@@ -1,0 +1,53 @@
+rules_version = '2';
+
+/* ============================================================
+   P1PLANNER — STORAGE SECURITY RULES
+   ============================================================
+   Chemin : users/{uid}/...
+   Lecture  : propriétaire + email vérifié.
+   Écriture : propriétaire + email vérifié + entitlement actif
+              (writeAccessUntil dans le futur, même source que
+              Firestore — voir firestore.rules).
+   Jamais de bucket public. Images uniquement, taille limitée.
+   ============================================================ */
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isSelfVerified(uid) {
+      return isOwner(uid) && isVerified();
+    }
+
+    function canWrite(uid) {
+      return isSelfVerified(uid) &&
+        firestore.exists(/databases/(default)/documents/entitlements/$(uid)) &&
+        firestore.get(/databases/(default)/documents/entitlements/$(uid)).data.writeAccessUntil is timestamp &&
+        firestore.get(/databases/(default)/documents/entitlements/$(uid)).data.writeAccessUntil > request.time;
+    }
+
+    // Images jointes aux notes/erreurs/flashcards : 5 Mo max, image/* uniquement.
+    match /users/{uid}/notesImages/{allImages=**} {
+      allow read: if isSelfVerified(uid);
+      allow write: if canWrite(uid) &&
+        request.resource.size < 5 * 1024 * 1024 &&
+        request.resource.contentType.matches('image/.*');
+      allow delete: if isSelfVerified(uid); // suppression d'une pièce jointe = action normale, pas une perte de données structurées
+    }
+  }
+}

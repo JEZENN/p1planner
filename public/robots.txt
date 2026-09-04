@@ -1,0 +1,63 @@
+# P1Planner — robots.txt
+# Site public : https://p1planner.fr/
+# Aucune donnée utilisateur n'est servie par le hosting statique (tout le
+# contenu privé passe par Firebase Auth/Firestore, jamais indexable) —
+# rien à interdire ici, tout le site public peut être exploré librement.
+
+User-agent: *
+Allow: /
+
+# ── Crawlers IA / moteurs de réponse — autorisés explicitement ──
+# Objectif : que P1Planner soit correctement compris et cité par les
+# outils d'IA (ChatGPT, Claude, Perplexity, Gemini...) sur des recherches
+# comme "méthode des J", "méthode des tours", "tableur P1", "organisation
+# P1". Voir aussi /llms.txt pour un résumé dédié aux agents IA.
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: Amazonbot
+Allow: /
+
+User-agent: Bytespider
+Allow: /
+
+User-agent: Meta-ExternalAgent
+Allow: /
+
+Sitemap: https://p1planner.fr/sitemap.xml

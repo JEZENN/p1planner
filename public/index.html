@@ -1,0 +1,1846 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>P1Planner — Tableur P1 : Méthode des tours &amp; Méthode des J</title>
+<meta name="description" content="P1Planner, le tableur P1 en ligne pour organiser sa P1/PASS/LAS : Méthode des tours, Méthode des J, planning, Programme de la journée, flashcards et statistiques. 15 jours gratuits, sans carte bancaire.">
+<meta name="theme-color" content="#0a0e1a">
+<link rel="canonical" href="https://p1planner.fr/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="P1Planner — Tableur P1 : Méthode des tours &amp; Méthode des J">
+<meta property="og:description" content="Le tableur P1 qui organise ta P1/PASS/LAS : Méthode des tours, Méthode des J, planning et Programme de la journée, réunis au même endroit.">
+<meta property="og:locale" content="fr_FR">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%236d5bf0'/%3E%3Cstop offset='1' stop-color='%234f9dfb'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='url(%23g)'/%3E%3Ctext x='32' y='42' font-family='Arial,sans-serif' font-weight='700' font-size='26' fill='white' text-anchor='middle'%3EP1%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=Fraunces:ital,opsz,wght@0,9..144,500;1,9..144,500&display=swap" rel="stylesheet">
+<script src="p1-billing.js"></script>
+<style>
+/* ============================================================
+   P1PLANNER — DESIGN TOKENS
+   ============================================================ */
+:root{
+  --bg:#0a0e1a;
+  --bg-soft:#0d1220;
+  --surface:#131a30;
+  --surface-2:#171f3a;
+  --surface-hover:#1c2545;
+  --border:rgba(255,255,255,.09);
+  --border-strong:rgba(255,255,255,.16);
+  --text:#f3f5fb;
+  --text-muted:#a6b0cc;
+  --text-dim:#707aa0;
+  --primary:#7c6cf6;
+  --primary-2:#5b8def;
+  --primary-soft:rgba(124,108,246,.14);
+  --accent:#ffab5c;
+  --accent-2:#ff7a7a;
+  --accent-soft:rgba(255,171,92,.16);
+  --success:#3ddc97;
+  --success-soft:rgba(61,220,151,.14);
+  --danger:#ff6b6b;
+  --gradient-brand:linear-gradient(135deg,#6d5bf0 0%,#8b6cf7 45%,#4f9dfb 100%);
+  --gradient-warm:linear-gradient(135deg,#ffab5c 0%,#ff7a7a 100%);
+  --shadow-glow:0 0 0 1px var(--border), 0 20px 60px -20px rgba(93,73,246,.35);
+  --shadow-card:0 1px 0 rgba(255,255,255,.04) inset, 0 12px 30px -18px rgba(0,0,0,.6);
+  --radius-sm:10px;
+  --radius-md:16px;
+  --radius-lg:24px;
+  --radius-pill:999px;
+  --font-display:'Space Grotesk',ui-sans-serif,system-ui,sans-serif;
+  --font-body:'Inter',ui-sans-serif,system-ui,sans-serif;
+  --font-serif:'Fraunces',ui-serif,Georgia,serif;
+  --container:1180px;
+  --header-h:72px;
+  --ease:cubic-bezier(.22,1,.36,1);
+}
+
+/* ============================================================
+   RESET
+   ============================================================ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--font-body);
+  font-size:16px;
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+  overflow-x:hidden;
+}
+img,svg{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+ul{list-style:none}
+input[type="range"]{font:inherit}
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:600;line-height:1.12;letter-spacing:-.01em}
+
+:focus-visible{outline:2px solid var(--primary-2);outline-offset:3px;border-radius:4px}
+::selection{background:var(--primary);color:#fff}
+
+.skip-link{
+  position:absolute;left:1rem;top:-60px;background:var(--primary);color:#fff;
+  padding:.75rem 1.25rem;border-radius:var(--radius-sm);z-index:200;transition:top .2s var(--ease);
+  font-weight:600;
+}
+.skip-link:focus{top:1rem}
+
+@media (prefers-reduced-motion: reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important;scroll-behavior:auto !important}
+}
+
+/* ============================================================
+   LAYOUT HELPERS
+   ============================================================ */
+.wrap{max-width:var(--container);margin-inline:auto;padding-inline:20px}
+.section{padding-block:clamp(56px,9vw,120px)}
+.section-head{max-width:640px;margin-bottom:clamp(32px,5vw,56px)}
+.eyebrow{
+  display:inline-flex;align-items:center;gap:.5rem;
+  font-size:.8rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--primary-2);background:var(--primary-soft);
+  border:1px solid rgba(124,108,246,.3);
+  padding:.4rem .85rem;border-radius:var(--radius-pill);margin-bottom:1rem;
+}
+.eyebrow.warm{color:var(--accent);background:var(--accent-soft);border-color:rgba(255,171,92,.32)}
+h2.h-section{font-size:clamp(1.7rem,3.6vw,2.6rem);margin-bottom:.75rem}
+.section-lead{color:var(--text-muted);font-size:1.05rem;max-width:52ch}
+.text-grad{
+  background:var(--gradient-brand);-webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.serif-accent{font-family:var(--font-serif);font-style:italic;font-weight:500}
+
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:.55rem;
+  padding:.85rem 1.5rem;border-radius:var(--radius-pill);font-weight:600;font-size:.98rem;
+  min-height:48px;transition:transform .25s var(--ease),box-shadow .25s var(--ease),background-color .2s;
+  white-space:nowrap;
+}
+.btn-primary{background:var(--gradient-brand);color:#fff;box-shadow:0 12px 30px -10px rgba(93,73,246,.55)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 16px 36px -8px rgba(93,73,246,.65)}
+.btn-warm{background:var(--gradient-warm);color:#1a1206;box-shadow:0 12px 30px -10px rgba(255,122,122,.4)}
+.btn-warm:hover{transform:translateY(-2px)}
+.btn-ghost{background:rgba(255,255,255,.04);color:var(--text);border:1px solid var(--border-strong)}
+.btn-ghost:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.28)}
+.btn-sm{padding:.6rem 1.1rem;min-height:40px;font-size:.9rem}
+.btn[aria-disabled="true"]{opacity:.5;pointer-events:none}
+
+.card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);
+  box-shadow:var(--shadow-card);
+}
+
+.icon{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.icon-lg{width:28px;height:28px}
+
+.pill-tag{
+  display:inline-flex;align-items:center;gap:.4rem;font-size:.78rem;font-weight:600;
+  padding:.3rem .65rem;border-radius:var(--radius-pill);border:1px solid var(--border-strong);
+  color:var(--text-muted);
+}
+
+/* reveal-on-scroll */
+.reveal{opacity:0;transform:translateY(22px);transition:opacity .7s var(--ease),transform .7s var(--ease)}
+.reveal.is-visible{opacity:1;transform:none}
+@media (prefers-reduced-motion: reduce){
+  .reveal{opacity:1;transform:none;transition:none}
+}
+
+.visually-hidden{
+  position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0,0,0,0);white-space:nowrap;border:0;
+}
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+.site-header{
+  position:fixed;inset-block-start:0;inset-inline:0;z-index:100;
+  height:var(--header-h);display:flex;align-items:center;
+  border-bottom:1px solid transparent;
+  transition:background-color .3s var(--ease),border-color .3s var(--ease),backdrop-filter .3s;
+}
+.site-header.is-scrolled{
+  background:rgba(10,14,26,.72);backdrop-filter:blur(16px) saturate(140%);-webkit-backdrop-filter:blur(16px) saturate(140%);
+  border-bottom-color:var(--border);
+}
+.site-header .wrap{width:100%;display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.brand{display:flex;align-items:center;gap:.6rem;font-family:var(--font-display);font-weight:700;font-size:1.15rem}
+.brand-mark{
+  width:34px;height:34px;border-radius:10px;background:var(--gradient-brand);
+  display:flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:700;color:#fff;
+}
+.nav-desktop{display:none;align-items:center;gap:2rem}
+.nav-desktop a{font-size:.94rem;font-weight:500;color:var(--text-muted);transition:color .2s;position:relative;padding-bottom:.3rem}
+.nav-desktop a:hover{color:var(--text)}
+.nav-desktop a::after{
+  content:"";position:absolute;left:0;right:0;bottom:0;height:2px;border-radius:2px;
+  background:var(--gradient-brand);transform:scaleX(0);transform-origin:left;
+  transition:transform .25s var(--ease);
+}
+.nav-desktop a:hover::after{transform:scaleX(1)}
+.nav-desktop a.is-current{color:var(--text)}
+.nav-desktop a.is-current::after{transform:scaleX(1)}
+.header-cta{display:none;align-items:center;gap:.7rem}
+.nav-toggle{
+  display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:10px;
+  border:1px solid var(--border-strong);
+}
+.nav-toggle .icon{width:20px;height:20px}
+.nav-toggle .icon-close{display:none}
+.nav-toggle[aria-expanded="true"] .icon-menu{display:none}
+.nav-toggle[aria-expanded="true"] .icon-close{display:block}
+
+.mobile-nav{
+  position:fixed;inset:var(--header-h) 0 0 0;background:rgba(9,12,22,.98);backdrop-filter:blur(10px);
+  z-index:90;padding:1.5rem 20px 2.5rem;transform:translateY(-8px);opacity:0;pointer-events:none;
+  transition:opacity .25s var(--ease),transform .25s var(--ease);
+  overflow-y:auto;
+}
+.mobile-nav.is-open{opacity:1;transform:none;pointer-events:auto}
+.mobile-nav a{display:block;padding:1rem 0;font-size:1.15rem;font-weight:600;border-bottom:1px solid var(--border);color:var(--text-muted);transition:color .2s,padding-left .2s var(--ease);position:relative}
+.mobile-nav a.is-current{color:var(--text);padding-left:.6rem}
+.mobile-nav a.is-current::before{
+  content:"";position:absolute;left:0;top:1.1rem;bottom:1.1rem;width:3px;border-radius:2px;background:var(--gradient-brand);
+}
+.mobile-nav .header-cta{display:flex;flex-direction:column;gap:.8rem;margin-top:1.5rem}
+.mobile-nav .header-cta .btn{width:100%}
+
+@media (min-width:900px){
+  .nav-desktop{display:flex}
+  .header-cta{display:flex}
+  .nav-toggle{display:none}
+  .mobile-nav{display:none}
+}
+
+/* ============================================================
+   HERO
+   ============================================================ */
+.hero{
+  position:relative;padding-block:calc(var(--header-h) + 56px) 40px;overflow:hidden;
+}
+.hero::before{
+  content:"";position:absolute;inset:-20% -10% auto -10%;height:640px;
+  background:radial-gradient(60% 60% at 30% 20%,rgba(124,108,246,.28),transparent 70%),
+             radial-gradient(50% 50% at 80% 10%,rgba(79,157,251,.22),transparent 70%);
+  pointer-events:none;z-index:0;
+}
+.hero .wrap{position:relative;z-index:1}
+.hero-grid{display:grid;gap:2.5rem;align-items:center}
+.hero-copy h1{font-size:clamp(2.1rem,5.4vw,3.6rem);margin-bottom:1.1rem}
+.hero-copy p.lead{font-size:1.1rem;color:var(--text-muted);max-width:52ch;margin-bottom:1.75rem}
+.hero-actions{display:flex;flex-wrap:wrap;gap:.9rem;margin-bottom:1.25rem}
+.hero-trust{display:flex;align-items:center;gap:.55rem;color:var(--text-dim);font-size:.88rem}
+.hero-trust .icon{width:16px;height:16px;color:var(--success)}
+
+/* Tableur mockup */
+.mock-sheet{
+  border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-glow);
+  border:1px solid var(--border-strong);background:var(--surface);
+}
+.mock-sheet-bar{
+  display:flex;align-items:center;gap:.5rem;padding:.75rem 1rem;background:var(--surface-2);
+  border-bottom:1px solid var(--border);
+}
+.mock-dot{width:10px;height:10px;border-radius:50%}
+.mock-sheet-bar .mock-dot:nth-child(1){background:#ff6b6b}
+.mock-sheet-bar .mock-dot:nth-child(2){background:#ffab5c}
+.mock-sheet-bar .mock-dot:nth-child(3){background:#3ddc97}
+.mock-sheet-title{margin-inline-start:.5rem;font-size:.8rem;color:var(--text-dim);font-weight:600}
+.mock-table{width:100%;border-collapse:collapse;font-size:.82rem}
+.mock-table th{
+  text-align:left;font-size:.68rem;text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);
+  padding:.6rem .75rem;border-bottom:1px solid var(--border);font-weight:700;
+}
+.mock-table td{padding:.55rem .75rem;border-bottom:1px solid var(--border);vertical-align:middle}
+.mock-table tr:last-child td{border-bottom:0}
+.mock-subject{display:inline-block;width:8px;height:8px;border-radius:50%;margin-inline-end:.5rem}
+.mock-course{color:var(--text);font-weight:500}
+.mock-tours{display:flex;gap:4px}
+.mock-tour-dot{width:16px;height:16px;border-radius:5px;background:var(--surface-2);border:1px solid var(--border-strong)}
+.mock-tour-dot[data-c="5"]{background:#3ddc97}
+.mock-tour-dot[data-c="4"]{background:#7fe0b0}
+.mock-tour-dot[data-c="3"]{background:#ffab5c}
+.mock-tour-dot[data-c="2"]{background:#ff8f6b}
+.mock-tour-dot[data-c="1"]{background:#ff6b6b}
+.mock-j-badge{
+  font-size:.7rem;font-weight:700;padding:.2rem .5rem;border-radius:var(--radius-pill);white-space:nowrap;
+}
+.mock-j-badge.late{background:rgba(255,107,107,.16);color:#ff9a9a}
+.mock-j-badge.today{background:var(--accent-soft);color:var(--accent)}
+.mock-j-badge.ok{background:var(--success-soft);color:var(--success)}
+.mock-j-badge.done{background:rgba(255,255,255,.06);color:var(--text-dim)}
+
+@media (min-width:960px){
+  .hero-grid{grid-template-columns:1.05fr 1fr;gap:3rem}
+}
+
+/* ============================================================
+   VALUE PROP / PAIN
+   ============================================================ */
+.value-grid{display:grid;gap:1.25rem}
+.value-card{padding:1.5rem;border-radius:var(--radius-md)}
+.value-card .icon-wrap{
+  width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+  background:var(--primary-soft);color:var(--primary-2);margin-bottom:1rem;
+}
+.value-card h3{font-size:1.05rem;margin-bottom:.4rem}
+.value-card p{color:var(--text-muted);font-size:.92rem}
+@media (min-width:720px){ .value-grid{grid-template-columns:repeat(3,1fr)} }
+
+/* ============================================================
+   PILLARS
+   ============================================================ */
+.pillars-grid{display:grid;gap:1.1rem}
+.pillar-card{
+  padding:1.75rem;position:relative;overflow:hidden;transition:transform .3s var(--ease),border-color .3s;
+}
+.pillar-card:hover{transform:translateY(-4px);border-color:var(--border-strong)}
+.pillar-num{
+  font-family:var(--font-serif);font-style:italic;font-size:2.2rem;color:var(--text-dim);
+  position:absolute;top:1rem;right:1.25rem;opacity:.5;
+}
+.pillar-card .icon-wrap{
+  width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+  background:var(--gradient-brand);color:#fff;margin-bottom:1.1rem;
+}
+.pillar-card h3{font-size:1.15rem;margin-bottom:.5rem}
+.pillar-card p{color:var(--text-muted);font-size:.92rem}
+@media (min-width:720px){ .pillars-grid{grid-template-columns:repeat(2,1fr)} }
+@media (min-width:1080px){ .pillars-grid{grid-template-columns:repeat(4,1fr)} }
+
+/* ============================================================
+   DEMO STEPPER
+   ============================================================ */
+.demo-shell{
+  display:grid;gap:1.75rem;align-items:start;
+}
+.demo-steps-nav{display:flex;flex-direction:column;gap:.4rem}
+.demo-step-btn{
+  display:flex;align-items:center;gap:.85rem;text-align:left;padding:.85rem 1rem;border-radius:var(--radius-md);
+  border:1px solid transparent;transition:background-color .2s,border-color .2s;
+}
+.demo-step-btn:hover{background:rgba(255,255,255,.03)}
+.demo-step-btn[aria-current="step"]{background:var(--surface);border-color:var(--border-strong)}
+.demo-step-index{
+  flex-shrink:0;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:.78rem;font-weight:700;background:var(--surface-2);color:var(--text-dim);
+}
+.demo-step-btn[aria-current="step"] .demo-step-index{background:var(--gradient-brand);color:#fff}
+.demo-step-btn h3{font-size:.95rem;margin-bottom:.15rem}
+.demo-step-btn p{font-size:.8rem;color:var(--text-dim)}
+
+.demo-stage{
+  padding:1.75rem;min-height:360px;display:flex;flex-direction:column;gap:1rem;position:relative;
+}
+.demo-stage-body{flex:1;display:flex;flex-direction:column;justify-content:center;gap:1rem}
+.demo-controls{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding-top:.75rem;border-top:1px solid var(--border)}
+.demo-dots{display:flex;gap:.4rem}
+.demo-dots button{width:8px;height:8px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border-strong)}
+.demo-dots button[aria-current="true"]{background:var(--primary-2)}
+.demo-arrows{display:flex;gap:.5rem}
+.demo-arrow{
+  width:38px;height:38px;border-radius:50%;border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;
+}
+.demo-arrow:hover{background:rgba(255,255,255,.06)}
+
+@media (min-width:900px){
+  .demo-shell{grid-template-columns:280px 1fr}
+}
+
+/* ============================================================
+   J TIMELINE
+   ============================================================ */
+.j-presets{display:grid;gap:1rem}
+.j-preset-card{padding:1.4rem}
+.j-preset-card h3{font-size:1rem;margin-bottom:.9rem;display:flex;align-items:center;gap:.5rem}
+.j-timeline{display:flex;flex-wrap:wrap;gap:.5rem}
+.j-chip{
+  font-family:var(--font-display);font-size:.78rem;font-weight:700;padding:.4rem .65rem;border-radius:var(--radius-sm);
+  background:var(--surface-2);border:1px solid var(--border-strong);color:var(--text-muted);
+}
+.j-chip:first-child{background:var(--primary-soft);color:var(--primary-2);border-color:rgba(124,108,246,.35)}
+@media (min-width:760px){ .j-presets{grid-template-columns:repeat(2,1fr)} }
+@media (min-width:1080px){ .j-presets{grid-template-columns:repeat(4,1fr)} }
+
+/* ============================================================
+   PROGRAMME DU JOUR mockup
+   ============================================================ */
+.today-mock{padding:1.5rem}
+.today-item{
+  display:flex;align-items:center;gap:.9rem;padding:.85rem 0;border-bottom:1px solid var(--border);
+}
+.today-item:last-child{border-bottom:0}
+.today-check{
+  width:26px;height:26px;border-radius:8px;border:2px solid var(--border-strong);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+}
+.today-check.done{background:var(--success);border-color:var(--success);color:#04241a}
+.today-item-body{flex:1;min-width:0}
+.today-item-body h5{font-size:.92rem;font-weight:600}
+.today-item-body span{font-size:.78rem;color:var(--text-dim)}
+.today-item-actions{display:flex;gap:.4rem;flex-shrink:0}
+.today-item-actions .btn{padding:.4rem .8rem;min-height:34px;font-size:.78rem}
+
+/* ============================================================
+   PLANNING MOCKUP (mini calendar)
+   ============================================================ */
+.cal-mock{padding:1.5rem}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-top:1rem}
+.cal-dow{font-size:.65rem;text-align:center;color:var(--text-dim);font-weight:700;text-transform:uppercase}
+.cal-day{
+  aspect-ratio:1;border-radius:8px;background:var(--surface-2);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;font-size:.72rem;color:var(--text-dim);position:relative;
+}
+.cal-day.type-cours{background:rgba(91,141,239,.18);border-color:rgba(91,141,239,.4);color:#bcd2ff}
+.cal-day.type-revision{background:rgba(124,108,246,.2);border-color:rgba(124,108,246,.45);color:#d6cffc}
+.cal-day.type-repos{background:rgba(61,220,151,.14);border-color:rgba(61,220,151,.35);color:#9ff0cd}
+.cal-day.type-vacances{background:rgba(255,171,92,.14);border-color:rgba(255,171,92,.35);color:#ffd3a3}
+.cal-day.type-examen{background:rgba(255,107,107,.18);border-color:rgba(255,107,107,.45);color:#ffb3b3;font-weight:700}
+.cal-legend{display:flex;flex-wrap:wrap;gap:.6rem 1rem;margin-top:1.1rem}
+.cal-legend-item{display:flex;align-items:center;gap:.4rem;font-size:.78rem;color:var(--text-muted)}
+.cal-legend-dot{width:9px;height:9px;border-radius:3px}
+
+/* ============================================================
+   STATS / TROPHIES
+   ============================================================ */
+.stats-grid{display:grid;gap:1.1rem}
+.stat-card{padding:1.4rem}
+.stat-card .num{font-family:var(--font-display);font-size:2rem;font-weight:700}
+.stat-card .label{color:var(--text-dim);font-size:.85rem;margin-top:.2rem}
+.progress-bar{height:8px;border-radius:var(--radius-pill);background:var(--surface-2);overflow:hidden;margin-top:.85rem}
+.progress-bar > span{display:block;height:100%;border-radius:inherit;background:var(--gradient-brand)}
+@media (min-width:720px){ .stats-grid{grid-template-columns:repeat(4,1fr)} }
+
+.trophy-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.9rem;margin-top:1.5rem}
+@media (min-width:720px){ .trophy-grid{grid-template-columns:repeat(8,1fr)} }
+.trophy{
+  aspect-ratio:1;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;
+  background:var(--surface-2);border:1px solid var(--border);color:var(--text-dim);
+}
+.trophy.unlocked{background:var(--gradient-warm);color:#2a1704;border-color:transparent}
+.trophy .icon{width:22px;height:22px}
+
+/* ============================================================
+   TOOLS GRID (flashcards / notes / erreurs / entrainement)
+   ============================================================ */
+.tools-grid{display:grid;gap:1.1rem}
+.tool-card{padding:1.6rem;display:flex;flex-direction:column;gap:.9rem}
+.tool-card .icon-wrap{
+  width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+  background:var(--surface-2);color:var(--primary-2);
+}
+.tool-card h3{font-size:1.05rem}
+.tool-card p{color:var(--text-muted);font-size:.9rem}
+.flash-demo{
+  border-radius:var(--radius-md);border:1px solid var(--border-strong);background:var(--surface-2);
+  padding:1.1rem;font-size:.85rem;color:var(--text-muted);
+}
+@media (min-width:720px){ .tools-grid{grid-template-columns:repeat(2,1fr)} }
+@media (min-width:1080px){ .tools-grid{grid-template-columns:repeat(4,1fr)} }
+
+/* ============================================================
+   TYPIXCLIN
+   ============================================================ */
+.typix-block{
+  display:grid;gap:2rem;align-items:center;padding:clamp(1.75rem,4vw,3rem);border-radius:var(--radius-lg);
+  background:linear-gradient(160deg,var(--surface) 0%,var(--surface-2) 100%);border:1px solid var(--border);
+}
+.typix-badge{
+  display:inline-flex;align-items:center;gap:.5rem;padding:.5rem 1rem;border-radius:var(--radius-pill);
+  background:rgba(255,255,255,.05);border:1px solid var(--border-strong);font-size:.82rem;font-weight:600;margin-bottom:1rem;
+}
+@media (min-width:960px){ .typix-block{grid-template-columns:1.1fr .9fr} }
+
+/* ============================================================
+   PREMIUM
+   ============================================================ */
+.premium-shell{display:grid;gap:1.75rem}
+.premium-toggle{
+  display:inline-flex;position:relative;padding:4px;border-radius:var(--radius-pill);background:var(--surface-2);
+  border:1px solid var(--border-strong);gap:4px;
+}
+/* Pastille qui glisse d'un bouton à l'autre (mesurée en JS : les deux
+   boutons n'ont pas la même largeur, contrairement aux onglets
+   Connexion/Inscription d'auth.html) — remplace un simple `background`
+   posé directement sur le bouton actif, qui ne pouvait que "sauter"
+   instantanément d'un bouton à l'autre (deux éléments DOM distincts, un
+   `background` ne peut pas glisser entre eux). Demande explicite de
+   l'utilisateur : même traitement que sur auth.html. */
+.premium-toggle-indicator{
+  position:absolute;top:4px;bottom:4px;border-radius:var(--radius-pill);background:var(--gradient-brand);
+  transition:left .3s cubic-bezier(.65,0,.35,1),width .3s cubic-bezier(.65,0,.35,1);z-index:0;
+}
+@media (prefers-reduced-motion: reduce){ .premium-toggle-indicator{transition:none} }
+.premium-toggle button{
+  padding:.55rem 1.1rem;border-radius:var(--radius-pill);font-size:.86rem;font-weight:600;color:var(--text-muted);
+  position:relative;z-index:1;transition:color .25s var(--ease);
+}
+.premium-toggle button[aria-pressed="true"]{color:#fff}
+#uniqueBlock,#recurrentBlock{transition:opacity .2s var(--ease),transform .2s var(--ease)}
+/* Anime aussi la HAUTEUR du conteneur pendant le switch : uniqueBlock
+   (slider + tableau de paliers) et recurrentBlock (une seule ligne de
+   prix) ont des hauteurs très différentes — sans ça, le fondu opacity
+   était bien présent (vérifié frame par frame) mais totalement éclipsé
+   par un saut de hauteur INSTANTANÉ du conteneur, qui donnait l'impression
+   qu'il n'y avait "aucune" transition (signalé deux fois par l'utilisateur
+   malgré le premier correctif). `overflow:hidden` le temps de l'anim
+   seulement (retiré ensuite pour ne pas rogner un éventuel contenu qui
+   déborderait après un redimensionnement de fenêtre). */
+.plan-card-stage{transition:height .2s var(--ease);overflow:hidden}
+@media (prefers-reduced-motion: reduce){ #uniqueBlock,#recurrentBlock,.plan-card-stage{transition:none} }
+.price-card{padding:clamp(1.5rem,3vw,2.25rem)}
+.price-row{display:flex;align-items:baseline;gap:.5rem;margin:1.1rem 0 .3rem}
+.price-amount{font-family:var(--font-display);font-size:2.6rem;font-weight:700}
+.price-suffix{color:var(--text-dim);font-size:.95rem}
+.price-slider-wrap{margin-top:1.5rem}
+.price-slider-wrap input[type="range"]{
+  width:100%;appearance:none;-webkit-appearance:none;height:6px;border-radius:var(--radius-pill);
+  background:var(--surface-2);outline:none;
+}
+.price-slider-wrap input[type="range"]::-webkit-slider-thumb{
+  appearance:none;-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--gradient-brand);
+  border:3px solid #0a0e1a;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.4);
+}
+.price-slider-wrap input[type="range"]::-moz-range-thumb{
+  width:22px;height:22px;border-radius:50%;background:var(--primary);border:3px solid #0a0e1a;cursor:pointer;
+}
+.price-meta{display:flex;justify-content:space-between;font-size:.78rem;color:var(--text-dim);margin-top:.5rem}
+.price-detail-list{display:flex;flex-direction:column;gap:.7rem;margin-top:1.4rem}
+.price-detail-list li{display:flex;align-items:flex-start;gap:.6rem;font-size:.88rem;color:var(--text-muted)}
+.price-detail-list .icon{width:18px;height:18px;color:var(--success);margin-top:2px}
+.tier-table{width:100%;border-collapse:collapse;margin-top:1rem;font-size:.85rem}
+.tier-table th,.tier-table td{padding:.6rem .5rem;text-align:left;border-bottom:1px solid var(--border)}
+.tier-table th{color:var(--text-dim);font-weight:600;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em}
+.tier-table tr.active td{color:var(--text);font-weight:700}
+@media (min-width:960px){ .premium-shell{grid-template-columns:1fr 1.15fr} }
+
+/* ============================================================
+   CREATOR
+   ============================================================ */
+.creator-block{display:grid;gap:2rem;align-items:center}
+.creator-avatar{
+  width:96px;height:96px;border-radius:26px;background:var(--gradient-brand);
+  display:flex;align-items:center;justify-content:center;font-family:var(--font-display);
+  font-size:1.9rem;font-weight:700;color:#fff;flex-shrink:0;
+}
+.creator-facts{display:flex;flex-direction:column;gap:.9rem;margin-top:1.4rem}
+.creator-fact{display:flex;gap:.75rem;align-items:flex-start}
+.creator-fact .icon-wrap{
+  width:36px;height:36px;border-radius:10px;background:var(--surface-2);color:var(--accent);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.creator-fact p{font-size:.92rem;color:var(--text-muted)}
+.creator-fact strong{color:var(--text)}
+@media (min-width:900px){ .creator-block{grid-template-columns:auto 1fr;gap:3rem} }
+
+/* ============================================================
+   FAQ
+   ============================================================ */
+.faq-list{display:flex;flex-direction:column;gap:.75rem;max-width:760px}
+.faq-item{border:1px solid var(--border);border-radius:var(--radius-md);background:var(--surface);overflow:hidden}
+.faq-item.is-expanded summary .icon{transform:rotate(180deg)}
+.faq-item summary{
+  list-style:none;cursor:pointer;padding:1.15rem 1.35rem;display:flex;align-items:center;justify-content:space-between;
+  gap:1rem;font-weight:600;font-size:.98rem;
+}
+.faq-item summary::-webkit-details-marker{display:none}
+.faq-item summary .icon{transition:transform .25s var(--ease);color:var(--text-dim);flex-shrink:0}
+/* L'animation d'ouverture/fermeture est pilotée en JS (max-height mesuré
+   + opacity) : <details> natif n'anime pas son ouverture nativement (pas
+   de support baseline pour transition-behavior:allow-discrete/
+   interpolate-size à ce jour). Ces deux propriétés sont la cible de la
+   transition ; le JS gère aussi le cas prefers-reduced-motion (snap
+   instantané, pas de transition). */
+.faq-item .faq-a{
+  padding:0 1.35rem 1.25rem;color:var(--text-muted);font-size:.92rem;max-width:65ch;
+  overflow:hidden;max-height:0;opacity:0;
+  transition:max-height .28s var(--ease),opacity .22s ease;
+}
+
+/* ============================================================
+   FINAL CTA
+   ============================================================ */
+.final-cta{
+  border-radius:var(--radius-lg);padding:clamp(2rem,6vw,4rem);text-align:center;position:relative;overflow:hidden;
+  background:linear-gradient(160deg,#171045 0%,#0d1a3e 55%,#0a0e1a 100%);border:1px solid var(--border-strong);
+}
+.final-cta::before{
+  content:"";position:absolute;inset:0;background:radial-gradient(50% 60% at 50% 0%,rgba(124,108,246,.35),transparent 70%);
+}
+.final-cta > *{position:relative;z-index:1}
+.final-cta h2{font-size:clamp(1.6rem,4vw,2.4rem);max-width:26ch;margin-inline:auto;margin-bottom:1rem}
+.final-cta p{color:var(--text-muted);max-width:48ch;margin-inline:auto;margin-bottom:1.75rem}
+.final-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:1rem}
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+.site-footer{border-top:1px solid var(--border);padding-block:3rem 2rem}
+.footer-grid{display:grid;gap:2.25rem}
+.footer-brand p{color:var(--text-dim);font-size:.88rem;margin-top:.75rem;max-width:34ch}
+.footer-col h5{font-size:.82rem;text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);margin-bottom:.9rem}
+.footer-col a{display:block;padding:.4rem 0;font-size:.9rem;color:var(--text-muted)}
+.footer-col a:hover{color:var(--text)}
+.footer-bottom{
+  display:flex;flex-wrap:wrap;gap:1rem;justify-content:space-between;align-items:center;
+  margin-top:2.5rem;padding-top:1.75rem;border-top:1px solid var(--border);color:var(--text-dim);font-size:.82rem;
+}
+@media (min-width:720px){ .footer-grid{grid-template-columns:1.4fr repeat(3,1fr)} }
+
+/* ============================================================
+   AMBIANCE — fond léger, barre de progression, retour en haut
+   (touches légères inspirées d'une référence fournie par
+   l'utilisateur — pas une reprise intégrale, juste ce qui sert
+   l'identité déjà en place : mêmes tokens --primary/--accent)
+   ============================================================ */
+.bg-orbs{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
+.bg-orb{position:absolute;border-radius:50%;filter:blur(90px);opacity:.22;will-change:transform;animation:bgOrbFloat 26s ease-in-out infinite}
+.bg-orb-1{width:520px;height:520px;top:-12%;left:-8%;background:radial-gradient(circle,var(--primary),transparent 70%);animation-duration:24s}
+.bg-orb-2{width:600px;height:600px;top:20%;right:-16%;background:radial-gradient(circle,var(--primary-2),transparent 70%);animation-duration:30s;animation-delay:-9s}
+.bg-orb-3{width:460px;height:460px;bottom:-10%;left:22%;background:radial-gradient(circle,var(--accent),transparent 70%);animation-duration:27s;animation-delay:-15s;opacity:.16}
+@keyframes bgOrbFloat{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(50px,-35px) scale(1.08)}66%{transform:translate(-35px,25px) scale(.96)}}
+@media (max-width:900px){ .bg-orbs{display:none} }
+@media (prefers-reduced-motion: reduce){ .bg-orb{animation:none} }
+
+.scroll-progress{position:fixed;top:0;left:0;height:3px;width:0%;background:var(--gradient-brand);z-index:300;transition:width .1s linear}
+
+.back-to-top{
+  position:fixed;bottom:24px;right:24px;width:48px;height:48px;border-radius:50%;
+  background:var(--gradient-brand);color:#fff;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;opacity:0;visibility:hidden;transform:translateY(16px) scale(.85);
+  transition:opacity .3s var(--ease),visibility .3s,transform .3s var(--ease),box-shadow .3s;
+  z-index:150;box-shadow:0 10px 26px -8px rgba(93,73,246,.55);
+}
+.back-to-top.is-visible{opacity:1;visibility:visible;transform:translateY(0) scale(1)}
+.back-to-top:hover{box-shadow:0 14px 34px -6px rgba(93,73,246,.7)}
+.back-to-top svg{width:20px;height:20px}
+@media (prefers-reduced-motion: reduce){ .back-to-top{transition:opacity .01s,visibility .01s} }
+
+.link-cta{
+  display:inline-flex;align-items:center;gap:.45rem;font-weight:700;font-size:.92rem;color:var(--primary-2);
+}
+.link-cta:hover{color:var(--text);text-decoration:underline}
+.link-cta .icon{transition:transform .2s var(--ease)}
+.link-cta:hover .icon{transform:translate(2px,-2px)}
+
+/* ============================================================
+   BARRE DE DÉFILEMENT PERSONNALISÉE
+   ============================================================ */
+html{scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:var(--primary) var(--bg-soft)}
+::-webkit-scrollbar{width:12px;height:12px}
+::-webkit-scrollbar-track{background:var(--bg-soft)}
+::-webkit-scrollbar-thumb{
+  background-color:var(--primary-2);border-radius:var(--radius-pill);
+  border:3px solid var(--bg-soft);background-clip:padding-box;
+}
+::-webkit-scrollbar-thumb:hover{background-color:var(--primary)}
+::-webkit-scrollbar-corner{background:var(--bg-soft)}
+</style>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "P1Planner",
+  "url": "https://p1planner.fr/",
+  "inLanguage": "fr-FR"
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "P1Planner",
+  "url": "https://p1planner.fr/",
+  "sameAs": []
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "P1Planner",
+  "url": "https://p1planner.fr/",
+  "applicationCategory": "EducationalApplication",
+  "operatingSystem": "Web",
+  "description": "Tableur P1 en ligne pour organiser sa P1/PASS/LAS : Méthode des tours (historique de révision par cours), Méthode des J (rappels espacés optionnels), planning, Programme de la journée, flashcards et statistiques.",
+  "inLanguage": "fr-FR",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "EUR",
+    "description": "15 jours d'essai gratuit, sans carte bancaire."
+  }
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "L'essai de 15 jours nécessite-t-il une carte bancaire ?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Non. L'essai gratuit de 15 jours démarre dès l'inscription, sans aucune information de paiement."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Que se passe-t-il si je ne renouvelle pas mon accès Premium ?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Ton compte repasse en lecture seule : tu peux toujours consulter tes cours, notes et statistiques, mais plus les modifier. Aucune donnée n'est jamais supprimée."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Qu'est-ce que la méthode des tours ?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "C'est le cœur du tableur P1 : à chaque fois que tu travailles un cours, tu enregistres un \"tour\" avec ton niveau de confiance, la date, le temps passé et le support utilisé. P1Planner s'appuie sur cet historique pour faire remonter en priorité les cours dont le dernier tour est le plus ancien ou la confiance la plus basse."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Dois-je utiliser la méthode des J ?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Non, elle est entièrement facultative. Tu peux réviser au feeling ou planifier toi-même chaque cours — les tours restent comptés dans tous les cas."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Comment organiser son année de P1 avec P1Planner ?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "L'organisation P1 tient en trois briques : le tableur liste tes cours et tes tours de révision, le planning répartit tes semaines matière par matière, et le Programme de la journée réunit chaque matin ce qu'il reste à faire — tours en retard, rappels J du jour, tâches et entraînements. Tout reste modifiable à tout moment, sans structure imposée."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Quel est le lien avec TypixClin ?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "TypixClin est un autre produit, destiné aux étudiants de P2 à D4. P1Planner en reprend l'expérience technique mais fonctionne de façon totalement indépendante : comptes, données et paiements séparés."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Puis-je changer de formule Premium en cours de route ?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Oui, tu peux changer de formule à tout moment depuis ton espace compte. Les deux formules ne sont pas cumulables : tu as soit un paiement unique en cours, soit un abonnement mensuel actif, jamais les deux à la fois."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "P1Planner est-il réservé aux études de médecine ?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Non. Il est pensé d'abord pour la P1/PASS/LAS, mais comme le programme est entièrement défini par l'utilisateur, il fonctionne pour toute filière basée sur des révisions structurées : droit, pharmacie, prépa, autres concours."
+      }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Aller au contenu</a>
+
+<div class="bg-orbs" aria-hidden="true">
+  <div class="bg-orb bg-orb-1"></div>
+  <div class="bg-orb bg-orb-2"></div>
+  <div class="bg-orb bg-orb-3"></div>
+</div>
+<div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
+<button type="button" class="back-to-top" id="backToTop" aria-label="Retour en haut de page">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>
+</button>
+
+<!-- ================= HEADER ================= -->
+<header class="site-header" id="siteHeader">
+  <div class="wrap">
+    <a href="#main" class="brand" aria-label="P1Planner, accueil">
+      <span class="brand-mark" aria-hidden="true">P1</span>
+      P1Planner
+    </a>
+
+    <nav class="nav-desktop" aria-label="Navigation principale">
+      <a href="#methode">Méthode</a>
+      <a href="#tableur">Tableur</a>
+      <a href="#outils">Outils</a>
+      <a href="#premium">Premium</a>
+      <a href="#createur">Origines</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+
+    <div class="header-cta">
+      <a href="auth.html" class="btn btn-ghost btn-sm">Connexion / Accès au tableur</a>
+      <a href="auth.html#inscription" class="btn btn-primary btn-sm">Essai gratuit</a>
+    </div>
+
+    <button class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="mobileNav" aria-label="Ouvrir le menu">
+      <svg class="icon icon-menu" viewBox="0 0 24 24"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+      <svg class="icon icon-close" viewBox="0 0 24 24"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+    </button>
+  </div>
+</header>
+
+<nav class="mobile-nav" id="mobileNav" aria-label="Navigation mobile">
+  <a href="#methode">Méthode</a>
+  <a href="#tableur">Tableur</a>
+  <a href="#outils">Outils</a>
+  <a href="#premium">Premium</a>
+  <a href="#createur">Origines</a>
+  <a href="#faq">FAQ</a>
+  <div class="header-cta">
+    <a href="auth.html" class="btn btn-ghost">Connexion / Accès au tableur</a>
+    <a href="auth.html#inscription" class="btn btn-primary">Essai gratuit — 15 jours</a>
+  </div>
+</nav>
+
+<main id="main">
+
+<!-- ================= HERO ================= -->
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <span class="eyebrow">Cours · Tours · Méthode des J · Programme du jour</span>
+      <h1>Organise tes révisions,<br><span class="text-grad">tour après tour</span>.</h1>
+      <p class="lead">P1Planner, le tableur P1 en ligne, planifie chaque cours du programme que <em class="serif-accent">tu</em> définis : combien de tours faire, quand les réviser, et ce qu'il reste à faire aujourd'hui. Pensé pour l'organisation P1/PASS/LAS, utilisable pour n'importe quel concours.</p>
+      <div class="hero-actions">
+        <a href="auth.html#inscription" class="btn btn-primary">
+          Commencer gratuitement
+          <svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </a>
+        <a href="#demo" class="btn btn-ghost">Voir la démo</a>
+      </div>
+      <div class="hero-trust">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+        15 jours d'essai, sans carte bancaire
+      </div>
+    </div>
+
+    <div class="hero-visual reveal">
+      <div class="mock-sheet" role="img" aria-label="Aperçu du tableur P1Planner : matières, cours, tours et échéances J">
+        <div class="mock-sheet-bar">
+          <span class="mock-dot"></span><span class="mock-dot"></span><span class="mock-dot"></span>
+          <span class="mock-sheet-title">tableur.html — Biochimie</span>
+        </div>
+        <table class="mock-table">
+          <thead>
+            <tr><th>Cours</th><th>Tours</th><th>J</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="mock-subject" style="background:#7c6cf6"></span><span class="mock-course">Glycolyse</span></td>
+              <td><div class="mock-tours"><span class="mock-tour-dot" data-c="5"></span><span class="mock-tour-dot" data-c="4"></span><span class="mock-tour-dot" data-c="3"></span><span class="mock-tour-dot"></span></div></td>
+              <td><span class="mock-j-badge today">J7 · aujourd'hui</span></td>
+            </tr>
+            <tr>
+              <td><span class="mock-subject" style="background:#5b8def"></span><span class="mock-course">Cycle de Krebs</span></td>
+              <td><div class="mock-tours"><span class="mock-tour-dot" data-c="4"></span><span class="mock-tour-dot" data-c="4"></span><span class="mock-tour-dot"></span><span class="mock-tour-dot"></span></div></td>
+              <td><span class="mock-j-badge late">J3 · en retard</span></td>
+            </tr>
+            <tr>
+              <td><span class="mock-subject" style="background:#3ddc97"></span><span class="mock-course">Structure de l'ADN</span></td>
+              <td><div class="mock-tours"><span class="mock-tour-dot" data-c="5"></span><span class="mock-tour-dot" data-c="5"></span><span class="mock-tour-dot" data-c="4"></span><span class="mock-tour-dot" data-c="4"></span></div></td>
+              <td><span class="mock-j-badge done">Fait</span></td>
+            </tr>
+            <tr>
+              <td><span class="mock-subject" style="background:#ffab5c"></span><span class="mock-course">Réplication de l'ADN</span></td>
+              <td><div class="mock-tours"><span class="mock-tour-dot" data-c="2"></span><span class="mock-tour-dot"></span><span class="mock-tour-dot"></span><span class="mock-tour-dot"></span></div></td>
+              <td><span class="mock-j-badge ok">J1 · dans 2j</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= VALUE PROP ================= -->
+<section class="section" aria-labelledby="value-h">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow warm">Le problème</span>
+      <h2 class="h-section" id="value-h">Trop de révisions se perdent entre les onglets</h2>
+      <p class="section-lead">Un cahier pour le programme, une appli de flashcards, un tableur fait maison pour le planning, et aucune vue d'ensemble de ce qu'il faut faire <em class="serif-accent">aujourd'hui</em>.</p>
+    </div>
+    <div class="value-grid">
+      <div class="card value-card reveal">
+        <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24"><path d="M4 19V6a2 2 0 0 1 2-2h13v15"/><path d="M6 22a2 2 0 0 1-2-2v-1h15v3"/></svg></div>
+        <h3>Le programme t'appartient</h3>
+        <p>Tu crées tes matières et tes cours — aucun programme imposé, aucune spécialité par défaut à trier.</p>
+      </div>
+      <div class="card value-card reveal">
+        <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3.2-6.9"/><polyline points="21 4 21 9 16 9"/></svg></div>
+        <h3>Un rythme de révision clair</h3>
+        <p>Chaque cours suit ses tours et, si tu le souhaites, une échéance de rappel espacé — sans y penser toi-même.</p>
+      </div>
+      <div class="card value-card reveal">
+        <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+        <h3>Un seul endroit, chaque matin</h3>
+        <p>Le Programme de la journée réunit tours, révisions et entraînements du jour — tu ouvres, tu vois, tu travailles.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 4 PILIERS ================= -->
+<section class="section" id="methode" aria-labelledby="pillars-h" style="background:var(--bg-soft)">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Les 4 piliers</span>
+      <h2 class="h-section" id="pillars-h">Comment ça marche</h2>
+      <p class="section-lead">Quatre briques simples pour organiser ta P1 — Méthode des tours, Méthode des J, planning — qui s'articulent sans jamais te forcer la main.</p>
+    </div>
+    <div class="pillars-grid">
+      <article class="card pillar-card reveal">
+        <span class="pillar-num" aria-hidden="true">01</span>
+        <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24" style="stroke:white"><path d="M4 19V6a2 2 0 0 1 2-2h13v15"/><path d="M6 22a2 2 0 0 1-2-2v-1h15v3"/></svg></div>
+        <h3>Cours</h3>
+        <p>Tes matières, tes cours, ta structure. P1Planner s'adapte à ton programme, pas l'inverse.</p>
+      </article>
+      <article class="card pillar-card reveal">
+        <span class="pillar-num" aria-hidden="true">02</span>
+        <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24" style="stroke:white"><path d="M21 12a9 9 0 1 1-3.2-6.9"/><polyline points="21 4 21 9 16 9"/></svg></div>
+        <h3>Méthode des tours</h3>
+        <p>Chaque passage sur un cours est noté : confiance, durée, support utilisé. Un historique fidèle de ton travail.</p>
+      </article>
+      <article class="card pillar-card reveal">
+        <span class="pillar-num" aria-hidden="true">03</span>
+        <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24" style="stroke:white"><rect x="3" y="4" width="18" height="17" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01M12 14h.01M16 14h.01"/></svg></div>
+        <h3>Méthode des J</h3>
+        <p>Un rappel espacé optionnel qui te dit quand reprendre un cours — ou juste au feeling, si tu préfères planifier toi-même.</p>
+      </article>
+      <article class="card pillar-card reveal">
+        <span class="pillar-num" aria-hidden="true">04</span>
+        <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24" style="stroke:white"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+        <h3>Programme de la journée</h3>
+        <p>Le centre opérationnel : ce qu'il y a à faire aujourd'hui, ce qui est en retard, ce que tu as déjà validé.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ================= DEMO ANIMÉE ================= -->
+<section class="section" id="demo" aria-labelledby="demo-h">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow warm">Démonstration</span>
+      <h2 class="h-section" id="demo-h">D'un cours travaillé à un trophée débloqué</h2>
+      <p class="section-lead">Le même parcours, du premier tour jusqu'aux statistiques — vue d'ensemble simplifiée du produit réel.</p>
+    </div>
+
+    <div class="demo-shell reveal">
+      <div class="demo-steps-nav" id="demoNav" role="tablist" aria-label="Étapes de la démonstration"></div>
+
+      <div class="card demo-stage">
+        <div class="demo-stage-body" id="demoStageBody" aria-live="polite"></div>
+        <div class="demo-controls">
+          <div class="demo-arrows">
+            <button class="demo-arrow" id="demoPrev" aria-label="Étape précédente">
+              <svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <button class="demo-arrow" id="demoNext" aria-label="Étape suivante">
+              <svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+          <div class="demo-dots" id="demoDots" role="tablist" aria-label="Aller à l'étape"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= TABLEUR ================= -->
+<section class="section" id="tableur" aria-labelledby="tableur-h" style="background:var(--bg-soft)">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Le tableur</span>
+      <h2 class="h-section" id="tableur-h">Dense, rapide, productif</h2>
+      <p class="section-lead">Le cœur de P1Planner reste un tableur — pas un tableau de bord qui cache l'information. Vue compacte ou détaillée, tout se fait au clavier comme à la souris.</p>
+    </div>
+    <div class="value-grid">
+      <div class="card value-card reveal">
+        <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div>
+        <h3>Mode compact ou détaillé</h3>
+        <p>Bascule d'une vue dense pour aller vite à une vue détaillée pour analyser un cours en profondeur.</p>
+      </div>
+      <div class="card value-card reveal">
+        <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24"><path d="M12 2a5 5 0 0 0-5 5v3H6a3 3 0 0 0-3 3v6a3 3 0 0 0 3 3h12a3 3 0 0 0 3-3v-6a3 3 0 0 0-3-3h-1V7a5 5 0 0 0-5-5Z"/></svg></div>
+        <h3>Sauvegarde protégée</h3>
+        <p>Chaque modification est sécurisée localement puis synchronisée : fermeture d'onglet, coupure réseau ou double appareil n'effacent rien.</p>
+      </div>
+      <div class="card value-card reveal">
+        <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg></div>
+        <h3>Priorité intelligente</h3>
+        <p>Un score met en avant les cours à revoir en priorité : ressenti faible, retard important, peu de tours faits.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= MÉTHODE DES J détaillée ================= -->
+<section class="section" id="tableur-j" aria-labelledby="j-h">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Optionnel, mais efficace</span>
+      <h2 class="h-section" id="j-h">La méthode des J, à ton rythme</h2>
+      <p class="section-lead">Choisis un rythme de rappel espacé, ou reste au feeling — dans les deux cas, tes tours sont comptés normalement.</p>
+    </div>
+    <div class="j-presets">
+      <div class="card j-preset-card reveal">
+        <h3><svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px;color:var(--accent)"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8Z"/></svg>Rapproché</h3>
+        <div class="j-timeline"><span class="j-chip">J0</span><span class="j-chip">J1</span><span class="j-chip">J3</span><span class="j-chip">J5</span><span class="j-chip">J8</span><span class="j-chip">J14</span><span class="j-chip">J30</span></div>
+      </div>
+      <div class="card j-preset-card reveal">
+        <h3><svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px;color:var(--primary-2)"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>Équilibré</h3>
+        <div class="j-timeline"><span class="j-chip">J0</span><span class="j-chip">J1</span><span class="j-chip">J3</span><span class="j-chip">J7</span><span class="j-chip">J14</span><span class="j-chip">J30</span></div>
+      </div>
+      <div class="card j-preset-card reveal">
+        <h3><svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px;color:var(--success)"><path d="M4 12h16M4 6h10M4 18h7"/></svg>Espacé</h3>
+        <div class="j-timeline"><span class="j-chip">J0</span><span class="j-chip">J3</span><span class="j-chip">J9</span><span class="j-chip">J25</span><span class="j-chip">J50</span></div>
+      </div>
+      <div class="card j-preset-card reveal">
+        <h3><svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px;color:var(--text-muted)"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Personnalisé</h3>
+        <div class="j-timeline"><span class="j-chip">J0</span><span class="j-chip">?</span><span class="j-chip">?</span><span class="j-chip">…</span></div>
+      </div>
+    </div>
+    <p class="pill-tag reveal" style="margin-top:1.5rem">
+      <svg class="icon" viewBox="0 0 24 24" style="width:14px;height:14px"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
+      Aucun de ces rythmes n'est une vérité scientifique — ce sont des points de départ, ajustables cours par cours.
+    </p>
+  </div>
+</section>
+
+<!-- ================= PROGRAMME DE LA JOURNÉE ================= -->
+<section class="section" id="tableur-today" aria-labelledby="today-h" style="background:var(--bg-soft)">
+  <div class="wrap" style="display:grid;gap:2.5rem;align-items:center;grid-template-columns:1fr">
+    <div class="section-head reveal" style="margin-bottom:0">
+      <span class="eyebrow warm">Chaque matin</span>
+      <h2 class="h-section" id="today-h">Ouvrir, voir, travailler, valider</h2>
+      <p class="section-lead">Un J en retard ? Deux actions suffisent : <strong>Valider</strong> ou <strong>Reporter</strong>. Tout le reste — planning, stats, trophées — se met à jour automatiquement.</p>
+    </div>
+    <div class="card today-mock reveal" style="max-width:640px">
+      <div class="today-item">
+        <div class="today-check done"><svg class="icon" viewBox="0 0 24 24" style="width:14px;height:14px"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="today-item-body"><h5>Structure de l'ADN — Tour 3</h5><span>Fait à 9h12</span></div>
+      </div>
+      <div class="today-item">
+        <div class="today-check"></div>
+        <div class="today-item-body"><h5>Cycle de Krebs — J3 en retard</h5><span>Prévu il y a 2 jours</span></div>
+        <div class="today-item-actions">
+          <button class="btn btn-primary btn-sm" type="button">Valider</button>
+          <button class="btn btn-ghost btn-sm" type="button">Reporter</button>
+        </div>
+      </div>
+      <div class="today-item">
+        <div class="today-check"></div>
+        <div class="today-item-body"><h5>Entraînement — QCM Biochimie</h5><span>À faire aujourd'hui</span></div>
+      </div>
+      <div class="today-item">
+        <div class="today-check"></div>
+        <div class="today-item-body"><h5>Réplication de l'ADN — J1</h5><span>Prévu aujourd'hui</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= PLANNING ================= -->
+<section class="section" id="tableur-planning" aria-labelledby="planning-h">
+  <div class="wrap" style="display:grid;gap:2.5rem;grid-template-columns:1fr">
+    <div class="section-head reveal" style="margin-bottom:0">
+      <span class="eyebrow">Vue d'ensemble</span>
+      <h2 class="h-section" id="planning-h">Le planning, semaine après semaine</h2>
+      <p class="section-lead">Tu choisis le type de chaque journée — l'état (en cours, en retard, partiellement réalisée…) est calculé pour toi à partir de ce que tu as réellement fait.</p>
+    </div>
+    <div class="card cal-mock reveal" style="max-width:520px">
+      <div class="cal-grid">
+        <span class="cal-dow">L</span><span class="cal-dow">M</span><span class="cal-dow">M</span><span class="cal-dow">J</span><span class="cal-dow">V</span><span class="cal-dow">S</span><span class="cal-dow">D</span>
+        <span class="cal-day type-cours">1</span><span class="cal-day type-cours">2</span><span class="cal-day type-cours">3</span><span class="cal-day type-revision">4</span><span class="cal-day type-cours">5</span><span class="cal-day type-repos">6</span><span class="cal-day type-repos">7</span>
+        <span class="cal-day type-cours">8</span><span class="cal-day type-cours">9</span><span class="cal-day type-revision">10</span><span class="cal-day type-cours">11</span><span class="cal-day type-revision">12</span><span class="cal-day type-repos">13</span><span class="cal-day type-repos">14</span>
+        <span class="cal-day type-vacances">15</span><span class="cal-day type-vacances">16</span><span class="cal-day type-vacances">17</span><span class="cal-day type-vacances">18</span><span class="cal-day type-vacances">19</span><span class="cal-day type-vacances">20</span><span class="cal-day type-vacances">21</span>
+        <span class="cal-day type-cours">22</span><span class="cal-day type-revision">23</span><span class="cal-day type-cours">24</span><span class="cal-day type-revision">25</span><span class="cal-day type-cours">26</span><span class="cal-day type-repos">27</span><span class="cal-day type-examen">28</span>
+      </div>
+      <div class="cal-legend">
+        <span class="cal-legend-item"><span class="cal-legend-dot" style="background:#5b8def"></span>Cours</span>
+        <span class="cal-legend-item"><span class="cal-legend-dot" style="background:#7c6cf6"></span>Révision</span>
+        <span class="cal-legend-item"><span class="cal-legend-dot" style="background:#3ddc97"></span>Repos</span>
+        <span class="cal-legend-item"><span class="cal-legend-dot" style="background:#ffab5c"></span>Vacances</span>
+        <span class="cal-legend-item"><span class="cal-legend-dot" style="background:#ff6b6b"></span>Examen</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= STATS & TROPHÉES ================= -->
+<section class="section" id="tableur-stats" aria-labelledby="stats-h" style="background:var(--bg-soft)">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow warm">Progression</span>
+      <h2 class="h-section" id="stats-h">Des statistiques qui donnent envie de continuer</h2>
+      <p class="section-lead">Vois ta progression réelle, matière par matière, et débloque des trophées au fil de tes efforts.</p>
+    </div>
+    <div class="stats-grid">
+      <div class="card stat-card reveal">
+        <div class="num">62%</div><div class="label">Cours entamés</div>
+        <div class="progress-bar"><span style="width:62%"></span></div>
+      </div>
+      <div class="card stat-card reveal">
+        <div class="num">184</div><div class="label">Tours réalisés</div>
+        <div class="progress-bar"><span style="width:74%"></span></div>
+      </div>
+      <div class="card stat-card reveal">
+        <div class="num">91%</div><div class="label">J réalisées à temps</div>
+        <div class="progress-bar"><span style="width:91%"></span></div>
+      </div>
+      <div class="card stat-card reveal">
+        <div class="num">37h</div><div class="label">Travail cette semaine</div>
+        <div class="progress-bar"><span style="width:80%"></span></div>
+      </div>
+    </div>
+
+    <div class="trophy-grid reveal" aria-label="Exemples de trophées">
+      <div class="trophy unlocked"><svg class="icon" viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4Z"/><path d="M7 6H4a3 3 0 0 0 3 5M17 6h3a3 3 0 0 1-3 5"/></svg></div>
+      <div class="trophy unlocked"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="6"/><path d="M9 14l-2 7 5-3 5 3-2-7"/></svg></div>
+      <div class="trophy unlocked"><svg class="icon" viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8Z"/></svg></div>
+      <div class="trophy"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
+      <div class="trophy"><svg class="icon" viewBox="0 0 24 24"><path d="M4 12h16M4 6h10M4 18h7"/></svg></div>
+      <div class="trophy"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+      <div class="trophy"><svg class="icon" viewBox="0 0 24 24"><path d="M12 2a5 5 0 0 0-5 5v3H6a3 3 0 0 0-3 3v6a3 3 0 0 0 3 3h12a3 3 0 0 0 3-3v-6a3 3 0 0 0-3-3h-1V7a5 5 0 0 0-5-5Z"/></svg></div>
+      <div class="trophy"><svg class="icon" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= OUTILS (flashcards / notes / erreurs / entrainement) ================= -->
+<section class="section" id="outils" aria-labelledby="outils-h">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Mémorisation</span>
+      <h2 class="h-section" id="outils-h">Tout ce qu'il faut pour retenir</h2>
+      <p class="section-lead">Flashcards, notes, cahiers d'erreurs et suivi d'entraînements — pour chaque cours ou chaque matière.</p>
+    </div>
+    <div class="tools-grid">
+      <div class="card tool-card reveal">
+        <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="11" rx="2"/><path d="M8 3h12a2 2 0 0 1 2 2v9"/></svg></div>
+        <h3>Flashcards</h3>
+        <p>Recto/verso par cours, avec un rythme de révision qui s'adapte : raté, hésitant ou su. La Session Flash enchaîne les cartes dues, toutes matières confondues, en une seule session.</p>
+      </div>
+      <div class="card tool-card reveal">
+        <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></div>
+        <h3>Notes</h3>
+        <p>Une note riche par cours ou par matière — mise en forme, images, tout ce qu'il faut garder sous la main.</p>
+      </div>
+      <div class="card tool-card reveal">
+        <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg></div>
+        <h3>Cahier d'erreurs</h3>
+        <p>Ce qu'il faut retravailler, cours par cours — pour ne plus refaire la même erreur deux fois.</p>
+      </div>
+      <div class="card tool-card reveal">
+        <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24"><path d="M6.5 6.5 3 3M17.5 6.5 21 3M6.5 17.5 3 21M17.5 17.5 21 21"/><rect x="8" y="8" width="8" height="8" rx="2"/></svg></div>
+        <h3>Entraînement</h3>
+        <p>Suis tes QCM, dossiers et plateformes externes : à faire, à refaire, relu — avec une note associée.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= PREMIUM ================= -->
+<section class="section" id="premium" aria-labelledby="premium-h">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow warm">Premium</span>
+      <h2 class="h-section" id="premium-h">15 jours gratuits, sans carte bancaire</h2>
+      <p class="section-lead">Ensuite, choisis ta formule. Le prix affiché ici est indicatif — le tarif exact est toujours calculé et confirmé par nos serveurs au moment du paiement.</p>
+    </div>
+
+    <div class="premium-shell reveal">
+      <div class="card price-card">
+        <div class="premium-toggle" role="tablist" aria-label="Type de formule">
+          <span class="premium-toggle-indicator" id="premiumToggleIndicator" aria-hidden="true"></span>
+          <button type="button" id="toggleUnique" aria-pressed="true" role="tab">Paiement unique</button>
+          <button type="button" id="toggleRecurrent" aria-pressed="false" role="tab">Abonnement mensuel</button>
+        </div>
+
+        <div class="plan-card-stage" id="planCardStage">
+        <div id="uniqueBlock">
+          <div class="price-row">
+            <span class="price-amount" id="priceAmount">3,00&nbsp;€</span>
+            <span class="price-suffix">/ mois, sur <span id="priceMonths">1</span> mois</span>
+          </div>
+          <p class="section-lead" style="font-size:.85rem" id="priceTotal">Soit 3,00&nbsp;€ au total.</p>
+          <div class="price-slider-wrap">
+            <label for="monthsRange" class="visually-hidden">Durée en mois</label>
+            <input type="range" id="monthsRange" min="1" max="12" value="1" step="1" aria-describedby="priceAmount priceTotal">
+            <div class="price-meta"><span>1 mois</span><span>12 mois (exemple)</span></div>
+          </div>
+          <table class="tier-table" aria-label="Barème dégressif">
+            <thead><tr><th>Durée</th><th>Tarif</th></tr></thead>
+            <tbody id="tierRows">
+              <tr data-tier="1-1"><td>1 mois</td><td>3,00 €/mois</td></tr>
+              <tr data-tier="2-4"><td>2 à 4 mois</td><td>2,50 €/mois</td></tr>
+              <tr data-tier="5-99"><td>5 mois et plus</td><td>2,25 €/mois</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div id="recurrentBlock" style="display:none">
+          <div class="price-row">
+            <span class="price-amount">3,00&nbsp;€</span>
+            <span class="price-suffix">/ mois</span>
+          </div>
+          <p class="section-lead" style="font-size:.85rem">Sans engagement — résiliable à tout moment depuis ton compte.</p>
+        </div>
+        </div>
+      </div>
+
+      <div class="card" style="padding:clamp(1.5rem,3vw,2.25rem)">
+        <h3 style="font-size:1.15rem;margin-bottom:1rem">Comment ça fonctionne</h3>
+        <ul class="price-detail-list">
+          <li><svg class="icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>15 jours d'essai gratuit à l'inscription, sans carte bancaire.</li>
+          <li><svg class="icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>À la fin de l'essai, indique la date approximative de ton concours ou de tes examens — la durée maximale disponible en couvre le mois, sans marge ajoutée.</li>
+          <li><svg class="icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Choisis un paiement unique pour la durée qui te convient, ou un abonnement mensuel sans engagement.</li>
+          <li><svg class="icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>À l'expiration, ton accès repasse en lecture seule — tes données ne sont jamais supprimées.</li>
+          <li><svg class="icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Le prix et la durée sont toujours vérifiés côté serveur — jamais calculés uniquement par ton navigateur.</li>
+        </ul>
+        <a href="auth.html#inscription" class="btn btn-warm" style="margin-top:1.5rem;width:100%">Commencer l'essai gratuit</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= ORIGINES (créateur + TypixClin) ================= -->
+<section class="section" id="createur" aria-labelledby="createur-h" style="background:var(--bg-soft)">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">À l'origine du projet</span>
+      <h2 class="h-section" id="createur-h">Origines</h2>
+    </div>
+    <div class="creator-block reveal">
+      <div class="creator-avatar" aria-hidden="true">JZ</div>
+      <div>
+        <p class="section-lead" style="font-size:1.02rem;max-width:60ch">Je m'appelle Jean Zennaro. P1Planner est né d'une conviction simple : bien s'organiser en P1/PASS/LAS change tout, et les outils existants ne collent pas toujours à la réalité d'une année de concours.</p>
+        <div class="creator-facts">
+          <div class="creator-fact">
+            <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8Z"/></svg></div>
+            <p><strong>3ᵉ de promotion en P1</strong>, major d'UE2 (Biocellulaire, Histologie, Embryologie) et d'UE3 (Biophysique, Physique).</p>
+          </div>
+          <div class="creator-fact">
+            <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px"><circle cx="12" cy="8" r="6"/><path d="M9 14l-2 7 5-3 5 3-2-7"/></svg></div>
+            <p><strong>275ᵉ sur environ 10 500</strong> aux Épreuves Dématérialisées Nationales (EDN, D4).</p>
+          </div>
+          <div class="creator-fact">
+            <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px"><path d="M12 2a5 5 0 0 0-5 5v3H6a3 3 0 0 0-3 3v6a3 3 0 0 0 3 3h12a3 3 0 0 0 3-3v-6a3 3 0 0 0-3-3h-1V7a5 5 0 0 0-5-5Z"/></svg></div>
+            <p><strong>Néo-interne d'anesthésie-réanimation</strong> à Paris.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Anciennement sa propre section pleine page ; regroupée ici avec le
+         reste des origines du projet (demande explicite de l'utilisateur).
+         Titre démoté en h3 (sous-partie d'"Origines", plus un h2 de
+         section à part entière). -->
+    <div class="typix-block reveal" style="margin-top:3rem;padding-top:2.5rem;border-top:1px solid var(--border)">
+      <div>
+        <span class="typix-badge">
+          <svg class="icon" viewBox="0 0 24 24" style="width:14px;height:14px"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+          Depuis TypixClin
+        </span>
+        <h3 style="font-family:var(--font-display);font-weight:600;font-size:clamp(1.25rem,2.4vw,1.6rem);letter-spacing:-.01em;margin-bottom:.75rem">Une expérience qui accompagne déjà des étudiants</h3>
+        <p class="section-lead" style="max-width:56ch">TypixClin accompagne des étudiants en médecine de la P2 au D4, avec un tableur déjà utilisé au quotidien. P1Planner en reprend les mécanismes les plus solides — sauvegarde, notes, flashcards, statistiques — pour les mettre au service d'un tout autre programme : le tien, dès la première année.</p>
+        <p class="section-lead" style="max-width:56ch;margin-top:.75rem">P1Planner n'est pas une déclinaison de TypixClin : c'est un produit indépendant, avec ses propres comptes et ses propres données, construit à partir de cette expérience.</p>
+        <a href="https://typixclin.fr/index.html" target="_blank" rel="noopener" class="link-cta" style="margin-top:1.1rem">
+          Découvrir TypixClin
+          <svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M7 17 17 7M8 7h9v9"/></svg>
+        </a>
+      </div>
+      <div class="card" style="padding:1.75rem">
+        <ul class="price-detail-list">
+          <li><svg class="icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Sauvegarde locale + cloud éprouvée, anti-perte de données</li>
+          <li><svg class="icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Notes, flashcards et statistiques déjà utilisées en conditions réelles</li>
+          <li><svg class="icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Comptes, données et paiements strictement séparés</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FAQ ================= -->
+<section class="section" id="faq" aria-labelledby="faq-h">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Questions fréquentes</span>
+      <h2 class="h-section" id="faq-h">Tout ce qu'on nous demande</h2>
+    </div>
+    <div class="faq-list reveal">
+      <details class="faq-item">
+        <summary>L'essai de 15 jours nécessite-t-il une carte bancaire ?<svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px"><polyline points="6 9 12 15 18 9"/></svg></summary>
+        <div class="faq-a">Non. L'essai gratuit de 15 jours démarre dès l'inscription, sans aucune information de paiement.</div>
+      </details>
+      <details class="faq-item">
+        <summary>Que se passe-t-il si je ne renouvelle pas mon accès Premium ?<svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px"><polyline points="6 9 12 15 18 9"/></svg></summary>
+        <div class="faq-a">Ton compte repasse en lecture seule : tu peux toujours consulter tes cours, notes et statistiques, mais plus les modifier. Aucune donnée n'est jamais supprimée.</div>
+      </details>
+      <details class="faq-item">
+        <summary>Qu'est-ce que la méthode des tours ?<svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px"><polyline points="6 9 12 15 18 9"/></svg></summary>
+        <div class="faq-a">C'est le cœur du tableur P1 : à chaque fois que tu travailles un cours, tu enregistres un "tour" avec ton niveau de confiance, la date, le temps passé et le support utilisé. P1Planner s'appuie sur cet historique pour faire remonter en priorité les cours dont le dernier tour est le plus ancien ou la confiance la plus basse.</div>
+      </details>
+      <details class="faq-item">
+        <summary>Dois-je utiliser la méthode des J ?<svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px"><polyline points="6 9 12 15 18 9"/></svg></summary>
+        <div class="faq-a">Non, elle est entièrement facultative. Tu peux réviser au feeling ou planifier toi-même chaque cours — les tours restent comptés dans tous les cas.</div>
+      </details>
+      <details class="faq-item">
+        <summary>Comment organiser son année de P1 avec P1Planner ?<svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px"><polyline points="6 9 12 15 18 9"/></svg></summary>
+        <div class="faq-a">L'organisation P1 tient en trois briques : le tableur liste tes cours et tes tours de révision, le planning répartit tes semaines matière par matière, et le Programme de la journée réunit chaque matin ce qu'il reste à faire — tours en retard, rappels J du jour, tâches et entraînements. Tout reste modifiable à tout moment, sans structure imposée.</div>
+      </details>
+      <details class="faq-item">
+        <summary>Quel est le lien avec TypixClin ?<svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px"><polyline points="6 9 12 15 18 9"/></svg></summary>
+        <div class="faq-a">TypixClin est un autre produit, destiné aux étudiants de P2 à D4. P1Planner en reprend l'expérience technique mais fonctionne de façon totalement indépendante : comptes, données et paiements séparés.</div>
+      </details>
+      <details class="faq-item">
+        <summary>Puis-je changer de formule Premium en cours de route ?<svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px"><polyline points="6 9 12 15 18 9"/></svg></summary>
+        <div class="faq-a">Oui, tu peux changer de formule à tout moment depuis ton espace compte. Les deux formules ne sont pas cumulables : tu as soit un paiement unique en cours, soit un abonnement mensuel actif, jamais les deux à la fois.</div>
+      </details>
+      <details class="faq-item">
+        <summary>P1Planner est-il réservé aux études de médecine ?<svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px"><polyline points="6 9 12 15 18 9"/></svg></summary>
+        <div class="faq-a">Non. Il est pensé d'abord pour la P1/PASS/LAS, mais comme le programme est entièrement défini par l'utilisateur, il fonctionne pour toute filière basée sur des révisions structurées : droit, pharmacie, prépa, autres concours.</div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FINAL CTA ================= -->
+<section class="section">
+  <div class="wrap">
+    <div class="final-cta reveal">
+      <h2>Ton prochain tour commence maintenant.</h2>
+      <p>15 jours d'essai, sans carte bancaire. Crée ton programme, définis ton rythme, et laisse P1Planner s'occuper du reste.</p>
+      <div class="final-actions">
+        <a href="auth.html#inscription" class="btn btn-primary">Commencer gratuitement</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ================= FOOTER ================= -->
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href="#main" class="brand" aria-label="P1Planner, accueil">
+          <span class="brand-mark" aria-hidden="true">P1</span>
+          P1Planner
+        </a>
+        <p>Planification de révisions pour la P1/PASS/LAS et au-delà — cours, tours, méthode des J et Programme de la journée.</p>
+      </div>
+      <div class="footer-col">
+        <h5>Produit</h5>
+        <a href="#methode">Méthode</a>
+        <a href="#tableur">Tableur</a>
+        <a href="#outils">Outils</a>
+        <a href="#premium">Premium</a>
+      </div>
+      <div class="footer-col">
+        <h5>Compte</h5>
+        <a href="auth.html">Connexion / Accès au tableur</a>
+        <a href="auth.html#inscription">Créer un compte</a>
+        <a href="comptepremium.html">Mon abonnement</a>
+      </div>
+      <div class="footer-col">
+        <h5>Informations</h5>
+        <a href="#createur">Origines</a>
+        <a href="#faq">FAQ</a>
+        <a href="mentions-legales.html">Mentions légales</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© <span id="year"></span> P1Planner. Tous droits réservés.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+  var prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---------- Header scroll state ---------- */
+  var header = document.getElementById("siteHeader");
+  var scrollProgressEl = document.getElementById("scrollProgress");
+  var backToTopEl = document.getElementById("backToTop");
+  function onScroll(){
+    header.classList.toggle("is-scrolled", window.scrollY > 8);
+    var doc = document.documentElement;
+    var max = (doc.scrollHeight - doc.clientHeight) || 1;
+    var pct = Math.min(100, Math.max(0, (window.scrollY / max) * 100));
+    if (scrollProgressEl) scrollProgressEl.style.width = pct + "%";
+    if (backToTopEl) backToTopEl.classList.toggle("is-visible", window.scrollY > 480);
+  }
+  onScroll();
+  window.addEventListener("scroll", onScroll, { passive: true });
+  window.addEventListener("resize", onScroll, { passive: true });
+  if (backToTopEl){
+    backToTopEl.addEventListener("click", function(){
+      window.scrollTo({ top: 0, behavior: prefersReducedMotion ? "auto" : "smooth" });
+    });
+  }
+
+  /* ---------- Nav : section active (scrollspy) ---------- */
+  // Chaque lien de nav peut correspondre à PLUSIEURS sections DOM — ex.
+  // "Tableur" doit rester actif sur toute sa vitrine, pas seulement sa
+  // courte intro : "La méthode des J, à ton rythme", "Ouvrir, voir,
+  // travailler, valider", "Le planning, semaine après semaine" et "Des
+  // statistiques..." sont des <section> SŒURS de #tableur (fermée après sa
+  // seule intro), sans id jusqu'ici — donc jamais observées, d'où un
+  // "trou" de surlignage en les traversant (bug signalé). Pareil pour
+  // "Méthode", qui doit aussi couvrir la démo animée juste après
+  // ("D'un cours travaillé à un trophée débloqué", #demo) — demande
+  // explicite de l'utilisateur.
+  var navSectionMap = {
+    methode: ["methode", "demo"],
+    tableur: ["tableur", "tableur-j", "tableur-today", "tableur-planning", "tableur-stats"],
+    outils: ["outils"],
+    premium: ["premium"],
+    createur: ["createur"],
+    faq: ["faq"]
+  };
+  var navKeyByElementId = {};
+  Object.keys(navSectionMap).forEach(function(navKey){
+    navSectionMap[navKey].forEach(function(elId){ navKeyByElementId[elId] = navKey; });
+  });
+  var navLinksByKey = {};
+  Object.keys(navSectionMap).forEach(function(navKey){
+    navLinksByKey[navKey] = Array.prototype.slice.call(document.querySelectorAll('.nav-desktop a[href="#' + navKey + '"], .mobile-nav a[href="#' + navKey + '"]'));
+  });
+  function setCurrentNavSection(navKey){
+    Object.keys(navLinksByKey).forEach(function(k){
+      var isCurrent = k === navKey;
+      navLinksByKey[k].forEach(function(a){ a.classList.toggle("is-current", isCurrent); });
+    });
+  }
+  if ("IntersectionObserver" in window){
+    var observedIds = Object.keys(navKeyByElementId);
+    var observedEls = observedIds.map(function(id){ return document.getElementById(id); }).filter(Boolean);
+    // Suit les éléments actuellement dans la bande d'observation, pas
+    // seulement la dernière entrée : sans ça, remonter tout en haut de la
+    // page (avant que "méthode", la 1ère section suivie, ne repasse dans la
+    // bande) ne déclenchait plus aucun événement `isIntersecting:true`, donc
+    // le lien restait souligné indéfiniment sur la dernière section visitée
+    // (bug signalé) — les événements `isIntersecting:false` (sortie de
+    // bande) étaient ignorés, jamais utilisés pour retirer le surlignage.
+    var currentlyIntersecting = {};
+    var navObserver = new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        currentlyIntersecting[entry.target.id] = entry.isIntersecting;
+      });
+      var activeId = observedIds.filter(function(id){ return currentlyIntersecting[id]; })[0];
+      setCurrentNavSection(activeId ? navKeyByElementId[activeId] : undefined); // undefined -> retire tout surlignage
+    }, { rootMargin: "-45% 0px -50% 0px", threshold: 0 });
+    observedEls.forEach(function(el){ navObserver.observe(el); });
+  }
+
+  /* ---------- FAQ : ouverture/fermeture animée ---------- */
+  var FAQ_ANIM_MS = 280;
+  Array.prototype.slice.call(document.querySelectorAll(".faq-item")).forEach(function(item){
+    var summary = item.querySelector("summary");
+    var answer = item.querySelector(".faq-a");
+    if (!summary || !answer) return;
+    var closeTimer = null;
+
+    summary.addEventListener("click", function(e){
+      e.preventDefault();
+      window.clearTimeout(closeTimer);
+
+      if (prefersReducedMotion){
+        item.open = !item.open;
+        item.classList.toggle("is-expanded", item.open);
+        return;
+      }
+
+      if (item.open){
+        // Fermeture : on garde `open` (et donc le rendu du contenu) le
+        // temps de l'animation, sinon <details> masque tout instantanément.
+        item.classList.remove("is-expanded");
+        answer.style.maxHeight = answer.scrollHeight + "px";
+        requestAnimationFrame(function(){
+          requestAnimationFrame(function(){
+            answer.style.maxHeight = "0px";
+            answer.style.opacity = "0";
+          });
+        });
+        closeTimer = window.setTimeout(function(){
+          item.open = false;
+          answer.style.maxHeight = "";
+        }, FAQ_ANIM_MS);
+      } else {
+        item.open = true;
+        item.classList.add("is-expanded");
+        answer.style.maxHeight = "0px";
+        answer.style.opacity = "0";
+        requestAnimationFrame(function(){
+          requestAnimationFrame(function(){
+            answer.style.maxHeight = answer.scrollHeight + "px";
+            answer.style.opacity = "1";
+          });
+        });
+        closeTimer = window.setTimeout(function(){
+          answer.style.maxHeight = "none";
+        }, FAQ_ANIM_MS);
+      }
+    });
+  });
+
+  /* ---------- Mobile nav ---------- */
+  var navToggle = document.getElementById("navToggle");
+  var mobileNav = document.getElementById("mobileNav");
+  function closeMobileNav(){
+    mobileNav.classList.remove("is-open");
+    navToggle.setAttribute("aria-expanded", "false");
+    navToggle.setAttribute("aria-label", "Ouvrir le menu");
+  }
+  function openMobileNav(){
+    mobileNav.classList.add("is-open");
+    navToggle.setAttribute("aria-expanded", "true");
+    navToggle.setAttribute("aria-label", "Fermer le menu");
+  }
+  navToggle.addEventListener("click", function(){
+    var isOpen = navToggle.getAttribute("aria-expanded") === "true";
+    isOpen ? closeMobileNav() : openMobileNav();
+  });
+  mobileNav.querySelectorAll("a").forEach(function(a){
+    a.addEventListener("click", closeMobileNav);
+  });
+  document.addEventListener("keydown", function(e){
+    if (e.key === "Escape") closeMobileNav();
+  });
+
+  /* ---------- Reveal on scroll ---------- */
+  var revealEls = Array.prototype.slice.call(document.querySelectorAll(".reveal"));
+  if (revealEls.length && "IntersectionObserver" in window && !prefersReducedMotion){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        if (entry.isIntersecting){
+          entry.target.classList.add("is-visible");
+          io.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12, rootMargin: "0px 0px -40px 0px" });
+    revealEls.forEach(function(el){ io.observe(el); });
+
+    /* Filet de sécurité : un scroll très rapide (flick trackpad, scroll
+       programmatique) peut faire "sauter" un élément sans jamais déclencher
+       l'observer. On revérifie géométriquement au scroll/resize, throttlé
+       par requestAnimationFrame, pour ne jamais laisser un bloc invisible. */
+    var tickingReveal = false;
+    function sweepReveal(){
+      tickingReveal = false;
+      var vh = window.innerHeight;
+      revealEls = revealEls.filter(function(el){
+        if (el.classList.contains("is-visible")) return false;
+        var rect = el.getBoundingClientRect();
+        if (rect.top < vh * 0.94 && rect.bottom > 0){
+          el.classList.add("is-visible");
+          io.unobserve(el);
+          return false;
+        }
+        return true;
+      });
+    }
+    function requestSweep(){
+      if (!tickingReveal){ tickingReveal = true; window.requestAnimationFrame(sweepReveal); }
+    }
+    window.addEventListener("scroll", requestSweep, { passive: true });
+    window.addEventListener("resize", requestSweep);
+    sweepReveal();
+  } else {
+    revealEls.forEach(function(el){ el.classList.add("is-visible"); });
+  }
+
+  /* ---------- Demo stepper ---------- */
+  var steps = [
+    {
+      title: "Cours travaillé",
+      hint: "Étape 1 / 7",
+      icon: '<path d="M4 19V6a2 2 0 0 1 2-2h13v15"/><path d="M6 22a2 2 0 0 1-2-2v-1h15v3"/>',
+      body: "Tu ouvres « Glycolyse » et tu commences à le travailler."
+    },
+    {
+      title: "Tour validé",
+      hint: "Étape 2 / 7",
+      icon: '<path d="M21 12a9 9 0 1 1-3.2-6.9"/><polyline points="21 4 21 9 16 9"/>',
+      body: "Tour 3 terminé : confiance 4/5, 55 minutes, avec une fiche de cours."
+    },
+    {
+      title: "Échéance J posée",
+      hint: "Étape 3 / 7",
+      icon: '<rect x="3" y="4" width="18" height="17" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/>',
+      body: "La méthode des J calcule automatiquement la prochaine échéance : J7, dans une semaine."
+    },
+    {
+      title: "Planning mis à jour",
+      hint: "Étape 4 / 7",
+      icon: '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4"/>',
+      body: "La journée correspondante passe automatiquement en « Révision » dans le planning."
+    },
+    {
+      title: "Programme du jour",
+      hint: "Étape 5 / 7",
+      icon: '<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
+      body: "Le jour J, ce cours apparaît en tête du Programme de la journée, prêt à être travaillé."
+    },
+    {
+      title: "Statistiques",
+      hint: "Étape 6 / 7",
+      icon: '<path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/>',
+      body: "Le temps de travail, le taux de J réalisées à temps et la progression de la matière se mettent à jour."
+    },
+    {
+      title: "Trophée débloqué",
+      hint: "Étape 7 / 7",
+      icon: '<path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4Z"/><path d="M7 6H4a3 3 0 0 0 3 5M17 6h3a3 3 0 0 1-3 5"/>',
+      body: "50 tours cumulés cette semaine : un nouveau trophée apparaît sur ton profil."
+    }
+  ];
+
+  var demoNav = document.getElementById("demoNav");
+  var demoDots = document.getElementById("demoDots");
+  var demoStageBody = document.getElementById("demoStageBody");
+  var demoPrev = document.getElementById("demoPrev");
+  var demoNext = document.getElementById("demoNext");
+  var demoSection = document.getElementById("demo");
+  var currentStep = 0;
+  var demoTimer = null;
+  var demoRunning = true;
+
+  steps.forEach(function(step, i){
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "demo-step-btn";
+    btn.setAttribute("role", "tab");
+    btn.innerHTML = '<span class="demo-step-index">' + (i + 1) + '</span>' +
+      '<span><h3>' + step.title + '</h3><p>' + step.hint + '</p></span>';
+    btn.addEventListener("click", function(){ goToStep(i); resetTimer(); });
+    demoNav.appendChild(btn);
+
+    var dot = document.createElement("button");
+    dot.type = "button";
+    dot.setAttribute("aria-label", "Étape " + (i + 1) + " : " + step.title);
+    dot.addEventListener("click", function(){ goToStep(i); resetTimer(); });
+    demoDots.appendChild(dot);
+  });
+
+  function renderStage(){
+    var step = steps[currentStep];
+    demoStageBody.innerHTML =
+      '<div class="icon-wrap" style="width:52px;height:52px;border-radius:14px;background:var(--gradient-brand);display:flex;align-items:center;justify-content:center;color:#fff">' +
+      '<svg class="icon icon-lg" viewBox="0 0 24 24">' + step.icon + '</svg></div>' +
+      '<h3 style="font-size:1.3rem">' + step.title + '</h3>' +
+      '<p style="color:var(--text-muted)">' + step.body + '</p>';
+
+    demoNav.querySelectorAll(".demo-step-btn").forEach(function(btn, i){
+      if (i === currentStep){ btn.setAttribute("aria-current", "step"); }
+      else { btn.removeAttribute("aria-current"); }
+    });
+    demoDots.querySelectorAll("button").forEach(function(dot, i){
+      dot.setAttribute("aria-current", i === currentStep ? "true" : "false");
+    });
+  }
+
+  function goToStep(i){
+    currentStep = (i + steps.length) % steps.length;
+    renderStage();
+  }
+
+  function startTimer(){
+    // Toujours nettoyer un éventuel timer déjà en cours avant d'en créer un
+    // nouveau : `startTimer()` est appelée directement (pas seulement via
+    // `resetTimer()`) par l'IntersectionObserver, mouseleave et focusout —
+    // sans ce garde, entrer/sortir plusieurs fois de la zone visible ou
+    // survolée empilait un `setInterval` supplémentaire à chaque fois,
+    // jamais nettoyé (`demoTimer` se faisait juste écraser). Avec assez
+    // d'intervalles empilés (ex. après avoir scrollé plusieurs fois devant
+    // la démo), leurs déclenchements décalés dans le temps produisaient un
+    // défilement rapide, quasi continu, des étapes — bug signalé ("ça passe
+    // de point en point sans interruption").
+    stopTimer();
+    if (prefersReducedMotion) return;
+    demoTimer = window.setInterval(function(){ goToStep(currentStep + 1); }, 4200);
+  }
+  function stopTimer(){
+    if (demoTimer){ window.clearInterval(demoTimer); demoTimer = null; }
+  }
+  function resetTimer(){ stopTimer(); if (demoRunning) startTimer(); }
+
+  demoPrev.addEventListener("click", function(){ goToStep(currentStep - 1); resetTimer(); });
+  demoNext.addEventListener("click", function(){ goToStep(currentStep + 1); resetTimer(); });
+
+  renderStage();
+
+  if ("IntersectionObserver" in window){
+    var demoObserver = new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        demoRunning = entry.isIntersecting;
+        if (entry.isIntersecting){ startTimer(); } else { stopTimer(); }
+      });
+    }, { threshold: 0.3 });
+    demoObserver.observe(demoSection);
+  } else {
+    startTimer();
+  }
+  demoSection.addEventListener("mouseenter", stopTimer);
+  demoSection.addEventListener("mouseleave", function(){ if (demoRunning) startTimer(); });
+  demoSection.addEventListener("focusin", stopTimer);
+  demoSection.addEventListener("focusout", function(){ if (demoRunning) startTimer(); });
+
+  /* ---------- Premium simulator ---------- */
+  var toggleUnique = document.getElementById("toggleUnique");
+  var toggleRecurrent = document.getElementById("toggleRecurrent");
+  var uniqueBlock = document.getElementById("uniqueBlock");
+  var recurrentBlock = document.getElementById("recurrentBlock");
+  var monthsRange = document.getElementById("monthsRange");
+  var priceAmount = document.getElementById("priceAmount");
+  var priceMonths = document.getElementById("priceMonths");
+  var priceTotal = document.getElementById("priceTotal");
+  var tierRows = document.querySelectorAll("#tierRows tr");
+
+  // Barème lu depuis p1-billing.js (source unique, partagée avec
+  // functions/premiumPlans.js et comptepremium.html) — jamais dupliqué en
+  // dur ici.
+  function tierFor(months){
+    var key = months <= 1 ? "1-1" : (months <= 4 ? "2-4" : "5-99");
+    return { rate: window.p1RatePerMonthForOneTime(months), key: key };
+  }
+
+  function updatePrice(){
+    var months = parseInt(monthsRange.value, 10);
+    var tier = tierFor(months);
+    var total = (tier.rate * months).toFixed(2).replace(".", ",");
+    priceAmount.textContent = tier.rate.toFixed(2).replace(".", ",") + " €";
+    priceMonths.textContent = months;
+    priceTotal.textContent = "Soit " + total + " € au total pour " + months + " mois — estimation, confirmée au paiement.";
+    tierRows.forEach(function(row){
+      row.classList.toggle("active", row.getAttribute("data-tier") === tier.key);
+    });
+  }
+  monthsRange.addEventListener("input", updatePrice);
+  updatePrice();
+
+  var planStage = document.getElementById("planCardStage");
+  var premiumToggleIndicator = document.getElementById("premiumToggleIndicator");
+  function updatePremiumToggleIndicator(){
+    if (!premiumToggleIndicator) return;
+    var activeBtn = toggleUnique.getAttribute("aria-pressed") === "true" ? toggleUnique : toggleRecurrent;
+    premiumToggleIndicator.style.left = activeBtn.offsetLeft + "px";
+    premiumToggleIndicator.style.width = activeBtn.offsetWidth + "px";
+  }
+  updatePremiumToggleIndicator();
+  window.addEventListener("resize", updatePremiumToggleIndicator, { passive: true });
+
+  var PLAN_ANIM_MS = 160;
+  var PLAN_HEIGHT_ANIM_MS = 200; // doit rester égal à la durée CSS de .plan-card-stage
+  function setPlanMode(mode){
+    var isUnique = mode === "unique";
+    toggleUnique.setAttribute("aria-pressed", String(isUnique));
+    toggleRecurrent.setAttribute("aria-pressed", String(!isUnique));
+    updatePremiumToggleIndicator();
+    var showEl = isUnique ? uniqueBlock : recurrentBlock;
+    var hideEl = isUnique ? recurrentBlock : uniqueBlock;
+
+    if (hideEl.style.display === "none"){
+      // Déjà dans le bon état (ex. appel d'initialisation) : rien à animer.
+      showEl.style.display = "";
+      return;
+    }
+    if (prefersReducedMotion){
+      hideEl.style.display = "none";
+      showEl.style.display = "";
+      if (planStage) planStage.style.height = "";
+      return;
+    }
+
+    // uniqueBlock (slider + tableau) et recurrentBlock (une ligne de prix)
+    // ont des hauteurs très différentes : sans figer puis animer la
+    // hauteur du conteneur, le fondu opacity ci-dessous était bien réel
+    // (vérifié frame par frame) mais totalement éclipsé par un saut de
+    // hauteur instantané, qui donnait l'impression qu'il n'y avait "aucune"
+    // transition (signalé malgré un premier correctif opacity-only).
+    if (planStage) planStage.style.height = planStage.getBoundingClientRect().height + "px";
+
+    hideEl.style.opacity = "0";
+    hideEl.style.transform = "translateY(6px)";
+    window.setTimeout(function(){
+      hideEl.style.display = "none";
+      showEl.style.display = "";
+      showEl.style.opacity = "0";
+      showEl.style.transform = "translateY(6px)";
+      // `planStage` a `overflow:hidden` + une hauteur explicite encore
+      // pinnée (l'ancienne) à cet instant : lire `scrollHeight` tel quel
+      // renvoie alors la hauteur PINNÉE elle-même (comportement navigateur
+      // sur overflow:hidden — pas de "vraie" mesure de dépassement quand
+      // rien ne peut visuellement déborder), pas la hauteur naturelle du
+      // nouveau contenu. D'où le bug trouvé en traçant `getAnimations()` :
+      // la transition démarrait bien, mais de 383px vers... 383px (rien à
+      // animer), donnant l'impression d'un saut instantané au moment du
+      // relâchement final vers "auto". Corrigé en levant la contrainte le
+      // temps de la mesure, puis en la réappliquant aussitôt — dans le même
+      // tick synchrone, donc sans reflow visible entre les deux.
+      var endHeight = null;
+      if (planStage) {
+        var pinnedHeight = planStage.style.height;
+        planStage.style.height = "auto";
+        endHeight = planStage.scrollHeight;
+        planStage.style.height = pinnedHeight;
+      }
+      requestAnimationFrame(function(){
+        if (planStage && endHeight != null){
+          planStage.style.height = endHeight + "px";
+          // Redonne la main au flux normal (`height:auto`) une fois la
+          // transition RÉELLEMENT finie (transitionend), pour rester correct
+          // si la fenêtre est redimensionnée ensuite. Un simple setTimeout
+          // fixe ici coupait la transition en cours (elle se termine tout
+          // juste APRÈS que le timeout la remette à "auto", "auto" n'étant
+          // pas animable -> saut instantané visible en toute fin, bug trouvé
+          // en mesurant la hauteur image par image). Le setTimeout de
+          // secours reste utile si transitionend ne se déclenche jamais
+          // (ex. hauteur de départ === hauteur d'arrivée).
+          var release = function(e){
+            if (e && e.propertyName !== "height") return;
+            planStage.style.height = "";
+            planStage.removeEventListener("transitionend", release);
+          };
+          planStage.addEventListener("transitionend", release);
+          window.setTimeout(release, PLAN_HEIGHT_ANIM_MS + 80);
+        }
+        requestAnimationFrame(function(){
+          showEl.style.opacity = "1";
+          showEl.style.transform = "translateY(0)";
+        });
+      });
+    }, PLAN_ANIM_MS);
+  }
+  toggleUnique.addEventListener("click", function(){ setPlanMode("unique"); });
+  toggleRecurrent.addEventListener("click", function(){ setPlanMode("recurrent"); });
+
+  /* ---------- Footer year ---------- */
+  document.getElementById("year").textContent = new Date().getFullYear();
+})();
+</script>
+</body>
+</html>

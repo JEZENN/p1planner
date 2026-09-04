@@ -1,0 +1,20 @@
+# P1Planner
+
+> P1Planner est un tableur de révision en ligne pensé pour les étudiants en P1/PASS/LAS (première année de médecine, réforme d'accès aux études de santé en France). Chaque utilisateur crée librement ses matières et ses cours — aucun programme officiel imposé — et suit sa progression via deux méthodes complémentaires : la Méthode des tours et la Méthode des J. Le tableur intègre aussi un planning hebdomadaire, un Programme de la journée, des flashcards, un cahier d'erreurs et des statistiques détaillées. 15 jours d'essai gratuit, sans carte bancaire.
+
+## Concepts clés
+
+- **Méthode des tours** : à chaque passage sur un cours, l'utilisateur enregistre un "tour" — niveau de confiance, date, temps de travail, support utilisé (QCM, fiche de cours, conférence, fiche perso...). C'est l'historique de révision de référence de P1Planner : le tableur fait remonter en priorité les cours dont le dernier tour est le plus ancien ou le niveau de confiance le plus bas.
+- **Méthode des J** : un système optionnel de rappels espacés (J+1, J+3, J+7, J+14...) déclenché après un tour, pour aider à consolider ce qui vient d'être travaillé. Plusieurs rythmes disponibles (rapproché, équilibré, espacé, personnalisé) ; jamais rétroactif, jamais obligatoire.
+- **Tableur P1** : le nom donné à l'outil central de P1Planner — la liste des cours, les tours, les statistiques et les flashcards, réunis dans une seule interface accessible en ligne, sans installation, synchronisée en temps réel.
+- **Organisation P1** : la partie planning de P1Planner — calendrier mensuel, Programme de la journée (checklist + tâches du jour), rappels J visibles sur le calendrier — pensée pour organiser une année de P1/PASS/LAS au jour le jour.
+
+## Pages
+
+- [Accueil](https://p1planner.fr/) : présentation du produit, fonctionnement (Méthode des tours, Méthode des J, planning, Programme de la journée), tarifs, FAQ.
+- [Mon tableur](https://p1planner.fr/tableur.html) : l'application elle-même (compte requis pour l'usage complet ; page publique de présentation visible sans connexion). Tarifs et gestion de l'abonnement Premium accessibles depuis le compte une fois connecté.
+- [Mentions légales](https://p1planner.fr/mentions-legales.html)
+
+## À propos
+
+Projet indépendant, développé et maintenu par Jean Zennaro. Sans lien avec un programme officiel imposé : chaque utilisateur construit ses propres matières et cours, à son rythme. Utilisable pour n'importe quel concours au-delà de la P1/PASS/LAS.

@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mon abonnement — P1Planner</title>
+<meta name="description" content="Gère ton essai gratuit et ton abonnement Premium P1Planner : durée, tarif, moyen de paiement.">
+<meta name="theme-color" content="#0a0e1a">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%236d5bf0'/%3E%3Cstop offset='1' stop-color='%234f9dfb'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='url(%23g)'/%3E%3Ctext x='32' y='42' font-family='Arial,sans-serif' font-weight='700' font-size='26' fill='white' text-anchor='middle'%3EP1%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=Fraunces:ital,opsz,wght@0,9..144,500;1,9..144,500&display=swap" rel="stylesheet">
+<script src="p1-billing.js"></script>
+<style>
+/* ============================================================
+   P1PLANNER — DESIGN TOKENS (identiques à index.html / auth.html)
+   ============================================================ */
+:root{
+  --bg:#0a0e1a;
+  --bg-soft:#0d1220;
+  --surface:#131a30;
+  --surface-2:#171f3a;
+  --surface-hover:#1c2545;
+  --border:rgba(255,255,255,.09);
+  --border-strong:rgba(255,255,255,.16);
+  --text:#f3f5fb;
+  --text-muted:#a6b0cc;
+  --text-dim:#707aa0;
+  --primary:#7c6cf6;
+  --primary-2:#5b8def;
+  --primary-soft:rgba(124,108,246,.14);
+  --accent:#ffab5c;
+  --accent-2:#ff7a7a;
+  --accent-soft:rgba(255,171,92,.16);
+  --success:#3ddc97;
+  --success-soft:rgba(61,220,151,.14);
+  --danger:#ff6b6b;
+  --danger-soft:rgba(255,107,107,.14);
+  --warning:#ffd166;
+  --warning-soft:rgba(255,209,102,.14);
+  --gradient-brand:linear-gradient(135deg,#6d5bf0 0%,#8b6cf7 45%,#4f9dfb 100%);
+  --gradient-warm:linear-gradient(135deg,#ffab5c 0%,#ff7a7a 100%);
+  --shadow-glow:0 0 0 1px var(--border), 0 20px 60px -20px rgba(93,73,246,.35);
+  --shadow-card:0 1px 0 rgba(255,255,255,.04) inset, 0 12px 30px -18px rgba(0,0,0,.6);
+  --radius-sm:10px;
+  --radius-md:16px;
+  --radius-lg:24px;
+  --radius-pill:999px;
+  --font-display:'Space Grotesk',ui-sans-serif,system-ui,sans-serif;
+  --font-body:'Inter',ui-sans-serif,system-ui,sans-serif;
+  --font-serif:'Fraunces',ui-serif,Georgia,serif;
+  --container:920px;
+  --header-h:72px;
+  --ease:cubic-bezier(.22,1,.36,1);
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%;scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:var(--primary) var(--bg-soft)}
+body{
+  background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:16px;line-height:1.55;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;min-height:100dvh;overflow-x:hidden;
+}
+::-webkit-scrollbar{width:12px;height:12px}
+::-webkit-scrollbar-track{background:var(--bg-soft)}
+::-webkit-scrollbar-thumb{background-color:var(--primary-2);border-radius:var(--radius-pill);border:3px solid var(--bg-soft);background-clip:padding-box}
+::-webkit-scrollbar-thumb:hover{background-color:var(--primary)}
+::-webkit-scrollbar-corner{background:var(--bg-soft)}
+img,svg{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+ul{list-style:none}
+h1,h2,h3{font-family:var(--font-display);font-weight:600;line-height:1.15;letter-spacing:-.01em}
+:focus-visible{outline:2px solid var(--primary-2);outline-offset:3px;border-radius:4px}
+::selection{background:var(--primary);color:#fff}
+
+.skip-link{
+  position:absolute;left:1rem;top:-60px;background:var(--primary);color:#fff;padding:.75rem 1.25rem;
+  border-radius:var(--radius-sm);z-index:200;transition:top .2s var(--ease);font-weight:600;
+}
+.skip-link:focus{top:1rem}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important}
+}
+.visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+.wrap{max-width:var(--container);margin-inline:auto;padding-inline:20px}
+.icon{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+
+.eyebrow{
+  display:inline-flex;align-items:center;gap:.5rem;font-size:.78rem;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--primary-2);background:var(--primary-soft);
+  border:1px solid rgba(124,108,246,.3);padding:.4rem .85rem;border-radius:var(--radius-pill);
+}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-card)}
+
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:.55rem;padding:.85rem 1.5rem;
+  border-radius:var(--radius-pill);font-weight:600;font-size:.95rem;min-height:48px;position:relative;
+  transition:transform .25s var(--ease),box-shadow .25s var(--ease),opacity .2s;
+}
+.btn-primary{background:var(--gradient-brand);color:#fff;box-shadow:0 12px 30px -10px rgba(93,73,246,.55)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 16px 36px -8px rgba(93,73,246,.65)}
+.btn-warm{background:var(--gradient-warm);color:#1a1206;box-shadow:0 12px 30px -10px rgba(255,122,122,.4)}
+.btn-ghost{background:rgba(255,255,255,.04);color:var(--text);border:1px solid var(--border-strong)}
+.btn-ghost:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.28)}
+.btn-sm{padding:.55rem 1.05rem;min-height:38px;font-size:.85rem}
+.btn[disabled]{opacity:.55;pointer-events:none}
+.btn .spinner{display:none}
+.btn.is-loading .btn-label{visibility:hidden}
+.btn.is-loading .spinner{
+  display:block;position:absolute;inset:0;margin:auto;width:20px;height:20px;border-radius:50%;
+  border:2.5px solid rgba(255,255,255,.35);border-top-color:#fff;animation:spin .7s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+.top-bar{
+  height:var(--header-h);display:flex;align-items:center;
+  position:sticky;top:0;background:rgba(10,14,26,.7);backdrop-filter:blur(16px) saturate(140%);
+  z-index:20;border-bottom:1px solid transparent;transition:background .25s var(--ease),border-color .25s var(--ease),box-shadow .25s var(--ease);
+}
+.top-bar.is-scrolled{background:rgba(10,14,26,.92);border-bottom-color:var(--border);box-shadow:0 12px 30px -22px rgba(0,0,0,.65)}
+.top-bar .wrap{width:100%;display:flex;align-items:center;justify-content:space-between}
+.brand{display:inline-flex;align-items:center;gap:.65rem;font-family:var(--font-display);font-weight:700;font-size:1.08rem}
+.brand-mark{
+  width:32px;height:32px;border-radius:10px;background:var(--gradient-brand);display:flex;align-items:center;
+  justify-content:center;font-size:.78rem;font-weight:700;color:#fff;flex-shrink:0;
+  box-shadow:0 6px 16px -6px rgba(93,73,246,.55);
+}
+.top-bar-actions{display:flex;align-items:center;gap:.4rem}
+.top-bar-logout{
+  display:inline-flex;align-items:center;gap:.4rem;font-size:.85rem;font-weight:600;color:var(--text-muted);
+  padding:.6rem .75rem;border-radius:var(--radius-pill);
+}
+.top-bar-logout:hover{color:var(--text);background:rgba(255,255,255,.06)}
+.top-bar-logout .icon{width:16px;height:16px}
+
+main{padding-block:clamp(1.75rem,4vw,3rem) 5rem}
+.page-head{margin-bottom:1.75rem}
+.page-head h1{font-size:clamp(1.5rem,3vw,2rem);margin-top:.6rem}
+.page-head p{color:var(--text-muted);margin-top:.5rem;max-width:56ch}
+
+.section-block{margin-bottom:1.75rem}
+.section-block h2{font-size:1.1rem;margin-bottom:.9rem}
+
+/* ============================================================
+   ÉTATS DE CHARGEMENT / GATE
+   ============================================================ */
+.state-card{padding:clamp(1.75rem,4vw,2.75rem);text-align:center;max-width:520px;margin-inline:auto}
+.state-icon{
+  width:56px;height:56px;border-radius:16px;background:var(--gradient-brand);display:flex;align-items:center;
+  justify-content:center;color:#fff;margin:0 auto 1.25rem;
+}
+.state-card h2{font-size:1.3rem;margin-bottom:.6rem}
+.state-card p{color:var(--text-muted);margin-bottom:1.5rem}
+.skeleton{
+  border-radius:var(--radius-lg);background:linear-gradient(100deg,var(--surface) 30%,var(--surface-2) 50%,var(--surface) 70%);
+  background-size:200% 100%;animation:shimmer 1.6s ease-in-out infinite;height:220px;
+}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+@media (prefers-reduced-motion: reduce){ .skeleton{animation:none;background:var(--surface)} }
+
+/* ============================================================
+   ALERTES
+   ============================================================ */
+.alert{
+  display:none;align-items:flex-start;gap:.65rem;padding:.9rem 1.1rem;border-radius:var(--radius-sm);
+  font-size:.87rem;margin-bottom:1.3rem;border:1px solid transparent;
+}
+.alert.is-visible{display:flex}
+.alert-error{background:var(--danger-soft);border-color:rgba(255,107,107,.35);color:#ffc2c2}
+.alert-success{background:var(--success-soft);border-color:rgba(61,220,151,.35);color:#bdf5da}
+.alert-info{background:var(--primary-soft);border-color:rgba(124,108,246,.35);color:#d6cffc}
+.alert-warning{background:var(--warning-soft);border-color:rgba(255,209,102,.35);color:#ffe6a3}
+.alert .icon{margin-top:1px;flex-shrink:0}
+
+/* ============================================================
+   COMPTE / STATUT
+   ============================================================ */
+.account-row{display:flex;align-items:center;gap:1rem;padding:1.5rem;flex-wrap:wrap}
+.avatar{
+  width:52px;height:52px;border-radius:16px;background:var(--gradient-brand);display:flex;align-items:center;
+  justify-content:center;font-family:var(--font-display);font-weight:700;color:#fff;flex-shrink:0;font-size:1.1rem;
+}
+.account-meta h2{font-size:1.05rem;margin-bottom:.15rem;line-height:1.2}
+.account-meta span{color:var(--text-dim);font-size:.85rem;line-height:1.5;display:inline-block}
+
+.status-desc{color:var(--text-muted);font-size:.92rem}
+
+/* ============================================================
+   STATUT PREMIUM — bandeau + métriques (disposition préférée
+   par l'utilisateur : panneau coloré à gauche, chiffres à droite)
+   ============================================================ */
+.status-hero{display:flex;flex-wrap:wrap;overflow:hidden;padding:0}
+.status-hero-left{
+  flex:1 1 260px;padding:1.6rem 1.75rem;display:flex;flex-direction:column;gap:.65rem;justify-content:center;
+  position:relative;color:#fff;
+}
+.status-hero-left.tone-trial{background:var(--gradient-warm);color:#2a1608}
+.status-hero-left.tone-active{background:var(--gradient-brand);color:#fff}
+.status-hero-left.tone-expired{background:var(--surface-2);color:var(--text)}
+.status-hero-left.tone-warning{background:linear-gradient(135deg,#ffd166 0%,#ff9f5c 100%);color:#2a1608}
+.status-hero-icon{
+  width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,.3);display:flex;align-items:center;
+  justify-content:center;
+}
+.status-hero-left.tone-expired .status-hero-icon{background:rgba(255,255,255,.08)}
+.status-hero-tag{
+  display:inline-flex;width:fit-content;align-items:center;font-weight:700;font-size:.85rem;
+  background:rgba(255,255,255,.32);padding:.4rem .8rem;border-radius:var(--radius-pill);
+}
+.status-hero-left.tone-expired .status-hero-tag{background:rgba(255,255,255,.09)}
+.status-hero-desc{font-size:.85rem;opacity:.92;max-width:36ch}
+.status-hero-right{flex:1 1 320px;display:grid;grid-template-columns:repeat(3,1fr)}
+.status-metric{padding:1.4rem 1.5rem;border-left:1px solid var(--border);display:flex;flex-direction:column;justify-content:center;gap:.4rem}
+.status-metric:first-child{border-left:0}
+.status-metric .metric-label{font-size:.66rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);font-weight:700}
+.status-metric .metric-value{font-family:var(--font-display);font-size:1.02rem;font-weight:700;display:flex;align-items:center;gap:.45rem}
+.metric-dot{width:8px;height:8px;border-radius:50%;background:var(--success);flex-shrink:0}
+@media (max-width:760px){
+  .status-hero-right{grid-template-columns:1fr}
+  .status-metric{border-left:0;border-top:1px solid var(--border)}
+  .status-metric:first-child{border-top:0}
+}
+
+/* ============================================================
+   DATE CONCOURS
+   ============================================================ */
+.exam-date-row{display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-end;padding:1.5rem}
+.field{flex:1;min-width:200px}
+.field label{display:block;font-size:.85rem;font-weight:600;margin-bottom:.4rem}
+.field input:focus{outline:none;border-color:var(--primary-2);box-shadow:0 0 0 3px rgba(91,141,239,.18)}
+.field-hint{color:var(--text-dim);font-size:.78rem;margin-top:.4rem}
+
+/* ---------- Sélecteur de date personnalisé (remplace l'input[type=date]
+   natif, dont le calendrier système ne suit pas le design) ---------- */
+.date-field{position:relative}
+.date-picker{position:relative}
+.date-picker-btn{
+  display:flex;align-items:center;gap:.6rem;width:100%;padding:.75rem 1rem;border-radius:var(--radius-sm);
+  background:var(--bg-soft);border:1px solid var(--border-strong);color:var(--text);font-size:.95rem;
+  font-family:inherit;min-height:46px;text-align:left;
+}
+.date-picker-btn:hover{border-color:rgba(255,255,255,.28)}
+.date-picker-btn.is-open{border-color:var(--primary-2);box-shadow:0 0 0 3px rgba(91,141,239,.18)}
+.date-picker-btn .icon{color:var(--text-dim);flex-shrink:0}
+.date-picker-btn span{color:var(--text-dim)}
+.date-picker-btn.has-value span{color:var(--text)}
+.date-picker-pop{
+  position:absolute;top:calc(100% + 8px);left:0;z-index:40;width:280px;background:var(--surface);
+  border:1px solid var(--border-strong);border-radius:var(--radius-md);box-shadow:var(--shadow-glow);
+  padding:1rem;
+}
+.date-picker-pop[hidden]{display:none}
+.dp-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem}
+.dp-month-year{font-family:var(--font-display);font-weight:700;font-size:.92rem;text-transform:capitalize}
+.dp-nav{
+  width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+  color:var(--text-muted);background:rgba(255,255,255,.04);
+}
+.dp-nav:hover{color:var(--text);background:rgba(255,255,255,.09)}
+.dp-weekdays{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:.7rem;color:var(--text-dim);font-weight:700;text-transform:uppercase;margin-bottom:.35rem}
+.dp-days{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.dp-day{
+  aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:.85rem;
+  color:var(--text-muted);
+}
+.dp-day:hover:not(:disabled){background:rgba(255,255,255,.08);color:var(--text)}
+.dp-day:disabled{opacity:.28;cursor:default}
+.dp-day.is-outside{color:var(--text-dim)}
+.dp-day.is-today{box-shadow:inset 0 0 0 1px var(--primary-2)}
+.dp-day.is-selected{background:var(--gradient-brand);color:#fff;font-weight:700}
+.dp-foot{display:flex;justify-content:space-between;margin-top:.85rem;padding-top:.75rem;border-top:1px solid var(--border)}
+.dp-foot button{font-size:.82rem;font-weight:600;color:var(--primary-2)}
+.dp-foot button:hover{color:var(--text)}
+
+/* ============================================================
+   SÉLECTEUR DE FORMULE
+   ============================================================ */
+.plan-toggle{display:inline-flex;position:relative;padding:4px;border-radius:var(--radius-pill);background:var(--surface-2);border:1px solid var(--border-strong);gap:4px;margin-bottom:1.4rem}
+/* Pastille glissante mesurée en JS (les deux boutons n'ont pas la même
+   largeur) — même traitement que sur auth.html/index.html, demande
+   explicite de l'utilisateur. Remplace un `background` posé directement
+   sur le bouton actif, qui ne pouvait que "sauter" d'un bouton à l'autre. */
+.plan-toggle-indicator{
+  position:absolute;top:4px;bottom:4px;border-radius:var(--radius-pill);background:var(--gradient-brand);
+  transition:left .3s cubic-bezier(.65,0,.35,1),width .3s cubic-bezier(.65,0,.35,1);z-index:0;
+}
+@media (prefers-reduced-motion: reduce){ .plan-toggle-indicator{transition:none} }
+.plan-toggle button{padding:.55rem 1.1rem;border-radius:var(--radius-pill);font-size:.85rem;font-weight:600;color:var(--text-muted);position:relative;z-index:1;transition:color .25s var(--ease)}
+.plan-toggle button[aria-pressed="true"]{color:#fff}
+#uniquePlanBlock,#recurrentPlanBlock{transition:opacity .2s var(--ease),transform .2s var(--ease)}
+.plan-card-stage{transition:height .2s var(--ease);overflow:hidden}
+@media (prefers-reduced-motion: reduce){ #uniquePlanBlock,#recurrentPlanBlock,.plan-card-stage{transition:none} }
+
+.plan-card{padding:1.75rem}
+.price-row{display:flex;align-items:baseline;gap:.5rem;margin:.9rem 0 .3rem}
+.price-amount{font-family:var(--font-display);font-size:2.4rem;font-weight:700}
+.price-suffix{color:var(--text-dim);font-size:.92rem}
+.price-slider-wrap{margin-top:1.4rem}
+.price-slider-wrap input[type="range"]{
+  width:100%;appearance:none;-webkit-appearance:none;height:6px;border-radius:var(--radius-pill);
+  background:var(--surface-2);outline:none;
+}
+.price-slider-wrap input[type="range"]::-webkit-slider-thumb{
+  appearance:none;-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--gradient-brand);
+  border:3px solid var(--surface);cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.4);
+}
+.price-slider-wrap input[type="range"]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--primary);border:3px solid var(--surface);cursor:pointer}
+.price-meta{display:flex;justify-content:space-between;font-size:.78rem;color:var(--text-dim);margin-top:.5rem}
+.tier-table{width:100%;border-collapse:collapse;margin-top:1.1rem;font-size:.84rem}
+.tier-table th,.tier-table td{padding:.55rem .5rem;text-align:left;border-bottom:1px solid var(--border)}
+.tier-table th{color:var(--text-dim);font-weight:600;font-size:.7rem;text-transform:uppercase;letter-spacing:.04em}
+.tier-table tr.active td{color:var(--text);font-weight:700}
+
+.info-list{display:flex;flex-direction:column;gap:.7rem;margin-top:1.4rem}
+.info-list li{display:flex;align-items:flex-start;gap:.6rem;font-size:.87rem;color:var(--text-muted)}
+.info-list .icon{width:18px;height:18px;color:var(--success);margin-top:2px}
+
+@media (min-width:760px){ .exam-date-row{flex-wrap:nowrap} }
+
+/* ============================================================
+   MODALE CGV
+   ============================================================ */
+.modal-backdrop{
+  position:fixed;inset:0;background:rgba(4,6,14,.72);backdrop-filter:blur(4px);z-index:150;
+  display:none;align-items:center;justify-content:center;padding:1.25rem;
+}
+.modal-backdrop.is-open{display:flex}
+.modal-box{width:100%;max-width:440px;padding:1.75rem}
+.modal-box h2{font-size:1.15rem;margin-bottom:.6rem}
+.modal-box p{color:var(--text-muted);font-size:.9rem;margin-bottom:1.1rem}
+.modal-summary{
+  background:var(--bg-soft);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem;
+  margin-bottom:1.2rem;font-size:.88rem;
+}
+.modal-summary-row{display:flex;justify-content:space-between;padding:.25rem 0;color:var(--text-muted)}
+.modal-summary-row strong{color:var(--text)}
+.checkbox-row{display:flex;align-items:flex-start;gap:.65rem;margin-bottom:1.4rem}
+/* Checkbox redessinée (voir auth.html) : `accent-color` seul laisse le
+   rendu natif "non coché" (carré blanc sur certains navigateurs/OS). */
+.checkbox-row input[type="checkbox"]{
+  appearance:none;-webkit-appearance:none;width:20px;height:20px;flex-shrink:0;margin-top:1px;
+  border-radius:5px;background:var(--bg-soft);border:1px solid var(--border-strong);
+  position:relative;cursor:pointer;transition:background .18s,border-color .18s;
+}
+.checkbox-row input[type="checkbox"]:hover{border-color:rgba(255,255,255,.32)}
+.checkbox-row input[type="checkbox"]:checked{background:var(--gradient-brand);border-color:transparent}
+.checkbox-row input[type="checkbox"]:checked::after{
+  content:"";position:absolute;left:6px;top:2px;width:5px;height:10px;
+  border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg);
+}
+.checkbox-row input[type="checkbox"]:focus-visible{outline:2px solid var(--primary-2);outline-offset:2px}
+.checkbox-row label{font-size:.85rem;color:var(--text-muted)}
+.checkbox-row a{color:var(--primary-2);font-weight:600}
+.modal-actions{display:flex;gap:.75rem}
+.modal-actions .btn{flex:1}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Aller au contenu</a>
+
+<header class="top-bar" id="topBar">
+  <div class="wrap">
+    <a href="index.html" class="brand" aria-label="P1Planner, accueil">
+      <span class="brand-mark" aria-hidden="true">P1</span>
+      P1Planner
+    </a>
+    <div class="top-bar-actions">
+      <a href="tableur.html" class="btn btn-primary btn-sm">Mon tableur</a>
+      <button type="button" class="top-bar-logout" id="btnLogout">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+        Déconnexion
+      </button>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+  <div class="wrap">
+
+    <div class="page-head">
+      <span class="eyebrow">Mon compte</span>
+      <h1>Mon abonnement</h1>
+      <p>Essai, formule, moyen de paiement — tout se passe ici.</p>
+    </div>
+
+    <div class="alert" id="globalAlert" role="alert" aria-live="assertive"></div>
+
+    <!-- ---------- ÉTAT : chargement ---------- -->
+    <div id="stateLoading" class="section-block">
+      <div class="skeleton" aria-hidden="true"></div>
+      <p class="visually-hidden" role="status">Chargement de ton compte…</p>
+    </div>
+
+    <!-- ---------- ÉTAT : non connecté ---------- -->
+    <div id="stateSignedOut" class="section-block" style="display:none">
+      <div class="card state-card">
+        <div class="state-icon"><svg class="icon" viewBox="0 0 24 24" style="width:26px;height:26px"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></div>
+        <h2>Connecte-toi pour accéder à ton abonnement</h2>
+        <p>Cette page est réservée à ton espace personnel P1Planner.</p>
+        <a href="auth.html?redirect=%2Fcomptepremium.html" class="btn btn-primary">Se connecter</a>
+      </div>
+    </div>
+
+    <!-- ---------- ÉTAT : profil authentifié ---------- -->
+    <div id="stateAccount" style="display:none">
+
+      <div class="card account-row section-block">
+        <div class="avatar" id="avatarInitials" aria-hidden="true">--</div>
+        <div class="account-meta">
+          <h2 id="accountName">—</h2>
+          <span id="accountEmail">—</span><br>
+          <span id="accountSince">—</span>
+        </div>
+      </div>
+
+      <div class="alert alert-info is-visible" id="activationBanner" style="display:none">
+        <svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+        <span>Paiement transmis, vérification en cours… Cette page se mettra à jour automatiquement dans quelques secondes.</span>
+      </div>
+
+      <section class="section-block" aria-labelledby="statusHeading">
+        <h2 id="statusHeading" class="visually-hidden">Statut de ton accès</h2>
+        <div class="card status-hero">
+          <div class="status-hero-left tone-trial" id="statusHeroLeft">
+            <div class="status-hero-icon" aria-hidden="true">
+              <svg class="icon" viewBox="0 0 24 24" style="width:22px;height:22px;stroke:currentColor"><path d="M3 8l4 3 5-7 5 7 4-3-2 11H5L3 8Z"/></svg>
+            </div>
+            <span class="status-hero-tag" id="statusHeroTag">—</span>
+            <p class="status-hero-desc" id="statusDesc">Chargement de ton statut…</p>
+          </div>
+          <div class="status-hero-right" id="statusDates"></div>
+        </div>
+      </section>
+
+      <!-- ---------- Date de concours ---------- -->
+      <section class="section-block" id="examDateSection" aria-labelledby="examHeading" style="display:none">
+        <h2 id="examHeading">Ta date de concours / d'examens</h2>
+        <div class="card exam-date-row">
+          <div class="field date-field">
+            <label for="examDateBtn">Date approximative du concours ou des examens S2</label>
+            <div class="date-picker">
+              <button type="button" class="date-picker-btn" id="examDateBtn" aria-haspopup="dialog" aria-expanded="false">
+                <svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+                <span id="examDateBtnText">Choisir une date</span>
+              </button>
+              <input type="hidden" id="examDate" value="">
+              <div class="date-picker-pop" id="examDatePicker" role="dialog" aria-label="Choisir une date" hidden>
+                <div class="dp-head">
+                  <button type="button" class="dp-nav" id="dpPrevMonth" aria-label="Mois précédent">
+                    <svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M15 18l-6-6 6-6"/></svg>
+                  </button>
+                  <span class="dp-month-year" id="dpMonthYear">—</span>
+                  <button type="button" class="dp-nav" id="dpNextMonth" aria-label="Mois suivant">
+                    <svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M9 18l6-6-6-6"/></svg>
+                  </button>
+                </div>
+                <div class="dp-weekdays">
+                  <span>lu</span><span>ma</span><span>me</span><span>je</span><span>ve</span><span>sa</span><span>di</span>
+                </div>
+                <div class="dp-days" id="dpDays"></div>
+                <div class="dp-foot">
+                  <button type="button" id="dpClear">Effacer</button>
+                  <button type="button" id="dpToday">Aujourd'hui</button>
+                </div>
+              </div>
+            </div>
+            <p class="field-hint">Ton accès pourra couvrir jusqu'à la fin de ce mois-là, sans marge ajoutée. Tu peux changer d'avis plus tard.</p>
+          </div>
+          <button type="button" class="btn btn-primary" id="btnSaveExamDate" style="min-width:180px">
+            <span class="btn-label">Enregistrer la date</span><span class="spinner" aria-hidden="true"></span>
+          </button>
+        </div>
+      </section>
+
+      <!-- ---------- Formule ---------- -->
+      <section class="section-block" id="planSection" aria-labelledby="planHeading" style="display:none">
+        <h2 id="planHeading">Choisir ma formule</h2>
+        <div class="plan-toggle" role="tablist" aria-label="Type de formule">
+          <span class="plan-toggle-indicator" id="planToggleIndicator" aria-hidden="true"></span>
+          <button type="button" id="toggleUnique" aria-pressed="true" role="tab">Paiement unique</button>
+          <button type="button" id="toggleRecurrent" aria-pressed="false" role="tab">Abonnement mensuel</button>
+        </div>
+
+        <div class="card plan-card">
+          <div class="plan-card-stage" id="planCardStage">
+          <div id="uniquePlanBlock">
+            <div class="price-row">
+              <span class="price-amount" id="priceAmount">3,00&nbsp;€</span>
+              <span class="price-suffix">/ mois, sur <span id="priceMonths">1</span> mois</span>
+            </div>
+            <p class="status-desc" id="priceTotal" style="font-size:.85rem">Soit 3,00&nbsp;€ au total — estimation.</p>
+            <div class="price-slider-wrap">
+              <label for="monthsRange" class="visually-hidden">Durée en mois</label>
+              <input type="range" id="monthsRange" min="1" max="12" value="1" step="1" aria-describedby="priceAmount priceTotal">
+              <div class="price-meta"><span>1 mois</span><span id="maxMonthsLabel">12 mois</span></div>
+            </div>
+            <table class="tier-table" aria-label="Barème dégressif">
+              <thead><tr><th>Durée</th><th>Tarif</th></tr></thead>
+              <tbody id="tierRows">
+                <tr data-tier="1-1"><td>1 mois</td><td>3,00 €/mois</td></tr>
+                <tr data-tier="2-4"><td>2 à 4 mois</td><td>2,50 €/mois</td></tr>
+                <tr data-tier="5-99"><td>5 mois et plus</td><td>2,25 €/mois</td></tr>
+              </tbody>
+            </table>
+            <button type="button" class="btn btn-warm" id="btnBuyUnique" style="width:100%;margin-top:1.4rem">Continuer</button>
+          </div>
+
+          <div id="recurrentPlanBlock" style="display:none">
+            <div class="price-row"><span class="price-amount">3,00&nbsp;€</span><span class="price-suffix">/ mois</span></div>
+            <p class="status-desc" style="font-size:.85rem">Sans engagement — résiliable à tout moment.</p>
+            <button type="button" class="btn btn-warm" id="btnBuyRecurrent" style="width:100%;margin-top:1.4rem">Continuer</button>
+          </div>
+          </div>
+
+          <ul class="info-list">
+            <li><svg class="icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Le prix et la durée sont toujours recalculés et confirmés par nos serveurs.</li>
+            <li><svg class="icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Les deux formules ne sont pas cumulables : tu peux changer à tout moment, mais tu n'as jamais un paiement unique et un abonnement mensuel actifs en même temps.</li>
+            <li><svg class="icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>À l'expiration, ton accès repasse en lecture seule — aucune donnée n'est jamais supprimée.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- ---------- Gestion abonnement récurrent ---------- -->
+      <section class="section-block" id="manageSection" aria-labelledby="manageHeading" style="display:none">
+        <h2 id="manageHeading">Gérer mon abonnement</h2>
+        <div class="card" style="padding:1.5rem;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:1rem">
+          <p class="status-desc" style="max-width:44ch">Modifie ton moyen de paiement ou résilie ton abonnement mensuel à tout moment, sans justification.</p>
+          <button type="button" class="btn btn-ghost" id="btnManageSubscription">
+            <span class="btn-label">Ouvrir le portail de facturation</span><span class="spinner" aria-hidden="true"></span>
+          </button>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</main>
+
+<!-- ================= MODALE CONSENTEMENT ================= -->
+<div class="modal-backdrop" id="consentModal" role="dialog" aria-modal="true" aria-labelledby="consentTitle">
+  <div class="card modal-box">
+    <h2 id="consentTitle">Confirmer le paiement</h2>
+    <p>Vérifie les détails avant de continuer vers le paiement sécurisé.</p>
+    <div class="modal-summary" id="consentSummary"></div>
+    <div class="checkbox-row">
+      <input type="checkbox" id="consentCheckbox">
+      <label for="consentCheckbox">J'ai lu et j'accepte les <a href="mentions-legales.html" target="_blank" rel="noopener">mentions légales</a> et les conditions de vente de P1Planner.</label>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" id="btnConsentCancel">Annuler</button>
+      <button type="button" class="btn btn-warm" id="btnConsentConfirm" disabled>
+        <span class="btn-label">Confirmer et payer</span><span class="spinner" aria-hidden="true"></span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getAuth, onAuthStateChanged, signOut, connectAuthEmulator
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+  getFirestore, doc, onSnapshot, connectFirestoreEmulator
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+  getFunctions, httpsCallable, connectFunctionsEmulator
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
+
+/* ============================================================
+   CONFIGURATION FIREBASE — Projet P1Planner (voir CLAUDE.md)
+   Isolation P0 : jamais un projet TypixClin. Vérifié explicitement
+   ci-dessous avant toute utilisation.
+   ============================================================ */
+const firebaseConfig = {
+  apiKey: "AIzaSyC3Ip1T_Bp_USxQE2RgeDjac1aE1HxTebM",
+  authDomain: "p1planner.firebaseapp.com",
+  projectId: "p1planner",
+  storageBucket: "p1planner.firebasestorage.app",
+  messagingSenderId: "731451401197",
+  appId: "1:731451401197:web:c42a76f270e78abe923de4"
+};
+
+let auth = null, db = null, functions = null, firebaseReady = false;
+if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig.projectId + firebaseConfig.authDomain)) {
+  console.error("Isolation P0 : projectId Firebase suspect — chargement interrompu.");
+} else {
+  try {
+    const app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    db = getFirestore(app);
+    functions = getFunctions(app, "europe-west1");
+    if (window.localStorage.getItem("p1planner:useEmulator") === "1") {
+      connectAuthEmulator(auth, "http://127.0.0.1:9099", { disableWarnings: true });
+      connectFirestoreEmulator(db, "127.0.0.1", 8080);
+      connectFunctionsEmulator(functions, "127.0.0.1", 5001);
+      console.warn("P1Planner: connecté aux émulateurs locaux (p1planner:useEmulator=1).");
+    }
+    firebaseReady = true;
+  } catch (err) {
+    console.error("Firebase init a échoué", err);
+  }
+}
+
+(function () {
+  "use strict";
+  function $(id) { return document.getElementById(id); }
+
+  /* ---------- Header : état au scroll ---------- */
+  var topBar = $("topBar");
+  if (topBar) {
+    var onTopBarScroll = function () { topBar.classList.toggle("is-scrolled", window.scrollY > 8); };
+    onTopBarScroll();
+    window.addEventListener("scroll", onTopBarScroll, { passive: true });
+  }
+
+  /* ---------- Alerte globale ---------- */
+  var globalAlert = $("globalAlert");
+  function showAlert(type, message) {
+    var iconMap = {
+      error: '<path d="M12 8v5M12 16h.01"/><circle cx="12" cy="12" r="9"/>',
+      success: '<path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/>',
+      info: '<path d="M12 16v-4M12 8h.01"/><circle cx="12" cy="12" r="9"/>',
+      warning: '<path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/>'
+    };
+    globalAlert.className = "alert is-visible alert-" + type;
+    globalAlert.innerHTML = '<svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px">' + iconMap[type] + '</svg><span></span>';
+    globalAlert.querySelector("span").textContent = message;
+  }
+  function hideAlert() { globalAlert.className = "alert"; globalAlert.innerHTML = ""; }
+
+  function setLoading(btn, loading) {
+    btn.disabled = loading;
+    btn.classList.toggle("is-loading", loading);
+  }
+
+  function translateError(err) {
+    var code = err && err.code;
+    if (code && code.indexOf("api-key-not-valid") !== -1) {
+      return "Configuration Firebase manquante (projet non encore relié).";
+    }
+    var map = {
+      "permission-denied": "Accès refusé — vérifie la configuration du projet.",
+      "unavailable": "Service momentanément indisponible. Réessaie dans un instant.",
+      "functions/not-found": "Cette fonctionnalité n'est pas encore disponible côté serveur.",
+      "functions/unavailable": "Service momentanément indisponible. Réessaie dans un instant."
+    };
+    return map[code] || "Une erreur est survenue. Réessaie dans un instant.";
+  }
+
+  /* ============================================================
+     ÉTATS DE PAGE
+     ============================================================ */
+  var states = { loading: $("stateLoading"), signedOut: $("stateSignedOut"), account: $("stateAccount") };
+  function showState(name) {
+    Object.keys(states).forEach(function (k) { states[k].style.display = k === name ? "" : "none"; });
+  }
+
+  /* ============================================================
+     RENDU DU STATUT — testable indépendamment de Firebase
+     (normalized = { displayName, email, createdAt, premium:
+       { status, trialEnd, accessEnd, planType, planMonths,
+         subscriptionStatus } })
+     ============================================================ */
+  // Convertit iso/Date/Timestamp Firestore (objet {seconds,...} ou avec
+  // .toDate()) en Date JS valide, ou null si absent/invalide. Avant ce
+  // correctif, un Timestamp Firestore passé tel quel à `new Date(...)`
+  // produisait un bug visible "Invalid Date" (Membre depuis le, Fin de
+  // l'essai) au lieu d'un simple tiret d'attente.
+  function toJsDate(value) {
+    if (!value) return null;
+    var d;
+    if (value instanceof Date) { d = value; }
+    else if (typeof value === "object" && typeof value.toDate === "function") { d = value.toDate(); }
+    else if (typeof value === "object" && typeof value.seconds === "number") { d = new Date(value.seconds * 1000); }
+    else { d = new Date(value); }
+    return isNaN(d.getTime()) ? null : d;
+  }
+  function fmtDate(value) {
+    var d = toJsDate(value);
+    return d ? d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) : "—";
+  }
+  function fmtDateShort(value) {
+    var d = toJsDate(value);
+    return d ? d.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" }) : "—";
+  }
+  // Jours restants — purement indicatif côté client, jamais la source de
+  // vérité (comme le reste des durées affichées sur cette page).
+  function daysLeft(value) {
+    var d = toJsDate(value);
+    if (!d) return null;
+    var ms = d.getTime() - Date.now();
+    return Math.ceil(ms / 86400000);
+  }
+
+  window.renderAccount = function renderAccount(normalized) {
+    var p = normalized.premium || {};
+    $("accountName").textContent = normalized.displayName || "Ton compte";
+    $("accountEmail").textContent = normalized.email || "";
+    $("accountSince").textContent = "Membre depuis le " + fmtDate(normalized.createdAt);
+    var initials = (normalized.displayName || normalized.email || "P1").trim().slice(0, 2).toUpperCase();
+    $("avatarInitials").textContent = initials;
+
+    var heroLeft = $("statusHeroLeft"), heroTag = $("statusHeroTag"), desc = $("statusDesc"), metrics = $("statusDates");
+    metrics.innerHTML = "";
+    var examSection = $("examDateSection"), planSection = $("planSection"), manageSection = $("manageSection");
+    examSection.style.display = "none";
+    planSection.style.display = "none";
+    manageSection.style.display = "none";
+
+    function setTone(tone) {
+      heroLeft.className = "status-hero-left tone-" + tone;
+    }
+    function addMetric(label, valueHtml) {
+      var el = document.createElement("div");
+      el.className = "status-metric";
+      el.innerHTML = '<span class="metric-label">' + label + '</span><span class="metric-value">' + valueHtml + "</span>";
+      metrics.appendChild(el);
+    }
+    function daysLeftHtml(value) {
+      var n = daysLeft(value);
+      if (n === null) return "—";
+      if (n < 0) return "Terminé";
+      var dotColor = n <= 3 ? "var(--danger)" : (n <= 7 ? "var(--warning)" : "var(--success)");
+      return '<span class="metric-dot" style="background:' + dotColor + '"></span>' + (n <= 0 ? "Dernier jour" : n + (n === 1 ? " jour" : " jours"));
+    }
+
+    if (p.status === "payment_issue" || p.subscriptionStatus === "past_due" || p.subscriptionStatus === "unpaid" || p.subscriptionStatus === "incomplete") {
+      setTone("warning");
+      heroTag.textContent = "Problème de paiement";
+      desc.textContent = "Ton dernier prélèvement a échoué. Mets à jour ton moyen de paiement pour garder ton accès.";
+      addMetric("Statut", "Paiement à régulariser");
+      manageSection.style.display = "";
+    } else if (p.status === "trial") {
+      setTone("trial");
+      heroTag.textContent = "Gratuit jusqu'au " + fmtDateShort(p.trialEnd);
+      desc.textContent = "Ton essai gratuit de 15 jours est en cours, sans carte bancaire.";
+      addMetric("Statut", "Accès gratuit temporaire");
+      addMetric("Fin de la période", fmtDate(p.trialEnd));
+      addMetric("Jours restants", daysLeftHtml(p.trialEnd));
+      examSection.style.display = "";
+      planSection.style.display = "";
+    } else if (p.status === "active") {
+      setTone("active");
+      heroTag.textContent = p.planType === "monthly" ? "Abonné · mensuel" : "Premium actif";
+      desc.textContent = p.planType === "monthly"
+        ? "Ton abonnement mensuel est actif, résiliable à tout moment."
+        : "Ton accès Premium est actif.";
+      addMetric("Statut", p.planType === "monthly" ? "Abonnement mensuel" : "Premium actif");
+      addMetric("Accès jusqu'au", fmtDate(p.accessEnd));
+      addMetric("Jours restants", daysLeftHtml(p.accessEnd));
+      planSection.style.display = "";
+      if (p.planType === "monthly") { manageSection.style.display = ""; }
+    } else {
+      setTone("expired");
+      heroTag.textContent = "Accès en lecture seule";
+      desc.textContent = "Ton accès Premium est terminé. Tes données restent consultables — rien n'est jamais supprimé.";
+      addMetric("Statut", "Lecture seule");
+      if (p.accessEnd) { addMetric("Terminé le", fmtDate(p.accessEnd)); }
+      examSection.style.display = "";
+      planSection.style.display = "";
+    }
+
+    updateMaxMonths(p.maxMonths || 12);
+    // La section formule (et son toggle) part masquée (`display:none`) au
+    // chargement : positionner la pastille glissante avant que la section
+    // ne soit visible mesurerait offsetLeft/offsetWidth à 0. Repositionnée
+    // ici, systématiquement après le rendu réel du compte (fonction
+    // hoisted, définie plus bas dans ce fichier mais appelable ici).
+    if (typeof updatePlanToggleIndicator === "function") updatePlanToggleIndicator();
+  };
+
+  /* ============================================================
+     SIMULATEUR DE PRIX (indicatif — jamais transmis au serveur)
+     ============================================================ */
+  var monthsRange = $("monthsRange"), priceAmount = $("priceAmount"), priceMonths = $("priceMonths"),
+      priceTotal = $("priceTotal"), tierRows = document.querySelectorAll("#tierRows tr"), maxMonthsLabel = $("maxMonthsLabel");
+
+  // Barème lu depuis p1-billing.js (source unique, partagée avec
+  // functions/premiumPlans.js) — jamais dupliqué en dur ici, pour ne
+  // jamais pouvoir afficher un prix différent de celui réellement facturé.
+  function tierKeyFor(months) {
+    if (months <= 1) return "1-1";
+    if (months <= 4) return "2-4";
+    return "5-99";
+  }
+  function tierFor(months) {
+    return { rate: window.p1RatePerMonthForOneTime(months), key: tierKeyFor(months) };
+  }
+  function updatePrice() {
+    var months = parseInt(monthsRange.value, 10);
+    var tier = tierFor(months);
+    var total = (tier.rate * months).toFixed(2).replace(".", ",");
+    priceAmount.textContent = tier.rate.toFixed(2).replace(".", ",") + " €";
+    priceMonths.textContent = months;
+    priceTotal.textContent = "Soit " + total + " € au total pour " + months + " mois — estimation, confirmée au paiement.";
+    tierRows.forEach(function (row) { row.classList.toggle("active", row.getAttribute("data-tier") === tier.key); });
+  }
+  function updateMaxMonths(max) {
+    monthsRange.max = String(max);
+    if (parseInt(monthsRange.value, 10) > max) monthsRange.value = String(max);
+    maxMonthsLabel.textContent = max + " mois";
+    updatePrice();
+  }
+  monthsRange.addEventListener("input", updatePrice);
+  updatePrice();
+
+  var prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var planStage = $("planCardStage");
+  var uniquePlanBlock = $("uniquePlanBlock"), recurrentPlanBlock = $("recurrentPlanBlock");
+  var planToggleIndicator = $("planToggleIndicator");
+  function updatePlanToggleIndicator(){
+    if (!planToggleIndicator) return;
+    var activeBtn = $("toggleUnique").getAttribute("aria-pressed") === "true" ? $("toggleUnique") : $("toggleRecurrent");
+    planToggleIndicator.style.left = activeBtn.offsetLeft + "px";
+    planToggleIndicator.style.width = activeBtn.offsetWidth + "px";
+  }
+  updatePlanToggleIndicator();
+  window.addEventListener("resize", updatePlanToggleIndicator, { passive: true });
+
+  var PLAN_ANIM_MS = 160;
+  var PLAN_HEIGHT_ANIM_MS = 200; // doit rester égal à la durée CSS de .plan-card-stage
+  // Même correctif que sur index.html (voir son commentaire détaillé) :
+  // fondu opacity/translateY sur le bloc qui change + hauteur du
+  // conteneur animée en parallèle (uniquePlanBlock, avec son curseur et
+  // son tableau de paliers, est bien plus grand que recurrentPlanBlock,
+  // une seule ligne de prix — sans ça le fondu était réel mais éclipsé par
+  // un saut de hauteur instantané). Mesurer `scrollHeight` doit lever la
+  // contrainte `height` le temps de la mesure : avec `overflow:hidden` +
+  // une hauteur déjà pinnée, `scrollHeight` renvoie sinon cette hauteur
+  // pinnée elle-même, pas la hauteur naturelle du nouveau contenu (bug
+  // réel trouvé et corrigé sur index.html avant d'écrire cette copie).
+  function setPlanMode(mode) {
+    var isUnique = mode === "unique";
+    $("toggleUnique").setAttribute("aria-pressed", String(isUnique));
+    $("toggleRecurrent").setAttribute("aria-pressed", String(!isUnique));
+    updatePlanToggleIndicator();
+    var showEl = isUnique ? uniquePlanBlock : recurrentPlanBlock;
+    var hideEl = isUnique ? recurrentPlanBlock : uniquePlanBlock;
+
+    if (hideEl.style.display === "none") {
+      showEl.style.display = "";
+      return;
+    }
+    if (prefersReducedMotion) {
+      hideEl.style.display = "none";
+      showEl.style.display = "";
+      if (planStage) planStage.style.height = "";
+      return;
+    }
+
+    if (planStage) planStage.style.height = planStage.getBoundingClientRect().height + "px";
+    hideEl.style.opacity = "0";
+    hideEl.style.transform = "translateY(6px)";
+    window.setTimeout(function () {
+      hideEl.style.display = "none";
+      showEl.style.display = "";
+      showEl.style.opacity = "0";
+      showEl.style.transform = "translateY(6px)";
+
+      var endHeight = null;
+      if (planStage) {
+        var pinnedHeight = planStage.style.height;
+        planStage.style.height = "auto";
+        endHeight = planStage.scrollHeight;
+        planStage.style.height = pinnedHeight;
+      }
+      requestAnimationFrame(function () {
+        if (planStage && endHeight != null) {
+          planStage.style.height = endHeight + "px";
+          var release = function (e) {
+            if (e && e.propertyName !== "height") return;
+            planStage.style.height = "";
+            planStage.removeEventListener("transitionend", release);
+          };
+          planStage.addEventListener("transitionend", release);
+          window.setTimeout(release, PLAN_HEIGHT_ANIM_MS + 80);
+        }
+        requestAnimationFrame(function () {
+          showEl.style.opacity = "1";
+          showEl.style.transform = "translateY(0)";
+        });
+      });
+    }, PLAN_ANIM_MS);
+  }
+  $("toggleUnique").addEventListener("click", function () { setPlanMode("unique"); });
+  $("toggleRecurrent").addEventListener("click", function () { setPlanMode("recurrent"); });
+
+  /* ============================================================
+     SÉLECTEUR DE DATE PERSONNALISÉ (remplace l'input[type=date] natif)
+     Écrit une chaîne ISO "YYYY-MM-DD" dans l'input caché #examDate —
+     la logique d'enregistrement ci-dessous n'a pas besoin de changer.
+     ============================================================ */
+  (function () {
+    var MONTH_NAMES = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+    var btn = $("examDateBtn"), btnText = $("examDateBtnText"), hiddenInput = $("examDate"),
+        pop = $("examDatePicker"), monthYearEl = $("dpMonthYear"), daysEl = $("dpDays");
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+    var viewYear = today.getFullYear(), viewMonth = today.getMonth();
+    var selected = null; // Date ou null
+
+    function isoOf(d) {
+      return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+    }
+    function sameDay(a, b) { return a && b && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate(); }
+
+    function renderCalendar() {
+      monthYearEl.textContent = MONTH_NAMES[viewMonth] + " " + viewYear;
+      daysEl.innerHTML = "";
+      var firstOfMonth = new Date(viewYear, viewMonth, 1);
+      // Grille lundi-premier : décale l'offset ISO (dimanche=0 → 6).
+      var startOffset = (firstOfMonth.getDay() + 6) % 7;
+      var gridStart = new Date(viewYear, viewMonth, 1 - startOffset);
+      for (var i = 0; i < 42; i++) {
+        var d = new Date(gridStart.getFullYear(), gridStart.getMonth(), gridStart.getDate() + i);
+        var dayBtn = document.createElement("button");
+        dayBtn.type = "button";
+        dayBtn.className = "dp-day";
+        dayBtn.textContent = String(d.getDate());
+        if (d.getMonth() !== viewMonth) dayBtn.classList.add("is-outside");
+        if (sameDay(d, today)) dayBtn.classList.add("is-today");
+        if (selected && sameDay(d, selected)) dayBtn.classList.add("is-selected");
+        (function (day) {
+          dayBtn.addEventListener("click", function () { selectDate(day); });
+        })(d);
+        daysEl.appendChild(dayBtn);
+      }
+    }
+    function selectDate(d) {
+      selected = d;
+      hiddenInput.value = isoOf(d);
+      btnText.textContent = d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+      btn.classList.add("has-value");
+      viewYear = d.getFullYear(); viewMonth = d.getMonth();
+      renderCalendar();
+      closePicker();
+    }
+    function openPicker() {
+      pop.hidden = false;
+      btn.classList.add("is-open");
+      btn.setAttribute("aria-expanded", "true");
+      renderCalendar();
+    }
+    function closePicker() {
+      pop.hidden = true;
+      btn.classList.remove("is-open");
+      btn.setAttribute("aria-expanded", "false");
+    }
+    btn.addEventListener("click", function () { pop.hidden ? openPicker() : closePicker(); });
+    $("dpPrevMonth").addEventListener("click", function () {
+      viewMonth--; if (viewMonth < 0) { viewMonth = 11; viewYear--; }
+      renderCalendar();
+    });
+    $("dpNextMonth").addEventListener("click", function () {
+      viewMonth++; if (viewMonth > 11) { viewMonth = 0; viewYear++; }
+      renderCalendar();
+    });
+    $("dpToday").addEventListener("click", function () { selectDate(new Date(today)); });
+    $("dpClear").addEventListener("click", function () {
+      selected = null;
+      hiddenInput.value = "";
+      btnText.textContent = "Choisir une date";
+      btn.classList.remove("has-value");
+      renderCalendar();
+      closePicker();
+    });
+    document.addEventListener("click", function (e) {
+      if (!pop.hidden && !pop.contains(e.target) && e.target !== btn && !btn.contains(e.target)) closePicker();
+    });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !pop.hidden) closePicker(); });
+  })();
+
+  /* ============================================================
+     DATE DE CONCOURS — estimation client immédiate (p1-billing.js,
+     source unique partagée avec functions/premiumPlans.js), confirmée et
+     ENREGISTRÉE par la Cloud Function saveExamDate (seule source de
+     vérité pour maxMonths — jamais une valeur calculée uniquement côté
+     client qui serait ensuite fait confiance pour le paiement).
+     ============================================================ */
+  $("btnSaveExamDate").addEventListener("click", function () {
+    var input = $("examDate");
+    if (!input.value) { showAlert("error", "Choisis une date avant d'enregistrer."); return; }
+    var examDate = new Date(input.value + "T00:00:00");
+    var now = new Date();
+    var estimate = window.p1ComputeMaxMonthsFromExamDate(examDate, now);
+    updateMaxMonths(estimate);
+    showAlert("info", "Durée maximale estimée : " + estimate + " mois (jusqu'à la fin du mois de ton concours). Enregistrement en cours…");
+
+    if (!firebaseReady || !functions) {
+      showAlert("error", "Configuration Firebase manquante — l'enregistrement n'est pas encore disponible sur cet environnement.");
+      return;
+    }
+    var btn = this;
+    setLoading(btn, true);
+    var saveExamDate = httpsCallable(functions, "saveExamDate");
+    saveExamDate({ examDate: input.value })
+      .then(function (result) {
+        var maxMonths = result && result.data && result.data.maxMonths;
+        if (typeof maxMonths === "number") {
+          updateMaxMonths(maxMonths);
+          showAlert("success", "Date enregistrée : durée maximale confirmée à " + maxMonths + " mois.");
+        } else {
+          showAlert("error", "Réponse inattendue du serveur.");
+        }
+      })
+      .catch(function (err) { showAlert("error", translateError(err)); })
+      .finally(function () { setLoading(btn, false); });
+  });
+
+  /* ============================================================
+     MODALE DE CONSENTEMENT + CHECKOUT
+     ============================================================ */
+  var modal = $("consentModal");
+  var pendingPlan = null;
+  function openConsentModal(summaryHtml, plan) {
+    pendingPlan = plan;
+    $("consentSummary").innerHTML = summaryHtml;
+    $("consentCheckbox").checked = false;
+    $("btnConsentConfirm").disabled = true;
+    modal.classList.add("is-open");
+    $("consentCheckbox").focus();
+  }
+  function closeConsentModal() {
+    modal.classList.remove("is-open");
+    pendingPlan = null;
+  }
+  $("consentCheckbox").addEventListener("change", function () {
+    $("btnConsentConfirm").disabled = !this.checked;
+  });
+  $("btnConsentCancel").addEventListener("click", closeConsentModal);
+  modal.addEventListener("click", function (e) { if (e.target === modal) closeConsentModal(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && modal.classList.contains("is-open")) closeConsentModal(); });
+
+  $("btnBuyUnique").addEventListener("click", function () {
+    var months = parseInt(monthsRange.value, 10);
+    var tier = tierFor(months);
+    var total = (tier.rate * months).toFixed(2).replace(".", ",");
+    openConsentModal(
+      '<div class="modal-summary-row"><span>Formule</span><strong>Paiement unique</strong></div>' +
+      '<div class="modal-summary-row"><span>Durée</span><strong>' + months + ' mois</strong></div>' +
+      '<div class="modal-summary-row"><span>Total estimé</span><strong>' + total + ' €</strong></div>',
+      { planType: "onetime", months: months }
+    );
+  });
+  $("btnBuyRecurrent").addEventListener("click", function () {
+    openConsentModal(
+      '<div class="modal-summary-row"><span>Formule</span><strong>Abonnement mensuel</strong></div>' +
+      '<div class="modal-summary-row"><span>Tarif</span><strong>3,00 €/mois</strong></div>' +
+      '<div class="modal-summary-row"><span>Engagement</span><strong>Aucun</strong></div>',
+      { planType: "monthly" }
+    );
+  });
+
+  $("btnConsentConfirm").addEventListener("click", function () {
+    if (!pendingPlan) return;
+    if (!firebaseReady || !functions) {
+      showAlert("error", "Configuration Firebase manquante — le paiement n'est pas encore disponible sur cet environnement.");
+      closeConsentModal();
+      return;
+    }
+    var btn = this;
+    setLoading(btn, true);
+    var createCheckoutSession = httpsCallable(functions, "createCheckoutSession");
+    createCheckoutSession({
+      planType: pendingPlan.planType,
+      months: pendingPlan.months,
+      successUrl: window.location.origin + "/comptepremium.html?success=true",
+      cancelUrl: window.location.origin + "/comptepremium.html?canceled=true"
+    })
+      .then(function (result) {
+        if (result && result.data && result.data.url) {
+          window.location.href = result.data.url;
+        } else {
+          showAlert("error", "Réponse inattendue du serveur de paiement.");
+        }
+      })
+      .catch(function (err) { showAlert("error", translateError(err)); })
+      .finally(function () { setLoading(btn, false); closeConsentModal(); });
+  });
+
+  /* ============================================================
+     PORTAIL DE FACTURATION
+     ============================================================ */
+  $("btnManageSubscription").addEventListener("click", function () {
+    if (!firebaseReady || !functions) {
+      showAlert("error", "Configuration Firebase manquante — le portail n'est pas encore disponible sur cet environnement.");
+      return;
+    }
+    var btn = this;
+    setLoading(btn, true);
+    var createCustomerPortalSession = httpsCallable(functions, "createCustomerPortalSession");
+    createCustomerPortalSession({ returnUrl: window.location.href })
+      .then(function (result) {
+        if (result && result.data && result.data.url) { window.location.href = result.data.url; }
+        else { showAlert("error", "Réponse inattendue du serveur."); }
+      })
+      .catch(function (err) { showAlert("error", translateError(err)); })
+      .finally(function () { setLoading(btn, false); });
+  });
+
+  /* ============================================================
+     DÉCONNEXION
+     ============================================================ */
+  $("btnLogout").addEventListener("click", function () {
+    if (!firebaseReady) { window.location.href = "auth.html"; return; }
+    signOut(auth).finally(function () { window.location.href = "auth.html"; });
+  });
+
+  /* ============================================================
+     ACTIVATION APRÈS RETOUR STRIPE (?success=true)
+     Ne JAMAIS annoncer "paiement réussi" depuis ce seul paramètre —
+     confirmation uniquement par relecture Firestore (webhook = source
+     de vérité). Voir docs/ARCHITECTURE.md, §Stripe.
+     ============================================================ */
+  var params = new URLSearchParams(window.location.search);
+  var pollAttempts = 0, pollTimer = null;
+  function startActivationPoll(uid) {
+    $("activationBanner").style.display = "";
+    pollTimer = window.setInterval(function () {
+      pollAttempts++;
+      if (pollAttempts >= 10) {
+        window.clearInterval(pollTimer);
+        $("activationBanner").style.display = "none";
+        showAlert("info", "La vérification prend plus de temps que prévu — recharge cette page dans une minute.");
+      }
+      // Le onSnapshot Firestore (ci-dessous) mettra à jour l'affichage dès
+      // que le webhook aura écrit le nouveau statut ; ce timer ne sert
+      // qu'à savoir quand abandonner l'attente automatique.
+    }, 3000);
+  }
+  function stopActivationPollIfDone() {
+    if (pollTimer) { window.clearInterval(pollTimer); pollTimer = null; }
+    $("activationBanner").style.display = "none";
+  }
+
+  /* ============================================================
+     BRANCHEMENT FIREBASE RÉEL
+     ============================================================ */
+  showState("loading");
+
+  if (!firebaseReady) {
+    showState("signedOut");
+    showAlert("error", "Configuration Firebase manquante — ce projet P1Planner n'est pas encore relié à un vrai projet Firebase (voir docs/ARCHITECTURE.md).");
+  } else {
+    onAuthStateChanged(auth, function (user) {
+      if (!user || !user.emailVerified) {
+        showState("signedOut");
+        return;
+      }
+      showState("account");
+      if (params.get("success") === "true") { startActivationPoll(user.uid); }
+
+      // Deux documents distincts (voir firestore.rules / docs/ARCHITECTURE.md) :
+      // users/{uid} = identité (créé par onUserCreated), entitlements/{uid} =
+      // source de vérité Premium/essai, jamais écrite par le client.
+      var latestUserData = null, latestEntitlement = null, bootstrapRetries = 0;
+      function renderIfReady() {
+        if (!latestEntitlement) {
+          if (bootstrapRetries++ < 8) {
+            window.setTimeout(renderIfReady, 1500);
+          } else {
+            showAlert("warning", "Ton compte est encore en cours de création côté serveur — réessaie dans un instant.");
+          }
+          return;
+        }
+        renderAccount({
+          displayName: user.displayName,
+          email: user.email,
+          createdAt: latestUserData && latestUserData.createdAt,
+          premium: {
+            status: latestEntitlement.status || "trial",
+            trialEnd: latestEntitlement.trialEndsAt,
+            accessEnd: latestEntitlement.premiumUntil || latestEntitlement.writeAccessUntil,
+            planType: latestEntitlement.planType,
+            maxMonths: latestEntitlement.maxMonths
+          }
+        });
+        stopActivationPollIfDone();
+      }
+
+      onSnapshot(doc(db, "users", user.uid), function (snap) {
+        latestUserData = snap.exists() ? snap.data() : null;
+        renderIfReady();
+      }, function (err) { showAlert("error", translateError(err)); });
+
+      onSnapshot(doc(db, "entitlements", user.uid), function (snap) {
+        latestEntitlement = snap.exists() ? snap.data() : null;
+        renderIfReady();
+      }, function (err) { showAlert("error", translateError(err)); });
+    });
+  }
+})();
+</script>
+</body>
+</html>

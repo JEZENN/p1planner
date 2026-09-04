@@ -1,0 +1,281 @@
+rules_version = '2';
+
+/* ============================================================
+   P1PLANNER — FIRESTORE SECURITY RULES
+   ============================================================
+   Principes (voir docs/ARCHITECTURE.md) :
+     - fail-closed : rien n'est autorisé sauf règle explicite ;
+     - isolation stricte par uid ;
+     - email non vérifié = aucune donnée applicative ;
+     - entitlements/{uid} et billingPrivate/{uid} = jamais
+       modifiables par le client (source de vérité = Cloud
+       Functions via Admin SDK, qui contourne ces règles) ;
+     - lecture seule après expiration d'entitlement (jamais de
+       suppression de données) ;
+     - pas de suppression physique pour les collections
+       "utilisateur" : archivedAt/deletedAt uniquement.
+   ============================================================ */
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /* ---------- Fallback explicite : tout le reste est refusé ---------- */
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    /* ============================================================
+       HELPERS
+       ============================================================ */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    // Un utilisateur ne peut agir que sur SES PROPRES données, et
+    // uniquement une fois son email vérifié (auth.html bloque déjà
+    // côté client, mais la vraie garde est ici).
+    function isSelfVerified(uid) {
+      return isOwner(uid) && isVerified();
+    }
+
+    // Admin — lecture seule au sens Rules : isAdmin ne vit que sur
+    // users/{uid} (allow write: if false, jamais posé par le client — voir
+    // ce match plus bas), posé manuellement depuis la Console Firebase.
+    // N'accorde JAMAIS d'écriture élargie ici : les actions admin qui
+    // touchent aux données d'un autre utilisateur (ex. restauration de
+    // sauvegarde) passent par une Cloud Function (Admin SDK, qui
+    // re-vérifie isAdmin côté serveur et contourne ces Rules), jamais par
+    // une règle Firestore ouverte à l'écriture pour un admin — cf. P0
+    // "utilisateur A pouvant modifier les données de B" (CLAUDE.md).
+    function isAdminUser() {
+      return isSelfVerified(request.auth.uid) &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+
+    function entitlementDoc(uid) {
+      return get(/databases/$(database)/documents/entitlements/$(uid)).data;
+    }
+
+    // Accès en écriture = entitlement présent ET writeAccessUntil dans
+    // le futur (couvre trial actif, formule unique active, abonnement
+    // récurrent actif — writeAccessUntil est le champ unique calculé
+    // côté serveur qui synthétise ces trois cas).
+    function canWrite(uid) {
+      return isSelfVerified(uid) &&
+        exists(/databases/$(database)/documents/entitlements/$(uid)) &&
+        entitlementDoc(uid).writeAccessUntil is timestamp &&
+        entitlementDoc(uid).writeAccessUntil > request.time;
+    }
+
+    /* ============================================================
+       users/{uid} — profil d'identité, backend-only en écriture
+       (créé par la Cloud Function onUserCreated). Les préférences
+       modifiables par l'utilisateur vivent dans le sous-document
+       settings/preferences ci-dessous, séparé exprès.
+       ============================================================ */
+    match /users/{uid} {
+      // isAdminUser() relit users/{callerUid} (self) : cette lecture-ci
+      // pour un uid tiers ne peut donc jamais être un cycle infini, elle ne
+      // se déclenche que pour LIRE le profil d'un AUTRE utilisateur.
+      allow read: if isSelfVerified(uid) || isAdminUser();
+      allow write: if false; // jamais depuis le client, même en écriture partielle
+
+      match /settings/preferences {
+        allow read: if isSelfVerified(uid);
+        allow create, update: if canWrite(uid);
+        allow delete: if false;
+      }
+
+      /* ---------- subjects (Matières) ---------- */
+      match /subjects/{subjectId} {
+        allow read: if isSelfVerified(uid);
+        allow create, update: if canWrite(uid);
+        allow delete: if false; // soft delete uniquement (archivedAt)
+      }
+
+      /* ---------- courses (Cours) — 1 cours = 1 document ---------- */
+      match /courses/{courseId} {
+        allow read: if isSelfVerified(uid);
+        allow create, update: if canWrite(uid);
+        allow delete: if false;
+
+        // Journal des tours : append-only, jamais modifié ni supprimé.
+        match /tourLogs/{tourLogId} {
+          allow read: if isSelfVerified(uid);
+          allow create: if canWrite(uid);
+          allow update, delete: if false;
+        }
+      }
+
+      /* ---------- notes (Cours/Matière/Entraînement — mécanique unique) ---------- */
+      match /notes/{noteId} {
+        allow read: if isSelfVerified(uid);
+        allow create, update: if canWrite(uid);
+        allow delete: if false;
+      }
+
+      /* ---------- flashcards ---------- */
+      match /flashcards/{cardId} {
+        allow read: if isSelfVerified(uid);
+        allow create, update: if canWrite(uid);
+        allow delete: if false;
+
+        match /reviews/{reviewId} {
+          allow read: if isSelfVerified(uid);
+          allow create: if canWrite(uid);
+          allow update, delete: if false;
+        }
+      }
+
+      /* ---------- cahier d'erreurs structuré ---------- */
+      match /errorEntries/{errorId} {
+        allow read: if isSelfVerified(uid);
+        allow create, update: if canWrite(uid);
+        allow delete: if false;
+      }
+
+      /* ---------- entraînements (suivi externe) ---------- */
+      match /trainingItems/{trainingId} {
+        allow read: if isSelfVerified(uid);
+        allow create, update: if canWrite(uid);
+        allow delete: if false;
+
+        match /attempts/{attemptId} {
+          allow read: if isSelfVerified(uid);
+          allow create: if canWrite(uid);
+          allow update, delete: if false;
+        }
+      }
+
+      /* ---------- tâches manuelles du Programme de la journée ---------- */
+      match /tasks/{taskId} {
+        allow read: if isSelfVerified(uid);
+        allow create, update: if canWrite(uid);
+        allow delete: if false;
+      }
+
+      /* ---------- planning ---------- */
+      match /calendarDays/{dateKey} {
+        allow read: if isSelfVerified(uid);
+        allow create, update: if canWrite(uid);
+        allow delete: if false;
+      }
+
+      /* ---------- agrégats quotidiens (pour les graphiques Stats) ----------
+         Un document par jour, incrémenté dans la même transaction que la
+         validation d'un Tour — jamais de lecture de tourLogs pour tracer
+         un graphique (voir §62/63 : pas de gros scan de logs). */
+      match /dailyStats/{dayKey} {
+        allow read: if isSelfVerified(uid);
+        allow create, update: if canWrite(uid);
+        allow delete: if false;
+      }
+
+      /* ---------- sauvegardes cloud + historique de versions ----------
+         Filet de sécurité, pas une donnée applicative primaire : ici
+         seulement, la suppression cliente est autorisée (purge des
+         anciennes versions au-delà des 5 dernières, cf. TypixClin) —
+         ce n'est pas une perte de données, la donnée primaire reste
+         intacte dans subjects/courses/etc. */
+      match /backups/{backupId} {
+        // Lecture admin ajoutée pour admin.html (onglet Sauvegardes) — la
+        // CRÉATION reste réservée au propriétaire OU à la Cloud Function
+        // adminCreateBackup/adminRestoreBackup (Admin SDK, contourne ces
+        // Rules) : jamais de règle d'écriture élargie à isAdminUser() ici.
+        allow read: if isSelfVerified(uid) || isAdminUser();
+        allow create: if canWrite(uid);
+        allow update: if false;
+        allow delete: if canWrite(uid);
+      }
+    }
+
+    /* ============================================================
+       entitlements/{uid} — source de vérité Premium/essai.
+       Écrit UNIQUEMENT par les Cloud Functions (Admin SDK, qui
+       contourne ces règles). Le client lit son propre entitlement,
+       ne peut jamais l'écrire.
+       ============================================================ */
+    match /entitlements/{uid} {
+      allow read: if isSelfVerified(uid) || isAdminUser();
+      allow write: if false;
+    }
+
+    /* ============================================================
+       billingPrivate/{uid} — Stripe customer/subscription/session
+       IDs, statut de paiement brut. Jamais modifiable depuis le
+       client, sous aucune condition. Lecture réservée à l'admin
+       (onglet Abonnements de admin.html) — jamais au propriétaire
+       lui-même (ce ne sont pas des données à exposer côté app).
+       ============================================================ */
+    match /billingPrivate/{uid} {
+      allow read: if isAdminUser();
+      allow write: if false;
+    }
+
+    /* ============================================================
+       userStats/{uid} — agrégats calculés côté serveur (réservé,
+       non alimenté en V1 : le tableur calcule ses stats en mémoire
+       à partir de courses/tourLogs). Lecture seule pour le client.
+       ============================================================ */
+    match /userStats/{uid} {
+      allow read: if isSelfVerified(uid);
+      allow write: if false;
+    }
+
+    /* ============================================================
+       achievements/{uid} — trophées. Réservé pour une V2 avec
+       calcul serveur ; en V1 aucune écriture n'est autorisée, y
+       compris depuis le client (pas de trophée auto-déblocable
+       par manipulation frontend).
+       ============================================================ */
+    match /achievements/{uid} {
+      allow read: if isSelfVerified(uid);
+      allow write: if false;
+    }
+
+    /* ============================================================
+       feedbacks/{feedbackId} — retours utilisateur → admin (nom AU
+       PLURIEL : c'est la collection que le tableur écrit/lit RÉELLEMENT,
+       voir public/tableur.html — champ userId, pas uid ; réponses admin
+       dans un tableau adminReplies[{text, sentAt}], pas un champ scalaire.
+       Un ancien nom singulier "feedback" avait été prévu ici sans jamais
+       correspondre au code client réel — corrigé pour cibler la bonne
+       collection, sans quoi le formulaire d'avis du tableur ET admin.html
+       échouent silencieusement (permission-denied via le fallback
+       fail-closed racine).
+       Collection racine (pas une sous-collection utilisateur) pour que
+       admin.html puisse lire l'ensemble. Écriture = création (immuable
+       pour l'auteur) + une exception étroite pour ajouter une réponse
+       admin (voir hasOnly() plus bas — arrayUnion côté admin.html).
+       ============================================================ */
+    match /feedbacks/{feedbackId} {
+      // Volontairement PAS gaté par canWrite(uid) : un utilisateur en
+      // lecture seule (essai/Premium expiré) doit pouvoir signaler un
+      // problème ou faire une demande sans que ce soit bloqué comme
+      // une écriture applicative normale.
+      // isAdminUser() ajouté pour admin.html (onglet Feedbacks) : l'admin
+      // lit l'ENSEMBLE des feedbacks, pas seulement les siens.
+      allow read: if (isSignedIn() && isVerified() && resource.data.userId == request.auth.uid) || isAdminUser();
+      allow create: if isSignedIn() && isVerified() &&
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.message is string &&
+        request.resource.data.message.size() > 0 &&
+        request.resource.data.message.size() <= 2000;
+      // Réponse admin : UNIQUEMENT adminReplies peut changer (jamais
+      // message/userId/createdAt d'origine, jamais par l'auteur lui-même —
+      // hasOnly() rejette toute tentative de modifier un autre champ).
+      allow update: if isAdminUser() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['adminReplies']);
+      allow delete: if false;
+    }
+  }
+}

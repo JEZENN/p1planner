@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Administration — P1Planner</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0a0e1a">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%236d5bf0'/%3E%3Cstop offset='1' stop-color='%234f9dfb'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='url(%23g)'/%3E%3Ctext x='32' y='42' font-family='Arial,sans-serif' font-weight='700' font-size='26' fill='white' text-anchor='middle'%3EP1%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+<style>
+/* ============================================================
+   P1PLANNER — DESIGN TOKENS (identiques à index.html / auth.html /
+   comptepremium.html — "nouvelle identité", pas la charte TypixClin)
+   ============================================================ */
+:root{
+  --bg:#0a0e1a;
+  --bg-soft:#0d1220;
+  --surface:#131a30;
+  --surface-2:#171f3a;
+  --surface-hover:#1c2545;
+  --border:rgba(255,255,255,.09);
+  --border-strong:rgba(255,255,255,.16);
+  --text:#f3f5fb;
+  --text-muted:#a6b0cc;
+  --text-dim:#707aa0;
+  --primary:#7c6cf6;
+  --primary-2:#5b8def;
+  --primary-soft:rgba(124,108,246,.14);
+  --accent:#ffab5c;
+  --success:#3ddc97;
+  --success-soft:rgba(61,220,151,.14);
+  --danger:#ff6b6b;
+  --danger-soft:rgba(255,107,107,.14);
+  --warning:#ffd166;
+  --warning-soft:rgba(255,209,102,.14);
+  --gradient-brand:linear-gradient(135deg,#6d5bf0 0%,#8b6cf7 45%,#4f9dfb 100%);
+  --gradient-warm:linear-gradient(135deg,#ffab5c 0%,#ff7a7a 100%);
+  --radius-sm:10px;
+  --radius-md:16px;
+  --radius-lg:24px;
+  --radius-pill:999px;
+  --font-display:'Space Grotesk',ui-sans-serif,system-ui,sans-serif;
+  --font-body:'Inter',ui-sans-serif,system-ui,sans-serif;
+  --sidebar-w:250px;
+  --ease:cubic-bezier(.22,1,.36,1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scrollbar-width:thin;scrollbar-color:var(--primary) var(--bg-soft)}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:15px;line-height:1.5;min-height:100dvh;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:700}
+button{cursor:pointer;font-family:var(--font-body);border:none;background:none;color:inherit;transition:all .18s var(--ease)}
+input,select,textarea{font-family:var(--font-body);color:inherit}
+a{color:inherit;text-decoration:none}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:var(--bg-soft)}
+::-webkit-scrollbar-thumb{background-color:var(--primary-2);border-radius:var(--radius-pill);border:2px solid var(--bg-soft);background-clip:padding-box}
+
+/* ─── AUTH GATE ─── */
+#auth-gate{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:1rem}
+.gate-card{background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius-lg);padding:2.5rem 3rem;text-align:center;max-width:400px;width:90%;box-shadow:0 20px 60px -20px rgba(93,73,246,.35)}
+.gate-logo{font-family:var(--font-display);font-size:1.6rem;font-weight:800;background:var(--gradient-brand);-webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:.4rem}
+.gate-sub{color:var(--text-muted);font-size:.875rem;margin-bottom:1.75rem}
+.gate-spinner{width:36px;height:36px;border:3px solid var(--border-strong);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 1rem}
+@keyframes spin{to{transform:rotate(360deg)}}
+.gate-icon-big{font-size:2.6rem;margin-bottom:.75rem}
+.gate-error{color:var(--danger);font-weight:700}
+.gate-link{color:var(--primary-2);font-weight:600}
+.gate-link:hover{text-decoration:underline}
+
+/* ─── LAYOUT ─── */
+#admin-panel{display:none;min-height:100vh}
+#sidebar{width:var(--sidebar-w);background:var(--bg-soft);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100}
+.sidebar-header{padding:1.5rem 1.25rem 1rem;border-bottom:1px solid var(--border)}
+.sidebar-logo{font-family:var(--font-display);font-size:1.25rem;font-weight:800}
+.sidebar-badge{display:inline-block;background:var(--danger-soft);color:var(--danger);font-size:.62rem;font-weight:700;padding:2px 7px;border-radius:99px;border:1px solid rgba(255,107,107,.3);margin-left:.5rem;vertical-align:middle;letter-spacing:.05em}
+.sidebar-nav{flex:1;padding:1rem .75rem;display:flex;flex-direction:column;gap:2px;overflow-y:auto}
+.nav-section-label{font-size:.62rem;font-weight:700;color:var(--text-dim);letter-spacing:.1em;text-transform:uppercase;padding:.75rem .5rem .35rem}
+.nav-item{display:flex;align-items:center;gap:.7rem;padding:.6rem .75rem;border-radius:var(--radius-sm);color:var(--text-muted);font-size:.85rem;font-weight:500;cursor:pointer;border:1px solid transparent}
+.nav-item i{width:16px;text-align:center;font-size:.85rem}
+.nav-item:hover{background:var(--primary-soft);color:var(--text)}
+.nav-item.active{background:var(--primary-soft);color:var(--primary-2);border-color:rgba(124,108,246,.3)}
+.nav-badge{margin-left:auto;background:var(--primary);color:#fff;font-size:.62rem;font-weight:700;padding:1px 6px;border-radius:99px}
+.sidebar-footer{padding:1rem .75rem;border-top:1px solid var(--border)}
+.back-to-tableur{display:flex;align-items:center;gap:.7rem;padding:.6rem .75rem;border-radius:var(--radius-sm);color:var(--text-muted);font-size:.85rem;font-weight:500;border:1px solid var(--border);margin-bottom:.5rem}
+.back-to-tableur:hover{color:var(--text);border-color:var(--border-strong)}
+.admin-user{display:flex;align-items:center;gap:.7rem;padding:.6rem .75rem;border-radius:var(--radius-sm);background:var(--surface)}
+.admin-avatar{width:32px;height:32px;background:var(--gradient-brand);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;color:#fff;flex-shrink:0}
+.admin-info{flex:1;min-width:0}
+.admin-name{font-size:.8rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.admin-role{font-size:.68rem;color:var(--text-dim)}
+.logout-btn{color:var(--text-dim);font-size:.85rem;padding:4px;border-radius:6px}
+.logout-btn:hover{color:var(--danger)}
+
+#main-content{margin-left:var(--sidebar-w);flex:1;min-height:100vh;padding:2rem;max-width:calc(100vw - var(--sidebar-w))}
+.page-header{margin-bottom:1.75rem}
+.page-title{font-size:1.6rem;font-weight:800}
+.page-subtitle{color:var(--text-muted);font-size:.875rem;margin-top:.2rem}
+.section{display:none}
+.section.active{display:block}
+
+/* ─── STATS ─── */
+.stats-grid{display:grid;grid-template-columns:repeat(2,minmax(200px,260px));gap:1rem;margin-bottom:1.5rem}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:1.25rem 1.4rem;position:relative;overflow:hidden}
+.stat-label{font-size:.78rem;color:var(--text-muted);font-weight:600;margin-bottom:.35rem}
+.stat-value{font-size:1.9rem;font-weight:800;font-family:var(--font-display)}
+.stat-sub{font-size:.75rem;color:var(--text-dim);margin-top:.25rem}
+.stat-icon{position:absolute;right:1rem;top:1rem;font-size:1.4rem;opacity:.18}
+
+/* ─── CARDS / TABLES ─── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden}
+.card+.card{margin-top:1rem}
+.card-header{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border-bottom:1px solid var(--border)}
+.card-title{font-size:.92rem;font-weight:700;display:flex;align-items:center;gap:.5rem}
+.data-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+@media(max-width:980px){.data-grid-2{grid-template-columns:1fr}.stats-grid{grid-template-columns:1fr 1fr}}
+.text-link{color:var(--primary-2);font-size:.8rem;font-weight:600;cursor:pointer}
+.text-link:hover{text-decoration:underline}
+
+.section-toolbar{display:flex;align-items:flex-end;justify-content:space-between;gap:1rem;margin-bottom:1.25rem;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:.45rem;padding:.55rem 1rem;border-radius:var(--radius-sm);font-size:.8rem;font-weight:700;white-space:nowrap}
+.btn-primary{background:var(--gradient-brand);color:#fff}
+.btn-primary:hover{filter:brightness(1.08)}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;filter:none}
+.btn-ghost{background:var(--surface-2);border:1px solid var(--border-strong);color:var(--text)}
+.btn-ghost:hover{background:var(--surface-hover)}
+.btn-danger{background:var(--danger-soft);color:var(--danger);border:1px solid rgba(255,107,107,.3)}
+.btn-danger:hover{background:rgba(255,107,107,.24)}
+.btn-sm{padding:.4rem .75rem;font-size:.72rem}
+
+.table-toolbar{display:flex;gap:.6rem;padding:1rem 1.25rem;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.search-input,.filter-select,.uid-input{background:var(--surface-2);border:1px solid var(--border-strong);border-radius:var(--radius-sm);padding:.55rem .8rem;font-size:.82rem;color:var(--text)}
+.search-input{flex:1;min-width:200px}
+.search-input:focus,.filter-select:focus,.uid-input:focus{outline:none;border-color:var(--primary)}
+.table-container{overflow-x:auto}
+table.data-table{width:100%;border-collapse:collapse;font-size:.82rem}
+table.data-table th{text-align:left;padding:.65rem 1.1rem;color:var(--text-dim);font-weight:700;font-size:.7rem;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border);white-space:nowrap}
+table.data-table td{padding:.7rem 1.1rem;border-bottom:1px solid var(--border);vertical-align:middle}
+table.data-table tr:last-child td{border-bottom:none}
+table.data-table tr:hover td{background:var(--surface-2)}
+.cell-name{font-weight:700}
+.cell-sub{font-size:.72rem;color:var(--text-dim);font-family:monospace}
+
+.badge{display:inline-flex;align-items:center;gap:.3rem;padding:.2rem .55rem;border-radius:99px;font-size:.68rem;font-weight:700}
+.badge-premium{background:var(--success-soft);color:var(--success)}
+.badge-trial{background:var(--warning-soft);color:var(--warning)}
+.badge-free{background:var(--surface-2);color:var(--text-dim)}
+.badge-expired{background:var(--danger-soft);color:var(--danger)}
+.badge-admin{background:rgba(124,108,246,.18);color:var(--primary-2);margin-left:.4rem}
+
+.empty-state{padding:2.5rem 1rem;text-align:center;color:var(--text-dim)}
+.empty-state i{font-size:1.8rem;display:block;margin-bottom:.6rem;opacity:.5}
+.spinner{width:22px;height:22px;border-radius:50%;border:3px solid var(--border-strong);border-top-color:var(--primary);animation:spin .8s linear infinite;margin:0 auto}
+
+.alert{display:flex;align-items:flex-start;gap:.6rem;padding:.85rem 1.1rem;border-radius:var(--radius-sm);font-size:.82rem;margin-bottom:1.25rem}
+.alert-warning{background:var(--warning-soft);color:var(--warning);border:1px solid rgba(255,209,102,.3)}
+.alert-info{background:var(--primary-soft);color:var(--primary-2);border:1px solid rgba(124,108,246,.3)}
+
+/* ─── FEEDBACKS ─── */
+.fb-toolbar{display:flex;gap:.6rem;margin-bottom:1.1rem;flex-wrap:wrap}
+.fb-count-pill{background:var(--surface-2);border:1px solid var(--border-strong);border-radius:99px;padding:.4rem .9rem;font-size:.78rem;font-weight:700;color:var(--text-muted);white-space:nowrap}
+.fb-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:1.1rem 1.25rem;margin-bottom:.9rem}
+.fb-card-head{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin-bottom:.5rem}
+.fb-card-user{font-weight:700;font-size:.85rem}
+.fb-card-date{font-size:.72rem;color:var(--text-dim)}
+.fb-card-msg{font-size:.86rem;color:var(--text);white-space:pre-wrap;margin:.5rem 0}
+.fb-stars{color:var(--warning);font-size:.75rem}
+.fb-replies{margin-top:.7rem;padding-top:.7rem;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:.5rem}
+.fb-reply-bubble{background:var(--primary-soft);border-radius:var(--radius-sm);padding:.6rem .85rem;font-size:.82rem}
+.fb-reply-meta{font-size:.68rem;color:var(--text-dim);margin-top:.3rem}
+.fb-reply-form{display:flex;gap:.5rem;margin-top:.7rem}
+.fb-reply-form textarea{flex:1;background:var(--surface-2);border:1px solid var(--border-strong);border-radius:var(--radius-sm);padding:.55rem .75rem;font-size:.82rem;color:var(--text);resize:vertical;min-height:44px}
+.fb-reply-form textarea:focus{outline:none;border-color:var(--primary)}
+
+@media(max-width:900px){
+  #sidebar{transform:translateX(-100%)}
+  #main-content{margin-left:0;max-width:100vw;padding:1.25rem}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ AUTH GATE ═══ -->
+<div id="auth-gate">
+  <div class="gate-card">
+    <div class="gate-logo">P1Planner</div>
+    <div class="gate-sub">Espace administration</div>
+    <div class="gate-spinner" id="gate-spinner"></div>
+    <div id="gate-message" style="font-size:.85rem;color:var(--text-muted)">Vérification des droits d'accès…</div>
+  </div>
+</div>
+
+<!-- ═══ ADMIN PANEL ═══ -->
+<div id="admin-panel">
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">P1Planner<span class="sidebar-badge">ADMIN</span></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Tableau de bord</div>
+      <div class="nav-item active" data-section="dashboard" onclick="showSection('dashboard', this)">
+        <i class="fas fa-chart-line"></i> Vue d'ensemble
+      </div>
+      <div class="nav-section-label">Gestion</div>
+      <div class="nav-item" data-section="users" onclick="showSection('users', this)">
+        <i class="fas fa-users"></i> Utilisateurs
+        <span class="nav-badge" id="nav-badge-users">…</span>
+      </div>
+      <div class="nav-item" data-section="subscriptions" onclick="showSection('subscriptions', this)">
+        <i class="fas fa-crown"></i> Abonnements
+      </div>
+      <div class="nav-section-label">Communication</div>
+      <div class="nav-item" data-section="feedbacks" onclick="showSection('feedbacks', this)">
+        <i class="fas fa-comment-dots"></i> Feedbacks
+        <span class="nav-badge" id="nav-badge-feedbacks" style="display:none">0</span>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="tableur.html" class="back-to-tableur"><i class="fas fa-arrow-left"></i><span>Retour au tableur</span></a>
+      <div class="admin-user">
+        <div class="admin-avatar" id="admin-avatar-initials">A</div>
+        <div class="admin-info">
+          <div class="admin-name" id="admin-display-name">Admin</div>
+          <div class="admin-role">Administrateur</div>
+        </div>
+        <button class="logout-btn" title="Déconnexion" onclick="window.__adminLogout && window.__adminLogout()"><i class="fas fa-sign-out-alt"></i></button>
+      </div>
+    </div>
+  </aside>
+
+  <main id="main-content">
+
+    <!-- ═══ DASHBOARD ═══ -->
+    <section id="section-dashboard" class="section active">
+      <div class="page-header">
+        <h1 class="page-title">Vue d'ensemble</h1>
+        <p class="page-subtitle">Supervision de la plateforme P1Planner</p>
+      </div>
+
+      <div class="alert alert-info" style="margin-bottom:1.25rem">
+        <i class="fas fa-info-circle"></i>
+        <span>Pas de présence en temps réel ici (nécessiterait Realtime Database, non provisionné pour P1Planner — voir CLAUDE.md, isolation des services Firebase). Pour les lectures/écritures Firestore en direct : <a href="https://console.firebase.google.com/project/p1planner/firestore/usage" target="_blank" rel="noopener" class="gate-link">console Firebase</a>.</span>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Utilisateurs total</div>
+          <div class="stat-value" id="stat-total-users">…</div>
+          <div class="stat-sub" id="stat-trial-sub">chargement…</div>
+          <i class="fas fa-users stat-icon"></i>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Premium actifs</div>
+          <div class="stat-value" id="stat-premium-users">…</div>
+          <div class="stat-sub">essai + abonnement + paiement unique en cours</div>
+          <i class="fas fa-crown stat-icon"></i>
+        </div>
+      </div>
+
+      <div class="data-grid-2">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><i class="fas fa-user-plus"></i> Derniers inscrits</div>
+            <span class="text-link" onclick="showSection('users', document.querySelector('[data-section=users]'))">Voir tous →</span>
+          </div>
+          <div id="recent-users-list" style="padding:.4rem 0"><div class="empty-state"><div class="spinner"></div></div></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><i class="fas fa-comment-dots"></i> Feedbacks à traiter</div>
+            <span class="text-link" onclick="showSection('feedbacks', document.querySelector('[data-section=feedbacks]'))">Voir tous →</span>
+          </div>
+          <div id="dashboard-feedback-summary" style="padding:.4rem 0"><div class="empty-state"><div class="spinner"></div></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ USERS ═══ -->
+    <section id="section-users" class="section">
+      <div class="section-toolbar">
+        <div>
+          <h1 class="page-title">Utilisateurs</h1>
+          <p class="page-subtitle" id="users-subtitle">Chargement…</p>
+        </div>
+        <button class="btn btn-primary" onclick="window.__loadUsers && window.__loadUsers()"><i class="fas fa-sync-alt"></i> Actualiser</button>
+      </div>
+      <div class="card">
+        <div class="table-toolbar">
+          <input type="text" class="search-input" id="users-search" placeholder="Rechercher par nom, email, UID…" oninput="window.__filterUsers && window.__filterUsers()">
+          <select class="filter-select" id="users-plan-filter" onchange="window.__filterUsers && window.__filterUsers()">
+            <option value="">Tous les plans</option>
+            <option value="premium">Premium</option>
+            <option value="trial">Essai</option>
+            <option value="free">Expiré / gratuit</option>
+          </select>
+        </div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead><tr>
+              <th>Utilisateur</th><th>UID</th><th>Inscription</th><th>Plan</th><th>Statut</th>
+            </tr></thead>
+            <tbody id="users-tbody"><tr><td colspan="5"><div class="empty-state"><div class="spinner"></div></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ SUBSCRIPTIONS ═══ -->
+    <section id="section-subscriptions" class="section">
+      <div class="page-header">
+        <h1 class="page-title">Abonnements</h1>
+        <p class="page-subtitle">Détail Premium / Stripe par utilisateur — lecture seule, aucune écriture possible depuis cet écran (source de vérité = webhook Stripe)</p>
+      </div>
+      <div class="card">
+        <div class="table-toolbar">
+          <input type="text" class="search-input" id="subs-search" placeholder="Rechercher…" oninput="window.__filterSubs && window.__filterSubs()">
+          <select class="filter-select" id="subs-filter" onchange="window.__filterSubs && window.__filterSubs()">
+            <option value="">Tous</option>
+            <option value="active">Actif</option>
+            <option value="trial">Essai</option>
+            <option value="expired">Expiré</option>
+            <option value="payment_issue">Incident de paiement</option>
+          </select>
+        </div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead><tr>
+              <th>Utilisateur</th><th>Formule</th><th>Statut</th><th>Fin d'accès</th><th>Stripe Customer</th>
+            </tr></thead>
+            <tbody id="subs-tbody"><tr><td colspan="5"><div class="empty-state"><div class="spinner"></div></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ BACKUPS ═══ -->
+    <!-- ═══ FEEDBACKS ═══ -->
+    <section id="section-feedbacks" class="section">
+      <div class="page-header">
+        <h1 class="page-title">Feedbacks</h1>
+        <p class="page-subtitle">Tous les retours utilisateur, en temps réel — répondez directement, l'utilisateur voit la réponse dans son tableur ("Mes messages")</p>
+      </div>
+      <div class="fb-toolbar">
+        <input type="text" class="search-input" id="fb-search" placeholder="Rechercher (message, email, type…)" oninput="window.__filterFeedbacks && window.__filterFeedbacks()">
+        <select class="filter-select" id="fb-status-filter" onchange="window.__filterFeedbacks && window.__filterFeedbacks()">
+          <option value="">Tous</option>
+          <option value="pending">Sans réponse</option>
+          <option value="answered">Avec réponse</option>
+        </select>
+        <span class="fb-count-pill" id="fb-count">…</span>
+      </div>
+      <div id="feedbacks-list"><div class="empty-state"><div class="spinner"></div></div></div>
+    </section>
+
+  </main>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getAuth, onAuthStateChanged, signOut, connectAuthEmulator
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+  getFirestore, doc, getDoc, getDocs, collection, query, orderBy, where,
+  updateDoc, onSnapshot, arrayUnion, connectFirestoreEmulator
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+/* ============================================================
+   CONFIGURATION FIREBASE — Projet P1Planner (voir CLAUDE.md)
+   Isolation P0 : jamais un projet TypixClin. Vérifié explicitement.
+   ============================================================ */
+const firebaseConfig = {
+  apiKey: "AIzaSyC3Ip1T_Bp_USxQE2RgeDjac1aE1HxTebM",
+  authDomain: "p1planner.firebaseapp.com",
+  projectId: "p1planner",
+  storageBucket: "p1planner.firebasestorage.app",
+  messagingSenderId: "731451401197",
+  appId: "1:731451401197:web:c42a76f270e78abe923de4"
+};
+
+let auth = null, db = null;
+if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig.projectId + firebaseConfig.authDomain)) {
+  document.getElementById("gate-message").innerHTML = '<span class="gate-error">Isolation P0 : projectId Firebase suspect — chargement interrompu.</span>';
+} else {
+  const app = initializeApp(firebaseConfig);
+  auth = getAuth(app);
+  db = getFirestore(app);
+  if (window.localStorage.getItem("p1planner:useEmulator") === "1") {
+    connectAuthEmulator(auth, "http://127.0.0.1:9099", { disableWarnings: true });
+    connectFirestoreEmulator(db, "127.0.0.1", 8080);
+    console.warn("P1Planner admin: connecté aux émulateurs locaux.");
+  }
+}
+
+let currentAdmin = null;
+let allUsers = [];          // [{uid, ...userData, entitlement, billing}]
+let usersView = [];
+let allFeedbacks = [];
+let feedbacksView = [];
+
+function $(id) { return document.getElementById(id); }
+function getInitials(name) {
+  if (!name) return "A";
+  const parts = name.trim().split(" ");
+  return parts.length >= 2 ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase() : name.substring(0, 2).toUpperCase();
+}
+function fmtDate(val) {
+  if (!val) return "—";
+  let d;
+  if (val && typeof val.toDate === "function") d = val.toDate();
+  else if (val && typeof val.seconds === "number") d = new Date(val.seconds * 1000);
+  else d = new Date(val);
+  if (isNaN(d)) return "—";
+  return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+function fmtDateTime(val) {
+  if (!val) return "—";
+  let d;
+  if (val && typeof val.toDate === "function") d = val.toDate();
+  else if (val && typeof val.seconds === "number") d = new Date(val.seconds * 1000);
+  else d = new Date(val);
+  if (isNaN(d)) return "—";
+  return d.toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+function escapeHtml(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+/* ── Statut Premium (entitlements) → libellé/badge partagé Users + Subs ── */
+function planInfo(ent) {
+  if (!ent) return { key: "free", label: "Gratuit", cls: "badge-free" };
+  const status = ent.status;
+  if (status === "active") return { key: "premium", label: ent.planType === "monthly" ? "Abonnement mensuel" : "Paiement unique", cls: "badge-premium" };
+  if (status === "trial") return { key: "trial", label: "Essai en cours", cls: "badge-trial" };
+  if (status === "payment_issue") return { key: "payment_issue", label: "Incident de paiement", cls: "badge-expired" };
+  return { key: "free", label: "Expiré", cls: "badge-expired" };
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   AUTH GATE
+   ═══════════════════════════════════════════════════════════════════ */
+function showGateError(title, sub) {
+  $("gate-spinner").style.display = "none";
+  $("gate-message").innerHTML = `<div class="gate-icon-big">🔒</div><span class="gate-error">${escapeHtml(title)}</span><br><span style="font-size:.8rem;color:var(--text-muted)">${sub}</span>`;
+}
+
+if (auth && db) {
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      showGateError("Connexion requise", 'Connecte-toi sur <a class="gate-link" href="auth.html?redirect=admin.html">auth.html</a>.');
+      return;
+    }
+    try {
+      const userSnap = await getDoc(doc(db, "users", user.uid));
+      if (!userSnap.exists() || userSnap.data().isAdmin !== true) {
+        showGateError("Accès refusé", "Ce compte ne dispose pas des droits administrateur.");
+        return;
+      }
+      currentAdmin = { uid: user.uid, ...userSnap.data() };
+      bootAdminPanel();
+    } catch (e) {
+      showGateError("Erreur de vérification", escapeHtml(e.message || String(e)));
+    }
+  });
+} else if (auth) {
+  showGateError("Erreur de configuration", "Firestore indisponible.");
+}
+
+window.__adminLogout = function () {
+  if (auth) signOut(auth).finally(() => { location.href = "auth.html"; });
+};
+
+function bootAdminPanel() {
+  $("auth-gate").style.display = "none";
+  $("admin-panel").style.display = "flex";
+  const name = currentAdmin.displayName || currentAdmin.email || "Admin";
+  $("admin-display-name").textContent = name;
+  $("admin-avatar-initials").textContent = getInitials(name);
+  loadUsers();
+  startFeedbacksListener();
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   NAVIGATION
+   ═══════════════════════════════════════════════════════════════════ */
+window.showSection = function (id, el) {
+  document.querySelectorAll(".section").forEach((s) => s.classList.remove("active"));
+  document.querySelectorAll(".nav-item").forEach((n) => n.classList.remove("active"));
+  $("section-" + id).classList.add("active");
+  if (el) el.classList.add("active");
+};
+
+/* ═══════════════════════════════════════════════════════════════════
+   USERS + SUBSCRIPTIONS (une seule lecture jointe : users + entitlements
+   + billingPrivate, tous accessibles en lecture pour isAdminUser() —
+   voir firestore.rules)
+   ═══════════════════════════════════════════════════════════════════ */
+async function loadUsers() {
+  $("users-tbody").innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="spinner"></div></div></td></tr>';
+  $("subs-tbody").innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="spinner"></div></div></td></tr>';
+  try {
+    const [usersSnap, entSnap, billSnap] = await Promise.all([
+      getDocs(query(collection(db, "users"), orderBy("createdAt", "desc"))),
+      getDocs(collection(db, "entitlements")),
+      getDocs(collection(db, "billingPrivate"))
+    ]);
+    const entByUid = {}; entSnap.forEach((d) => { entByUid[d.id] = d.data(); });
+    const billByUid = {}; billSnap.forEach((d) => { billByUid[d.id] = d.data(); });
+
+    allUsers = usersSnap.docs.map((d) => ({ uid: d.id, ...d.data(), entitlement: entByUid[d.id] || null, billing: billByUid[d.id] || null }));
+    usersView = allUsers.slice();
+
+    const premiumCount = allUsers.filter((u) => u.entitlement && u.entitlement.status === "active").length;
+    const trialCount = allUsers.filter((u) => u.entitlement && u.entitlement.status === "trial").length;
+    $("stat-total-users").textContent = allUsers.length;
+    $("stat-trial-sub").textContent = `dont ${trialCount} en essai`;
+    $("stat-premium-users").textContent = premiumCount;
+    $("nav-badge-users").textContent = allUsers.length;
+
+    renderRecentUsers();
+    renderUsers();
+    renderSubs();
+  } catch (e) {
+    console.error("loadUsers:", e);
+    $("users-tbody").innerHTML = `<tr><td colspan="5"><div class="empty-state"><i class="fas fa-triangle-exclamation"></i><p>${escapeHtml(e.message || String(e))}</p></div></td></tr>`;
+  }
+}
+window.__loadUsers = loadUsers;
+
+function renderRecentUsers() {
+  const box = $("recent-users-list");
+  const recent = allUsers.slice(0, 5);
+  if (!recent.length) { box.innerHTML = '<div class="empty-state"><i class="fas fa-user-slash"></i><p>Aucun utilisateur</p></div>'; return; }
+  box.innerHTML = recent.map((u) => {
+    const plan = planInfo(u.entitlement);
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:.55rem 1.25rem;border-bottom:1px solid var(--border)">
+      <div style="min-width:0">
+        <div class="cell-name" style="font-size:.82rem">${escapeHtml(u.displayName || u.email || "—")}</div>
+        <div class="cell-sub">${fmtDate(u.createdAt)}</div>
+      </div>
+      <span class="badge ${plan.cls}">${plan.label}</span>
+    </div>`;
+  }).join("");
+}
+
+function renderUsers() {
+  const tbody = $("users-tbody");
+  $("users-subtitle").textContent = `${usersView.length} utilisateur(s) affiché(s) sur ${allUsers.length}`;
+  if (!usersView.length) { tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><i class="fas fa-user-slash"></i><p>Aucun résultat</p></div></td></tr>'; return; }
+  tbody.innerHTML = usersView.map((u) => {
+    const plan = planInfo(u.entitlement);
+    const statusLabel = u.entitlement ? (u.entitlement.status || "—") : "—";
+    return `<tr>
+      <td>
+        <div class="cell-name">${escapeHtml(u.displayName || "—")}${u.isAdmin ? '<span class="badge badge-admin">ADMIN</span>' : ""}</div>
+        <div class="cell-sub">${escapeHtml(u.email || "")}</div>
+      </td>
+      <td class="cell-sub">${escapeHtml(u.uid)}</td>
+      <td>${fmtDate(u.createdAt)}</td>
+      <td><span class="badge ${plan.cls}">${plan.label}</span></td>
+      <td>${escapeHtml(statusLabel)}</td>
+    </tr>`;
+  }).join("");
+}
+
+window.__filterUsers = function () {
+  const q = ($("users-search").value || "").toLowerCase().trim();
+  const planFilter = $("users-plan-filter").value;
+  usersView = allUsers.filter((u) => {
+    if (q) {
+      const hay = `${u.displayName || ""} ${u.email || ""} ${u.uid}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    if (planFilter) {
+      const plan = planInfo(u.entitlement);
+      if (plan.key !== planFilter && !(planFilter === "free" && plan.key === "free")) return false;
+    }
+    return true;
+  });
+  renderUsers();
+};
+
+function renderSubs() {
+  const tbody = $("subs-tbody");
+  const withEnt = allUsers.filter((u) => u.entitlement);
+  window.__subsFull = withEnt;
+  renderSubsFiltered(withEnt);
+}
+function renderSubsFiltered(list) {
+  const tbody = $("subs-tbody");
+  if (!list.length) { tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><i class="fas fa-crown"></i><p>Aucun résultat</p></div></td></tr>'; return; }
+  tbody.innerHTML = list.map((u) => {
+    const plan = planInfo(u.entitlement);
+    const endsAt = u.entitlement.premiumUntil || u.entitlement.trialEndsAt;
+    const customerId = u.billing && u.billing.stripeCustomerId;
+    return `<tr>
+      <td>
+        <div class="cell-name">${escapeHtml(u.displayName || u.email || "—")}</div>
+        <div class="cell-sub">${escapeHtml(u.email || "")}</div>
+      </td>
+      <td><span class="badge ${plan.cls}">${plan.label}</span></td>
+      <td>${escapeHtml(u.entitlement.status || "—")}</td>
+      <td>${fmtDate(endsAt)}</td>
+      <td class="cell-sub">${customerId ? escapeHtml(customerId) : "—"}</td>
+    </tr>`;
+  }).join("");
+}
+window.__filterSubs = function () {
+  const q = ($("subs-search").value || "").toLowerCase().trim();
+  const statusFilter = $("subs-filter").value;
+  const list = (window.__subsFull || []).filter((u) => {
+    if (statusFilter && (!u.entitlement || u.entitlement.status !== statusFilter)) return false;
+    if (q) {
+      const hay = `${u.displayName || ""} ${u.email || ""}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+  renderSubsFiltered(list);
+};
+
+/* ═══════════════════════════════════════════════════════════════════
+   FEEDBACKS — collection réelle "feedbacks" (pluriel), champ userId,
+   réponses dans adminReplies[] (voir public/tableur.html, script
+   "Mes messages" déjà câblé côté utilisateur pour LIRE ce même champ).
+   ═══════════════════════════════════════════════════════════════════ */
+function startFeedbacksListener() {
+  onSnapshot(query(collection(db, "feedbacks"), orderBy("createdAt", "desc")), (snap) => {
+    allFeedbacks = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    const pending = allFeedbacks.filter((f) => !(f.adminReplies && f.adminReplies.length)).length;
+    const badge = $("nav-badge-feedbacks");
+    if (pending > 0) { badge.style.display = ""; badge.textContent = pending; } else { badge.style.display = "none"; }
+    renderDashboardFeedbackSummary(pending);
+    window.__filterFeedbacks();
+  }, (err) => {
+    console.error("feedbacks listener:", err);
+    $("feedbacks-list").innerHTML = `<div class="empty-state"><i class="fas fa-triangle-exclamation"></i><p>${escapeHtml(err.message || String(err))}</p></div>`;
+  });
+}
+
+function renderDashboardFeedbackSummary(pending) {
+  const box = $("dashboard-feedback-summary");
+  box.innerHTML = `<div style="padding:.9rem 1.25rem">
+    <div class="stat-value" style="font-size:1.6rem">${pending}</div>
+    <div class="stat-sub">feedback(s) sans réponse sur ${allFeedbacks.length} au total</div>
+  </div>`;
+}
+
+window.__filterFeedbacks = function () {
+  const q = ($("fb-search").value || "").toLowerCase().trim();
+  const statusFilter = $("fb-status-filter").value;
+  feedbacksView = allFeedbacks.filter((f) => {
+    const answered = !!(f.adminReplies && f.adminReplies.length);
+    if (statusFilter === "pending" && answered) return false;
+    if (statusFilter === "answered" && !answered) return false;
+    if (q) {
+      const hay = `${f.message || ""} ${f.userEmail || ""} ${f.type || ""}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+  renderFeedbacks();
+};
+
+function renderFeedbacks() {
+  $("fb-count").textContent = `${feedbacksView.length} / ${allFeedbacks.length}`;
+  const list = $("feedbacks-list");
+  if (!feedbacksView.length) { list.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p>Aucun feedback</p></div>'; return; }
+  list.innerHTML = feedbacksView.map((f) => {
+    const stars = f.note ? `<span class="fb-stars">${"★".repeat(f.note)}${"☆".repeat(5 - f.note)}</span>` : "";
+    const replies = (f.adminReplies || []).map((r) => `
+      <div class="fb-reply-bubble">
+        <div>${escapeHtml(r.text)}</div>
+        <div class="fb-reply-meta"><i class="fas fa-reply"></i> ${fmtDateTime(r.sentAt)}</div>
+      </div>`).join("");
+    return `<div class="fb-card">
+      <div class="fb-card-head">
+        <span class="fb-card-user">${escapeHtml(f.userEmail || f.userId || "—")}</span>
+        ${f.type ? `<span class="badge badge-free">${escapeHtml(f.type)}</span>` : ""}
+        ${stars}
+        <span class="fb-card-date">${fmtDateTime(f.createdAt)}</span>
+      </div>
+      <div class="fb-card-msg">${escapeHtml(f.message || "")}</div>
+      ${replies ? `<div class="fb-replies">${replies}</div>` : ""}
+      <div class="fb-reply-form">
+        <textarea id="fb-reply-input-${f.id}" placeholder="Répondre à cet utilisateur…"></textarea>
+        <button class="btn btn-primary btn-sm" onclick="window.__replyFeedback('${f.id}')"><i class="fas fa-paper-plane"></i></button>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+window.__replyFeedback = async function (feedbackId) {
+  const ta = $("fb-reply-input-" + feedbackId);
+  const text = (ta.value || "").trim();
+  if (!text) return;
+  try {
+    await updateDoc(doc(db, "feedbacks", feedbackId), {
+      adminReplies: arrayUnion({ text, sentAt: new Date().toISOString() })
+    });
+    ta.value = "";
+  } catch (e) {
+    console.error("replyFeedback:", e);
+    alert("Échec de l'envoi : " + (e.message || e));
+  }
+};
+</script>
+</body>
+</html>

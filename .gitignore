@@ -1,0 +1,34 @@
+node_modules/
+functions/node_modules/
+
+.env
+.env.*
+!.env.example
+functions/.env
+functions/.env.*
+*.local
+service-account*.json
+*serviceAccount*.json
+*firebase-adminsdk*.json
+
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*-debug.log
+
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Config locale d'outillage (Claude Code) : pas utile aux autres, pas publiée
+.claude/
+
+# Références TypixClin : locales uniquement
+reference-typixclin/*
+!reference-typixclin/README.md

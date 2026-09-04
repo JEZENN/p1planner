@@ -1,0 +1,18 @@
+{
+  "name": "p1planner",
+  "private": true,
+  "version": "0.1.0",
+  "description": "P1Planner — tests locaux (Firestore/Storage Rules, Cloud Functions). Frontend = HTML/CSS/JS statique dans public/, sans bundler.",
+  "type": "module",
+  "scripts": {
+    "test:rules": "mocha test/firestore.rules.test.mjs --timeout 20000",
+    "test:bootstrap": "mocha test/bootstrap.test.mjs --timeout 20000",
+    "emulators": "firebase emulators:start --only auth,firestore,functions"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^3.0.4",
+    "firebase": "^10.12.2",
+    "firebase-admin": "^12.6.0",
+    "mocha": "^10.7.3"
+  }
+}

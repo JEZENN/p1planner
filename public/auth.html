@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Connexion — P1Planner</title>
+<meta name="description" content="Connecte-toi ou crée ton compte P1Planner pour organiser tes révisions : cours, tours, méthode des J et Programme de la journée.">
+<meta name="theme-color" content="#0a0e1a">
+<meta name="robots" content="noindex, follow">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%236d5bf0'/%3E%3Cstop offset='1' stop-color='%234f9dfb'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='url(%23g)'/%3E%3Ctext x='32' y='42' font-family='Arial,sans-serif' font-weight='700' font-size='26' fill='white' text-anchor='middle'%3EP1%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=Fraunces:ital,opsz,wght@0,9..144,500;1,9..144,500&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   P1PLANNER — DESIGN TOKENS (identiques à index.html)
+   ============================================================ */
+:root{
+  --bg:#0a0e1a;
+  --bg-soft:#0d1220;
+  --surface:#131a30;
+  --surface-2:#171f3a;
+  --surface-hover:#1c2545;
+  --border:rgba(255,255,255,.09);
+  --border-strong:rgba(255,255,255,.16);
+  --text:#f3f5fb;
+  --text-muted:#a6b0cc;
+  --text-dim:#707aa0;
+  --primary:#7c6cf6;
+  --primary-2:#5b8def;
+  --primary-soft:rgba(124,108,246,.14);
+  --accent:#ffab5c;
+  --accent-2:#ff7a7a;
+  --accent-soft:rgba(255,171,92,.16);
+  --success:#3ddc97;
+  --success-soft:rgba(61,220,151,.14);
+  --danger:#ff6b6b;
+  --danger-soft:rgba(255,107,107,.14);
+  --gradient-brand:linear-gradient(135deg,#6d5bf0 0%,#8b6cf7 45%,#4f9dfb 100%);
+  --gradient-warm:linear-gradient(135deg,#ffab5c 0%,#ff7a7a 100%);
+  --shadow-glow:0 0 0 1px var(--border), 0 20px 60px -20px rgba(93,73,246,.35);
+  --shadow-card:0 1px 0 rgba(255,255,255,.04) inset, 0 12px 30px -18px rgba(0,0,0,.6);
+  --radius-sm:10px;
+  --radius-md:16px;
+  --radius-lg:24px;
+  --radius-pill:999px;
+  --font-display:'Space Grotesk',ui-sans-serif,system-ui,sans-serif;
+  --font-body:'Inter',ui-sans-serif,system-ui,sans-serif;
+  --font-serif:'Fraunces',ui-serif,Georgia,serif;
+  --ease:cubic-bezier(.22,1,.36,1);
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%;scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:var(--primary) var(--bg-soft)}
+body{
+  background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:16px;line-height:1.55;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;min-height:100dvh;
+}
+::-webkit-scrollbar{width:12px;height:12px}
+::-webkit-scrollbar-track{background:var(--bg-soft)}
+::-webkit-scrollbar-thumb{background-color:var(--primary-2);border-radius:var(--radius-pill);border:3px solid var(--bg-soft);background-clip:padding-box}
+::-webkit-scrollbar-thumb:hover{background-color:var(--primary)}
+::-webkit-scrollbar-corner{background:var(--bg-soft)}
+img,svg{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+ul{list-style:none}
+h1,h2,h3{font-family:var(--font-display);font-weight:600;line-height:1.15;letter-spacing:-.01em}
+
+:focus-visible{outline:2px solid var(--primary-2);outline-offset:3px;border-radius:4px}
+::selection{background:var(--primary);color:#fff}
+
+.skip-link{
+  position:absolute;left:1rem;top:-60px;background:var(--primary);color:#fff;padding:.75rem 1.25rem;
+  border-radius:var(--radius-sm);z-index:200;transition:top .2s var(--ease);font-weight:600;
+}
+.skip-link:focus{top:1rem}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important}
+}
+
+.visually-hidden{
+  position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);
+  white-space:nowrap;border:0;
+}
+
+.icon{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:.55rem;padding:.85rem 1.5rem;
+  border-radius:var(--radius-pill);font-weight:600;font-size:.98rem;min-height:48px;width:100%;
+  transition:transform .25s var(--ease),box-shadow .25s var(--ease),opacity .2s;position:relative;
+}
+.btn-primary{background:var(--gradient-brand);color:#fff;box-shadow:0 12px 30px -10px rgba(93,73,246,.55)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 16px 36px -8px rgba(93,73,246,.65)}
+.btn-ghost{background:rgba(255,255,255,.04);color:var(--text);border:1px solid var(--border-strong)}
+.btn-ghost:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.28)}
+.btn[disabled]{opacity:.6;pointer-events:none}
+.btn .spinner{display:none}
+.btn.is-loading .btn-label{visibility:hidden}
+.btn.is-loading .spinner{
+  display:block;position:absolute;inset:0;margin:auto;width:20px;height:20px;border-radius:50%;
+  border:2.5px solid rgba(255,255,255,.35);border-top-color:#fff;animation:spin .7s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.eyebrow{
+  display:inline-flex;align-items:center;gap:.5rem;font-size:.78rem;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--primary-2);background:var(--primary-soft);
+  border:1px solid rgba(124,108,246,.3);padding:.4rem .85rem;border-radius:var(--radius-pill);
+}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-card)}
+
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+.top-bar{padding:1.25rem clamp(1rem,4vw,2.5rem)}
+.brand{display:inline-flex;align-items:center;gap:.6rem;font-family:var(--font-display);font-weight:700;font-size:1.1rem}
+.brand-mark{
+  width:32px;height:32px;border-radius:9px;background:var(--gradient-brand);display:flex;align-items:center;
+  justify-content:center;font-size:.8rem;font-weight:700;color:#fff;flex-shrink:0;
+}
+
+.auth-shell{
+  display:grid;min-height:calc(100dvh - 76px);
+}
+.auth-brand{
+  position:relative;overflow:hidden;padding:clamp(2rem,5vw,3.5rem);display:flex;flex-direction:column;
+  /* `justify-content:center` centrait ce panneau (contenu plus court)
+     DANS LA HAUTEUR DE LA LIGNE DE GRILLE ENTIÈRE — hauteur elle-même
+     dictée par le panneau formulaire (carte désormais figée sur la
+     hauteur du panneau Inscription, le plus grand des 4, depuis le
+     correctif anti-décalage de cette session). Sur un écran large où
+     cette hauteur dépasse largement le contenu du panneau de marque, le
+     centrage le faisait démarrer bien plus bas que le formulaire à droite
+     — signalé deux fois avec capture à l'appui. Aligné en haut à la place,
+     comme le panneau formulaire visuellement. */
+  justify-content:flex-start;padding-top:clamp(3rem,7vh,5.5rem);gap:1.75rem;
+}
+.auth-brand::before{
+  content:"";position:absolute;inset:-30% -10% auto -10%;height:600px;
+  background:radial-gradient(60% 60% at 30% 20%,rgba(124,108,246,.3),transparent 70%),
+             radial-gradient(50% 50% at 85% 15%,rgba(79,157,251,.22),transparent 70%);
+  pointer-events:none;
+}
+.auth-brand > *{position:relative;z-index:1}
+.auth-brand h1{font-size:clamp(1.6rem,3.2vw,2.3rem);max-width:16ch}
+.auth-brand p.lead{color:var(--text-muted);max-width:38ch;margin-top:.85rem}
+.trust-list{display:flex;flex-direction:column;gap:.85rem;margin-top:.5rem}
+.trust-item{display:flex;align-items:flex-start;gap:.65rem;font-size:.92rem;color:var(--text-muted)}
+
+/* Le panneau de marque (texte + maquette mini-sheet) est centré
+   verticalement dans une colonne dont la hauteur suit son PROPRE contenu
+   (pas seulement le viewport) : sur un écran PC courant (~800px de haut
+   utile, chrome du navigateur déduit), ce contenu dépasse et la maquette
+   mini-sheet — en bas, la moins essentielle — se retrouvait coupée à
+   moitié à l'ouverture de la page (bug signalé, "rogné en bas"). Corrigé
+   en resserrant l'espacement puis, sur les hauteurs vraiment contraintes,
+   en masquant la maquette plutôt que de la laisser à moitié coupée : le
+   texte (titre, accroche, réassurance), toujours l'essentiel, reste
+   intégralement visible sans avoir à scroller. */
+@media (max-height:900px){
+  .auth-brand{padding-block:1.5rem;gap:1.1rem}
+  .auth-brand h1{font-size:clamp(1.35rem,2.6vw,1.9rem)}
+  .auth-brand p.lead{margin-top:.6rem}
+  .trust-list{gap:.55rem;margin-top:.3rem}
+}
+@media (max-height:760px){
+  .mini-sheet{display:none}
+}
+.trust-item .icon{color:var(--success);margin-top:2px}
+
+.mini-sheet{border-radius:var(--radius-md);overflow:hidden;border:1px solid var(--border-strong);background:var(--surface);box-shadow:var(--shadow-glow);max-width:360px}
+.mini-sheet-bar{display:flex;align-items:center;gap:.5rem;padding:.6rem .85rem;background:var(--surface-2);border-bottom:1px solid var(--border)}
+.mini-dot{width:8px;height:8px;border-radius:50%}
+.mini-sheet-bar .mini-dot:nth-child(1){background:#ff6b6b}
+.mini-sheet-bar .mini-dot:nth-child(2){background:#ffab5c}
+.mini-sheet-bar .mini-dot:nth-child(3){background:#3ddc97}
+.mini-sheet table{width:100%;border-collapse:collapse;font-size:.76rem}
+.mini-sheet td{padding:.55rem .7rem;border-bottom:1px solid var(--border)}
+.mini-sheet tr:last-child td{border-bottom:0}
+.mini-tour{display:inline-block;width:12px;height:12px;border-radius:4px;margin-inline-end:3px}
+
+.auth-form-side{
+  display:flex;align-items:center;justify-content:center;padding:clamp(1.5rem,4vw,3rem);
+}
+.auth-card{width:100%;max-width:420px;padding:clamp(1.5rem,3vw,2.25rem)}
+
+.auth-tabs{display:flex;padding:4px;border-radius:var(--radius-pill);background:var(--surface-2);border:1px solid var(--border-strong);margin-bottom:1.6rem;position:relative}
+/* Pastille qui glisse d'un onglet à l'autre au lieu d'un fond posé
+   directement sur le bouton actif (changement instantané, sans transition). */
+.auth-tabs-indicator{
+  position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);
+  border-radius:var(--radius-pill);background:var(--gradient-brand);
+  transition:transform .32s cubic-bezier(.65,0,.35,1);z-index:0;
+}
+.auth-tabs[data-active="signup"] .auth-tabs-indicator{transform:translateX(100%)}
+@media (prefers-reduced-motion: reduce){ .auth-tabs-indicator{transition:none} }
+.auth-tabs button{flex:1;padding:.6rem 1rem;border-radius:var(--radius-pill);font-size:.9rem;font-weight:600;color:var(--text-muted);position:relative;z-index:1;transition:color .25s var(--ease)}
+.auth-tabs button[aria-selected="true"]{color:#fff}
+
+/* Empilement en grille : les 4 panneaux partagent la même cellule
+   (grid-column/row:1), donc la hauteur de .auth-panels-stage s'aligne
+   automatiquement sur le PLUS GRAND des 4 — actif ou non. C'est ce qui
+   empêche la carte de changer de hauteur au changement d'onglet (et donc
+   le panneau de marque à gauche de se recentrer verticalement, bug
+   signalé) : `display:none` aurait retiré le panneau caché du calcul de
+   hauteur, `visibility:hidden` non. */
+.auth-panels-stage{display:grid}
+.auth-panel{
+  grid-column:1;grid-row:1;visibility:hidden;opacity:0;pointer-events:none;
+  transform:translateY(10px);
+  transition:opacity .22s var(--ease),transform .22s var(--ease);
+}
+.auth-panel.is-active{
+  visibility:visible;opacity:1;pointer-events:auto;position:relative;z-index:1;transform:translateY(0);
+}
+@media (prefers-reduced-motion: reduce){ .auth-panel{transition:none;transform:none} }
+.auth-panel h2{font-size:1.35rem;margin-bottom:.4rem}
+.auth-panel p.panel-lead{color:var(--text-muted);font-size:.9rem;margin-bottom:1.4rem}
+
+.field{margin-bottom:1.1rem}
+.field-row-2col{display:grid;grid-template-columns:1fr 1fr;gap:.85rem}
+@media (max-width:480px){ .field-row-2col{grid-template-columns:1fr} }
+.field label{display:block;font-size:.85rem;font-weight:600;margin-bottom:.4rem}
+.field-input-wrap{position:relative}
+.field input{
+  width:100%;padding:.8rem 1rem;border-radius:var(--radius-sm);background:var(--bg-soft);
+  border:1px solid var(--border-strong);color:var(--text);font-size:.95rem;font-family:inherit;
+  transition:border-color .2s,box-shadow .2s;min-height:48px;
+}
+.field input::placeholder{color:var(--text-dim)}
+.field input:focus{outline:none;border-color:var(--primary-2);box-shadow:0 0 0 3px rgba(91,141,239,.18)}
+.field input[aria-invalid="true"]{border-color:var(--danger)}
+/* Autofill navigateur : neutralise le fond blanc imposé par défaut
+   (Chrome/Edge/Safari) pour rester sur le fond sombre du design. */
+.field input:-webkit-autofill,
+.field input:-webkit-autofill:hover,
+.field input:-webkit-autofill:focus,
+.field input:-webkit-autofill:active{
+  -webkit-text-fill-color:var(--text);
+  -webkit-box-shadow:0 0 0 1000px var(--bg-soft) inset;
+  box-shadow:0 0 0 1000px var(--bg-soft) inset;
+  caret-color:var(--text);
+  transition:background-color 9999s ease-in-out 0s;
+}
+.field input:autofill{ -webkit-text-fill-color:var(--text); }
+.field input.has-toggle{padding-inline-end:2.9rem}
+.field-toggle{
+  position:absolute;inset-block:0;inset-inline-end:.35rem;display:flex;align-items:center;justify-content:center;
+  width:38px;color:var(--text-dim);border-radius:8px;
+}
+.field-toggle:hover{color:var(--text)}
+.field-error{display:none;color:var(--danger);font-size:.8rem;margin-top:.4rem;align-items:center;gap:.35rem}
+.field-error.is-visible{display:flex}
+.field-hint{color:var(--text-dim);font-size:.78rem;margin-top:.4rem}
+
+.field-row-between{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.1rem;gap:1rem}
+.link-muted{font-size:.85rem;color:var(--primary-2);font-weight:600}
+.link-muted:hover{text-decoration:underline}
+
+.checkbox-row{display:flex;align-items:flex-start;gap:.65rem;margin-bottom:1.4rem}
+/* Checkbox entièrement redessinée : `accent-color` seul laisse l'état
+   "non coché" au rendu natif du navigateur (souvent un carré blanc/clair,
+   qui détonne sur fond sombre) — on neutralise ce rendu et on dessine
+   nous-mêmes la coche. */
+.checkbox-row input[type="checkbox"]{
+  appearance:none;-webkit-appearance:none;width:20px;height:20px;flex-shrink:0;margin-top:1px;
+  border-radius:5px;background:var(--bg-soft);border:1px solid var(--border-strong);
+  position:relative;cursor:pointer;transition:background .18s,border-color .18s;
+}
+.checkbox-row input[type="checkbox"]:hover{border-color:rgba(255,255,255,.32)}
+.checkbox-row input[type="checkbox"]:checked{background:var(--gradient-brand);border-color:transparent}
+.checkbox-row input[type="checkbox"]:checked::after{
+  content:"";position:absolute;left:6px;top:2px;width:5px;height:10px;
+  border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg);
+}
+.checkbox-row input[type="checkbox"]:focus-visible{outline:2px solid var(--primary-2);outline-offset:2px}
+.checkbox-row label{font-size:.85rem;color:var(--text-muted)}
+.checkbox-row a{color:var(--primary-2);font-weight:600}
+
+.alert{
+  display:none;align-items:flex-start;gap:.6rem;padding:.85rem 1rem;border-radius:var(--radius-sm);
+  font-size:.86rem;margin-bottom:1.2rem;border:1px solid transparent;
+}
+.alert.is-visible{display:flex}
+.alert-error{background:var(--danger-soft);border-color:rgba(255,107,107,.35);color:#ffc2c2}
+.alert-success{background:var(--success-soft);border-color:rgba(61,220,151,.35);color:#bdf5da}
+.alert-info{background:var(--primary-soft);border-color:rgba(124,108,246,.35);color:#d6cffc}
+.alert .icon{margin-top:1px;flex-shrink:0}
+
+.switch-line{text-align:center;font-size:.87rem;color:var(--text-muted);margin-top:1.4rem}
+.switch-line button{color:var(--primary-2);font-weight:700}
+
+.verify-icon{
+  width:60px;height:60px;border-radius:18px;background:var(--gradient-brand);display:flex;align-items:center;
+  justify-content:center;color:#fff;margin-bottom:1.2rem;
+}
+
+@media (min-width:960px){
+  .auth-shell{grid-template-columns:1fr 1fr}
+  .auth-brand{border-inline-end:1px solid var(--border)}
+}
+
+/* ============================================================
+   MODALE — CONDITIONS D'UTILISATION
+   ============================================================ */
+.cgu-link-btn{color:var(--primary-2);font-weight:600;text-decoration:underline;text-underline-offset:2px}
+.cgu-link-btn:hover{color:var(--text)}
+
+.modal-backdrop{
+  position:fixed;inset:0;background:rgba(4,6,14,.72);backdrop-filter:blur(4px);z-index:150;
+  display:none;align-items:center;justify-content:center;padding:1.25rem;
+}
+.modal-backdrop.is-open,.modal-backdrop.is-closing{display:flex}
+.modal-backdrop.is-open{animation:cguOverlayIn .2s ease forwards}
+.modal-backdrop.is-closing{animation:cguOverlayOut .18s ease forwards}
+.modal-backdrop.is-open .cgu-modal{animation:cguContentIn .22s cubic-bezier(.34,1.3,.64,1) forwards}
+.modal-backdrop.is-closing .cgu-modal{animation:cguContentOut .18s ease forwards}
+@keyframes cguOverlayIn{from{opacity:0}to{opacity:1}}
+@keyframes cguOverlayOut{from{opacity:1}to{opacity:0}}
+@keyframes cguContentIn{from{opacity:0;transform:scale(.94) translateY(14px)}to{opacity:1;transform:scale(1) translateY(0)}}
+@keyframes cguContentOut{from{opacity:1;transform:scale(1) translateY(0)}to{opacity:0;transform:scale(.94) translateY(14px)}}
+@media (prefers-reduced-motion: reduce){
+  .modal-backdrop.is-open,.modal-backdrop.is-closing,
+  .modal-backdrop.is-open .cgu-modal,.modal-backdrop.is-closing .cgu-modal{animation:none}
+}
+
+.cgu-modal{width:100%;max-width:640px;max-height:min(720px,86vh);display:flex;flex-direction:column;padding:0;overflow:hidden}
+/* En-tête calqué sur le gabarit des modales du tableur (icône carrée en
+   dégradé + titre à côté, bouton fermer rond ABSOLU teinté "danger" en
+   haut à droite) — cohérence visuelle avec le reste du produit. */
+.cgu-modal-head{
+  display:flex;align-items:center;gap:.85rem;padding:1.1rem 3.4rem 1.1rem 1.4rem;
+  border-bottom:1px solid var(--border);flex-shrink:0;position:relative;
+}
+.cgu-modal-icon{
+  width:44px;height:44px;border-radius:var(--radius-md);flex-shrink:0;background:var(--gradient-brand);
+  color:#fff;display:flex;align-items:center;justify-content:center;
+}
+.cgu-modal-head h2{font-size:1.1rem;line-height:1.25;min-width:0}
+.cgu-modal-close{
+  position:absolute;top:1rem;right:1.1rem;width:32px;height:32px;border-radius:50%;
+  background:var(--danger-soft);color:var(--danger);display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;transition:transform .18s,background .18s,color .18s,box-shadow .18s;
+}
+.cgu-modal-close:hover{background:var(--danger);color:#fff;transform:scale(1.12);box-shadow:0 4px 12px rgba(255,107,107,.45)}
+.cgu-modal-close:active{transform:scale(.88)}
+.cgu-modal-body{overflow-y:auto;padding:1.4rem 1.5rem;font-size:.88rem;color:var(--text-muted);flex:1}
+.cgu-modal-body h3{font-family:var(--font-display);font-size:.98rem;color:var(--text);margin:1.3rem 0 .55rem}
+.cgu-modal-body h3:first-child{margin-top:0}
+.cgu-modal-body p{margin-bottom:.75rem}
+.cgu-modal-body ul{list-style:disc;margin:0 0 .75rem 1.2em;padding:0}
+.cgu-modal-body li{margin-bottom:.35rem}
+.cgu-modal-body li::marker{color:var(--primary-2)}
+.cgu-modal-body strong{color:var(--text)}
+.cgu-modal-updated{color:var(--text-dim);font-size:.78rem;padding-top:.9rem;margin-top:.4rem;border-top:1px solid var(--border)}
+.cgu-modal-foot{
+  display:flex;gap:.75rem;padding:1.1rem 1.5rem;border-top:1px solid var(--border);flex-shrink:0;
+}
+.cgu-modal-foot .btn{flex:1}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#authCard">Aller au formulaire</a>
+
+<div class="top-bar">
+  <a href="index.html" class="brand" aria-label="P1Planner, retour à l'accueil">
+    <span class="brand-mark" aria-hidden="true">P1</span>
+    P1Planner
+  </a>
+</div>
+
+<div class="auth-shell">
+  <!-- ================= BRAND PANEL ================= -->
+  <aside class="auth-brand" aria-hidden="true">
+    <div>
+      <span class="eyebrow" style="margin-bottom:1.1rem;display:inline-flex">Ton espace P1Planner</span>
+      <h1>Reprends tes révisions là où tu les as laissées.</h1>
+      <p class="lead">Cours, tours, méthode des J, Programme de la journée : tout se synchronise, partout où tu te connectes.</p>
+      <ul class="trust-list">
+        <li class="trust-item"><svg class="icon" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>15 jours d'essai gratuit, sans carte bancaire</li>
+        <li class="trust-item"><svg class="icon" viewBox="0 0 24 24"><path d="M12 2a5 5 0 0 0-5 5v3H6a3 3 0 0 0-3 3v6a3 3 0 0 0 3 3h12a3 3 0 0 0 3-3v-6a3 3 0 0 0-3-3h-1V7a5 5 0 0 0-5-5Z"/></svg>Sauvegarde automatique, à chaque action</li>
+        <li class="trust-item"><svg class="icon" viewBox="0 0 24 24"><path d="M4 19V6a2 2 0 0 1 2-2h13v15"/><path d="M6 22a2 2 0 0 1-2-2v-1h15v3"/></svg>Un programme entièrement personnalisable</li>
+      </ul>
+    </div>
+
+    <div class="mini-sheet">
+      <div class="mini-sheet-bar"><span class="mini-dot"></span><span class="mini-dot"></span><span class="mini-dot"></span></div>
+      <table>
+        <tbody>
+          <tr><td><span class="mini-tour" style="background:#3ddc97"></span><span class="mini-tour" style="background:#3ddc97"></span><span class="mini-tour" style="background:#ffab5c"></span></td><td style="color:var(--text-dim)">Glycolyse</td></tr>
+          <tr><td><span class="mini-tour" style="background:#3ddc97"></span><span class="mini-tour" style="background:#171f3a;border:1px solid var(--border-strong)"></span><span class="mini-tour" style="background:#171f3a;border:1px solid var(--border-strong)"></span></td><td style="color:var(--text-dim)">Cycle de Krebs</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </aside>
+
+  <!-- ================= FORM PANEL ================= -->
+  <div class="auth-form-side">
+    <div class="card auth-card" id="authCard">
+
+      <div class="auth-tabs" role="tablist" aria-label="Connexion ou inscription" data-active="login">
+        <span class="auth-tabs-indicator" aria-hidden="true"></span>
+        <button type="button" id="tabLogin" role="tab" aria-selected="true" aria-controls="panelLogin">Connexion</button>
+        <button type="button" id="tabSignup" role="tab" aria-selected="false" aria-controls="panelSignup">Inscription</button>
+      </div>
+
+      <div class="alert" id="globalAlert" role="alert" aria-live="assertive"></div>
+
+      <!-- Les 4 panneaux sont empilés dans la MÊME cellule de grille (voir
+           .auth-panels-stage) : la hauteur de la grille s'aligne sur le
+           panneau le plus grand des 4, qu'il soit affiché ou non, donc la
+           carte ne change JAMAIS de hauteur en changeant d'onglet — plus de
+           recentrage vertical du panneau de marque à gauche (bug signalé). -->
+      <div class="auth-panels-stage">
+      <!-- ---------- CONNEXION ---------- -->
+      <section class="auth-panel is-active" id="panelLogin" role="tabpanel" aria-labelledby="tabLogin">
+        <h2>Content de te revoir</h2>
+        <p class="panel-lead">Connecte-toi pour retrouver ton Programme de la journée.</p>
+
+        <form id="formLogin" novalidate>
+          <div class="field">
+            <label for="loginEmail">Adresse email</label>
+            <input type="email" id="loginEmail" name="email" autocomplete="email" required placeholder="toi@exemple.fr" aria-describedby="loginEmailError">
+            <div class="field-error" id="loginEmailError"><svg class="icon" viewBox="0 0 24 24" style="width:14px;height:14px"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span>Adresse email invalide.</span></div>
+          </div>
+          <div class="field">
+            <div class="field-row-between" style="margin-bottom:.4rem">
+              <label for="loginPassword" style="margin-bottom:0">Mot de passe</label>
+              <button type="button" class="link-muted" id="gotoReset">Mot de passe oublié ?</button>
+            </div>
+            <div class="field-input-wrap">
+              <input type="password" id="loginPassword" name="password" autocomplete="current-password" required minlength="8" class="has-toggle" placeholder="••••••••" aria-describedby="loginPasswordError">
+              <button type="button" class="field-toggle" data-toggle-for="loginPassword" aria-label="Afficher le mot de passe" aria-pressed="false">
+                <svg class="icon icon-eye" viewBox="0 0 24 24" style="width:18px;height:18px"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="icon icon-eye-off" viewBox="0 0 24 24" style="width:18px;height:18px;display:none"><path d="M3 3l18 18"/><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 5.2A10.9 10.9 0 0 1 12 5c7 0 11 7 11 7a13.6 13.6 0 0 1-3.2 3.9M6.5 6.6C3.7 8.3 2 12 2 12s4 7 11 7c1.4 0 2.7-.24 3.9-.66"/></svg>
+              </button>
+            </div>
+            <div class="field-error" id="loginPasswordError"><svg class="icon" viewBox="0 0 24 24" style="width:14px;height:14px"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span>Mot de passe requis.</span></div>
+          </div>
+
+          <button type="submit" class="btn btn-primary" id="btnLogin">
+            <span class="btn-label">Se connecter</span><span class="spinner" aria-hidden="true"></span>
+          </button>
+        </form>
+
+        <p class="switch-line">Pas encore de compte ? <button type="button" id="linkToSignup">Crée-le gratuitement</button></p>
+      </section>
+
+      <!-- ---------- INSCRIPTION ---------- -->
+      <section class="auth-panel" id="panelSignup" role="tabpanel" aria-labelledby="tabSignup">
+        <h2>Créer ton compte</h2>
+        <p class="panel-lead">15 jours d'essai gratuit, sans carte bancaire.</p>
+
+        <form id="formSignup" novalidate>
+          <div class="field-row-2col">
+            <div class="field">
+              <label for="signupFirstName">Prénom</label>
+              <input type="text" id="signupFirstName" name="given-name" autocomplete="given-name" required minlength="2" placeholder="Ton prénom" aria-describedby="signupFirstNameError">
+              <div class="field-error" id="signupFirstNameError"><svg class="icon" viewBox="0 0 24 24" style="width:14px;height:14px"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span>Merci d'indiquer ton prénom.</span></div>
+            </div>
+            <div class="field">
+              <label for="signupLastName">Nom</label>
+              <input type="text" id="signupLastName" name="family-name" autocomplete="family-name" required minlength="2" placeholder="Ton nom" aria-describedby="signupLastNameError">
+              <div class="field-error" id="signupLastNameError"><svg class="icon" viewBox="0 0 24 24" style="width:14px;height:14px"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span>Merci d'indiquer ton nom.</span></div>
+            </div>
+          </div>
+          <div class="field">
+            <label for="signupEmail">Adresse email</label>
+            <input type="email" id="signupEmail" name="email" autocomplete="email" required placeholder="toi@exemple.fr" aria-describedby="signupEmailError">
+            <div class="field-error" id="signupEmailError"><svg class="icon" viewBox="0 0 24 24" style="width:14px;height:14px"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span>Adresse email invalide.</span></div>
+          </div>
+          <div class="field">
+            <label for="signupPassword">Mot de passe</label>
+            <div class="field-input-wrap">
+              <input type="password" id="signupPassword" name="password" autocomplete="new-password" required minlength="8" class="has-toggle" placeholder="8 caractères minimum" aria-describedby="signupPasswordError signupPasswordHint">
+              <button type="button" class="field-toggle" data-toggle-for="signupPassword" aria-label="Afficher le mot de passe" aria-pressed="false">
+                <svg class="icon icon-eye" viewBox="0 0 24 24" style="width:18px;height:18px"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="icon icon-eye-off" viewBox="0 0 24 24" style="width:18px;height:18px;display:none"><path d="M3 3l18 18"/><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 5.2A10.9 10.9 0 0 1 12 5c7 0 11 7 11 7a13.6 13.6 0 0 1-3.2 3.9M6.5 6.6C3.7 8.3 2 12 2 12s4 7 11 7c1.4 0 2.7-.24 3.9-.66"/></svg>
+              </button>
+            </div>
+            <div class="field-hint" id="signupPasswordHint">8 caractères minimum.</div>
+            <div class="field-error" id="signupPasswordError"><svg class="icon" viewBox="0 0 24 24" style="width:14px;height:14px"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span>8 caractères minimum.</span></div>
+          </div>
+          <div class="field" style="margin-bottom:.5rem">
+            <label for="signupPasswordConfirm">Confirme ton mot de passe</label>
+            <input type="password" id="signupPasswordConfirm" name="passwordConfirm" autocomplete="new-password" required minlength="8" placeholder="••••••••" aria-describedby="signupPasswordConfirmError">
+            <div class="field-error" id="signupPasswordConfirmError"><svg class="icon" viewBox="0 0 24 24" style="width:14px;height:14px"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span>Les mots de passe ne correspondent pas.</span></div>
+          </div>
+
+          <div class="checkbox-row">
+            <input type="checkbox" id="signupConsent" required>
+            <label for="signupConsent">J'ai lu et j'accepte les <button type="button" class="cgu-link-btn" id="openCguModal">Conditions d'utilisation</button> de P1Planner.</label>
+          </div>
+
+          <button type="submit" class="btn btn-primary" id="btnSignup">
+            <span class="btn-label">Créer mon compte</span><span class="spinner" aria-hidden="true"></span>
+          </button>
+        </form>
+
+        <p class="switch-line">Déjà un compte ? <button type="button" id="linkToLogin">Connecte-toi</button></p>
+      </section>
+
+      <!-- ---------- MOT DE PASSE OUBLIÉ ---------- -->
+      <section class="auth-panel" id="panelReset" role="tabpanel" aria-labelledby="tabReset">
+        <h2>Réinitialiser ton mot de passe</h2>
+        <p class="panel-lead">Indique ton adresse email, on t'envoie un lien de réinitialisation.</p>
+
+        <form id="formReset" novalidate>
+          <div class="field">
+            <label for="resetEmail">Adresse email</label>
+            <input type="email" id="resetEmail" name="email" autocomplete="email" required placeholder="toi@exemple.fr" aria-describedby="resetEmailError">
+            <div class="field-error" id="resetEmailError"><svg class="icon" viewBox="0 0 24 24" style="width:14px;height:14px"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span>Adresse email invalide.</span></div>
+          </div>
+          <button type="submit" class="btn btn-primary" id="btnReset">
+            <span class="btn-label">Envoyer le lien</span><span class="spinner" aria-hidden="true"></span>
+          </button>
+        </form>
+        <p class="switch-line"><button type="button" id="linkBackFromReset">← Retour à la connexion</button></p>
+      </section>
+
+      <!-- ---------- VÉRIFICATION EMAIL ---------- -->
+      <section class="auth-panel" id="panelVerify" role="tabpanel" aria-labelledby="tabVerify">
+        <div class="verify-icon">
+          <svg class="icon" viewBox="0 0 24 24" style="width:28px;height:28px"><path d="M4 6h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Z"/><path d="M3.5 7 12 13l8.5-6"/></svg>
+        </div>
+        <h2>Vérifie ta boîte mail</h2>
+        <p class="panel-lead">Un email de vérification a été envoyé à <strong id="verifyEmailTarget">ton adresse</strong>. Clique sur le lien pour activer ton compte, puis reconnecte-toi.</p>
+        <button type="button" class="btn btn-ghost" id="btnResendVerify" style="margin-bottom:.9rem">
+          <span class="btn-label">Renvoyer l'email de vérification</span><span class="spinner" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="btn btn-ghost" id="btnVerifySignOut">Se déconnecter</button>
+      </section>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODALE — CONDITIONS D'UTILISATION ================= -->
+<div class="modal-backdrop" id="cguModal" role="dialog" aria-modal="true" aria-labelledby="cguModalTitle">
+  <div class="card cgu-modal">
+    <div class="cgu-modal-head">
+      <div class="cgu-modal-icon" aria-hidden="true">
+        <svg class="icon" viewBox="0 0 24 24" style="width:20px;height:20px;stroke:currentColor"><path d="M9 12h6M9 16h6M9 8h2"/><path d="M8 3h5l5 5v11a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M13 3v5h5"/></svg>
+      </div>
+      <h2 id="cguModalTitle">Conditions d'utilisation</h2>
+      <button type="button" class="cgu-modal-close" id="cguModalCloseX" aria-label="Fermer">
+        <svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="cgu-modal-body" id="cguModalBody" tabindex="0">
+      <h3>1. Objet</h3>
+      <p>Les présentes conditions d'utilisation régissent l'accès et l'usage de P1Planner, une application web de planification des révisions destinée en priorité aux étudiants en P1/PASS/LAS, également utilisable pour toute filière basée sur des révisions structurées. En créant un compte, tu acceptes ces conditions dans leur intégralité.</p>
+
+      <h3>2. Description du service</h3>
+      <p>P1Planner te permet de créer librement tes propres matières et cours (aucun programme officiel imposé), de suivre tes passages de révision via la <strong>Méthode des tours</strong>, d'organiser le rythme de tes révisions avec la <strong>Méthode des J</strong> (optionnelle), et de gérer ton <strong>Programme de la journée</strong>. S'y ajoutent un planning, des statistiques, des flashcards, un cahier d'erreurs et des trophées.</p>
+      <p>P1Planner est un outil d'organisation personnelle. Les méthodes proposées sont des aides à la planification, pas des méthodes pédagogiques dont l'efficacité serait scientifiquement garantie : à toi de les adapter à ta propre situation.</p>
+
+      <h3>3. Compte utilisateur</h3>
+      <p>En créant un compte, tu t'engages à :</p>
+      <ul>
+        <li>fournir une adresse email valide et t'assurer de son exactitude ;</li>
+        <li>garder ton mot de passe confidentiel et nous prévenir en cas d'usage non autorisé de ton compte ;</li>
+        <li>n'utiliser qu'un seul compte à ton nom, à usage strictement personnel ;</li>
+        <li>ne pas tenter d'accéder aux données d'un autre utilisateur ni de perturber le fonctionnement du service.</li>
+      </ul>
+
+      <h3>4. Essai gratuit et Premium</h3>
+      <p>La création de compte donne accès à un essai gratuit de 15 jours, sans carte bancaire. À l'issue de l'essai, l'accès en écriture est suspendu mais <strong>aucune donnée n'est jamais supprimée</strong> : tu conserves un accès en lecture seule à tout ce que tu as créé.</p>
+      <p>Pour prolonger ton accès, deux formules au choix :</p>
+      <ul>
+        <li><strong>Paiement unique</strong>, durée choisie (jusqu'à la fin du mois de ton concours/examens), tarif dégressif : 1 mois à 3,00&nbsp;€/mois, 2 à 4 mois à 2,50&nbsp;€/mois, 5 mois et plus à 2,25&nbsp;€/mois ;</li>
+        <li><strong>Abonnement mensuel</strong> à 3,00&nbsp;€/mois, sans engagement, résiliable à tout moment depuis ton espace compte.</li>
+      </ul>
+      <p>Le prix affiché avant paiement est toujours indicatif : le montant exact est calculé et confirmé par nos serveurs, jamais par ton navigateur. Le paiement est traité par Stripe ; P1Planner ne stocke aucune donnée de carte bancaire.</p>
+
+      <h3>5. Résiliation</h3>
+      <p>Tu peux résilier un abonnement mensuel à tout moment, sans justification, depuis le portail de facturation accessible dans ton espace compte. La résiliation prend effet à la fin de la période déjà payée ; aucun remboursement au prorata n'est effectué, sauf disposition légale contraire.</p>
+      <p>Tu peux demander la suppression de ton compte et de tes données à tout moment en nous contactant (voir §8).</p>
+
+      <h3>6. Propriété intellectuelle et contenu</h3>
+      <p>Les contenus que tu crées dans ton espace (matières, cours, notes, flashcards) restent ta propriété. P1Planner n'en revendique aucun droit au-delà de ce qui est strictement nécessaire au fonctionnement du service (stockage, sauvegarde, affichage dans ton compte).</p>
+      <p>L'identité visuelle, le code et les textes de P1Planner sont protégés au titre du droit d'auteur ; toute reproduction sans autorisation est interdite.</p>
+
+      <h3>7. Responsabilité</h3>
+      <p>P1Planner est fourni « en l'état ». Nous mettons tout en œuvre pour assurer la disponibilité et la fiabilité du service, sans garantie d'absence totale d'interruption. P1Planner ne saurait être tenu responsable des résultats obtenus aux examens ou concours préparés à l'aide de l'outil.</p>
+
+      <h3>8. Données personnelles et contact</h3>
+      <p>Le traitement de tes données personnelles est détaillé dans les <a href="mentions-legales.html" target="_blank" rel="noopener">mentions légales</a> de P1Planner. Pour toute question relative à ces conditions, à ton compte ou à tes données : <a href="mailto:typixclin@gmail.com">typixclin@gmail.com</a>.</p>
+
+      <h3>9. Modification des conditions et droit applicable</h3>
+      <p>Ces conditions peuvent évoluer ; la version en vigueur au moment de ton inscription (ou de ta dernière acceptation) est celle qui s'applique. Elles sont soumises au droit français ; en cas de litige non résolu à l'amiable, les tribunaux français sont seuls compétents.</p>
+
+      <p class="cgu-modal-updated">Dernière mise à jour : <span id="cguUpdateDate"></span>.</p>
+    </div>
+    <div class="cgu-modal-foot">
+      <button type="button" class="btn btn-ghost" id="cguModalClose">Fermer</button>
+      <button type="button" class="btn btn-primary" id="cguModalAccept">
+        <svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px"><polyline points="20 6 9 17 4 12"/></svg>
+        J'accepte
+      </button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import {
+  initializeApp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getAuth, onAuthStateChanged,
+  signInWithEmailAndPassword, createUserWithEmailAndPassword,
+  signOut, sendEmailVerification, sendPasswordResetEmail,
+  updateProfile, connectAuthEmulator
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+  getFunctions, httpsCallable, connectFunctionsEmulator
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
+
+/* ============================================================
+   CONFIGURATION FIREBASE — Projet P1Planner (voir CLAUDE.md)
+   Isolation P0 : jamais un projet TypixClin. Vérifié explicitement
+   ci-dessous avant toute utilisation.
+   ============================================================ */
+const firebaseConfig = {
+  apiKey: "AIzaSyC3Ip1T_Bp_USxQE2RgeDjac1aE1HxTebM",
+  authDomain: "p1planner.firebaseapp.com",
+  projectId: "p1planner",
+  storageBucket: "p1planner.firebasestorage.app",
+  messagingSenderId: "731451401197",
+  appId: "1:731451401197:web:c42a76f270e78abe923de4"
+};
+
+let auth = null;
+let functionsInstance = null;
+let firebaseReady = false;
+const REGION = "europe-west1";
+if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig.projectId + firebaseConfig.authDomain)) {
+  console.error("Isolation P0 : projectId Firebase suspect — chargement interrompu.");
+} else {
+  try {
+    const app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    functionsInstance = getFunctions(app, REGION);
+    // Mode émulateur local, STRICTEMENT opt-in (jamais activé par défaut,
+    // jamais en prod) : ne touche au vrai projet Firebase que si un
+    // développeur a explicitement posé ce flag dans son propre navigateur.
+    if (window.localStorage.getItem("p1planner:useEmulator") === "1") {
+      connectAuthEmulator(auth, "http://127.0.0.1:9099", { disableWarnings: true });
+      connectFunctionsEmulator(functionsInstance, "127.0.0.1", 5001);
+      console.warn("P1Planner: connecté aux émulateurs Auth/Functions locaux (p1planner:useEmulator=1).");
+    }
+    firebaseReady = true;
+  } catch (err) {
+    console.error("Firebase init a échoué", err);
+  }
+}
+// Email de vérification envoyé par une Cloud Function (Brevo, expéditeur
+// noreply@p1planner.fr) — pas par sendEmailVerification() du SDK client,
+// dont le mailer par défaut de Firebase s'est révélé peu fiable (voir
+// docs/DECISIONS.md). resendEmailVerification() ci-dessous appelle cette
+// Function ; en cas d'échec (Functions pas encore déployées, etc.), on
+// retombe sur le SDK client pour ne jamais bloquer complètement l'utilisateur.
+function resendEmailVerification(user) {
+  if (functionsInstance) {
+    const call = httpsCallable(functionsInstance, "resendVerificationEmail");
+    return call().catch(function (err) {
+      console.warn("resendVerificationEmail (Cloud Function) a échoué, repli sur le SDK client :", err);
+      return sendEmailVerification(user);
+    });
+  }
+  return sendEmailVerification(user);
+}
+
+(function () {
+  "use strict";
+
+  /* ---------- Petits utilitaires DOM ---------- */
+  function $(id) { return document.getElementById(id); }
+
+  var panels = {
+    login: $("panelLogin"),
+    signup: $("panelSignup"),
+    reset: $("panelReset"),
+    verify: $("panelVerify")
+  };
+  var tabsBar = document.querySelector(".auth-tabs");
+
+  function showPanel(name) {
+    Object.keys(panels).forEach(function (key) {
+      panels[key].classList.toggle("is-active", key === name);
+    });
+    var isTabbed = name === "login" || name === "signup";
+    tabsBar.style.display = isTabbed ? "" : "none";
+    if (isTabbed) {
+      $("tabLogin").setAttribute("aria-selected", String(name === "login"));
+      $("tabSignup").setAttribute("aria-selected", String(name === "signup"));
+      tabsBar.setAttribute("data-active", name);
+    }
+    hideAlert();
+    var firstField = panels[name].querySelector("input");
+    if (firstField) { window.setTimeout(function () { firstField.focus(); }, 50); }
+  }
+
+  $("tabLogin").addEventListener("click", function () { showPanel("login"); });
+  $("tabSignup").addEventListener("click", function () { showPanel("signup"); });
+  $("linkToSignup").addEventListener("click", function () { showPanel("signup"); });
+  $("linkToLogin").addEventListener("click", function () { showPanel("login"); });
+  $("gotoReset").addEventListener("click", function () {
+    var email = $("loginEmail").value.trim();
+    if (email) { $("resetEmail").value = email; }
+    showPanel("reset");
+  });
+  $("linkBackFromReset").addEventListener("click", function () { showPanel("login"); });
+
+  /* ---------- Alerte globale ---------- */
+  var globalAlert = $("globalAlert");
+  function showAlert(type, message) {
+    globalAlert.className = "alert is-visible alert-" + type;
+    var iconMap = {
+      error: '<path d="M12 8v5M12 16h.01"/><circle cx="12" cy="12" r="9"/>',
+      success: '<path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/>',
+      info: '<path d="M12 16v-4M12 8h.01"/><circle cx="12" cy="12" r="9"/>'
+    };
+    globalAlert.innerHTML =
+      '<svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px">' + iconMap[type] + '</svg><span>' + message + '</span>';
+  }
+  function hideAlert() {
+    globalAlert.className = "alert";
+    globalAlert.innerHTML = "";
+  }
+
+  /* ---------- Afficher / masquer mot de passe ---------- */
+  document.querySelectorAll(".field-toggle").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var input = $(btn.getAttribute("data-toggle-for"));
+      var showing = input.type === "text";
+      input.type = showing ? "password" : "text";
+      btn.setAttribute("aria-pressed", String(!showing));
+      btn.setAttribute("aria-label", showing ? "Afficher le mot de passe" : "Masquer le mot de passe");
+      btn.querySelector(".icon-eye").style.display = showing ? "" : "none";
+      btn.querySelector(".icon-eye-off").style.display = showing ? "none" : "";
+    });
+  });
+
+  /* ---------- Validation de champ générique ---------- */
+  function setFieldError(input, errorEl, show) {
+    input.setAttribute("aria-invalid", show ? "true" : "false");
+    errorEl.classList.toggle("is-visible", !!show);
+  }
+
+  /* ---------- Redirection anti open-redirect ---------- */
+  function sanitizeRedirect(raw) {
+    if (!raw) return null;
+    try {
+      var decoded = decodeURIComponent(raw);
+      if (/^\/(?!\/)/.test(decoded) === false) return null; // doit commencer par un seul "/"
+      if (/[:\\]/.test(decoded)) return null; // pas de protocole ni de backslash
+      return decoded;
+    } catch (e) {
+      return null;
+    }
+  }
+  function getRedirectTarget() {
+    var params = new URLSearchParams(window.location.search);
+    return sanitizeRedirect(params.get("redirect")) || "tableur.html";
+  }
+
+  /* ---------- Traduction des erreurs Firebase ---------- */
+  function translateAuthError(err, context) {
+    var code = err && err.code;
+    if (code && code.indexOf("api-key-not-valid") !== -1) {
+      // Config Firebase encore en placeholder (voir en haut du script) : le
+      // SDK renvoie un code non standard ("auth/api-key-not-valid.-please-...").
+      return "Configuration Firebase manquante (projet non encore relié).";
+    }
+    if (context === "login" && (
+      code === "auth/user-not-found" || code === "auth/wrong-password" ||
+      code === "auth/invalid-credential" || code === "auth/invalid-email"
+    )) {
+      // Jamais révéler si l'email existe ou non (durcissement vs TypixClin).
+      return "Email ou mot de passe incorrect.";
+    }
+    var map = {
+      "auth/email-already-in-use": "Un compte existe déjà avec cet email — connecte-toi plutôt.",
+      "auth/weak-password": "Ce mot de passe est trop faible (8 caractères minimum).",
+      "auth/invalid-email": "Adresse email invalide.",
+      "auth/too-many-requests": "Trop de tentatives. Réessaie dans quelques minutes.",
+      "auth/network-request-failed": "Problème de connexion réseau. Réessaie.",
+      "auth/api-key-not-valid": "Configuration Firebase manquante (projet non encore relié).",
+      "auth/invalid-api-key": "Configuration Firebase manquante (projet non encore relié)."
+    };
+    return map[code] || "Une erreur est survenue. Réessaie dans un instant.";
+  }
+
+  function requireFirebase() {
+    if (!firebaseReady) {
+      showAlert("error", "Configuration Firebase manquante — ce projet P1Planner n'est pas encore relié à un vrai projet Firebase.");
+      return false;
+    }
+    return true;
+  }
+
+  /* ---------- Anti double-submit ---------- */
+  function setLoading(btn, loading) {
+    btn.disabled = loading;
+    btn.classList.toggle("is-loading", loading);
+  }
+
+  /* ============================================================
+     FORMULAIRE CONNEXION
+     ============================================================ */
+  var pendingUnverifiedUser = null;
+
+  $("formLogin").addEventListener("submit", function (e) {
+    e.preventDefault();
+    hideAlert();
+    var emailInput = $("loginEmail"), passInput = $("loginPassword");
+    var email = emailInput.value.trim(), password = passInput.value;
+    var valid = true;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setFieldError(emailInput, $("loginEmailError"), true); valid = false; }
+    else { setFieldError(emailInput, $("loginEmailError"), false); }
+    if (password.length < 8) { setFieldError(passInput, $("loginPasswordError"), true); valid = false; }
+    else { setFieldError(passInput, $("loginPasswordError"), false); }
+    if (!valid || !requireFirebase()) return;
+
+    var btn = $("btnLogin");
+    setLoading(btn, true);
+    signInWithEmailAndPassword(auth, email, password)
+      .then(function (cred) {
+        if (!cred.user.emailVerified) {
+          pendingUnverifiedUser = cred.user;
+          $("verifyEmailTarget").textContent = cred.user.email;
+          showPanel("verify");
+          return;
+        }
+        window.location.href = getRedirectTarget();
+      })
+      .catch(function (err) {
+        showAlert("error", translateAuthError(err, "login"));
+      })
+      .finally(function () { setLoading(btn, false); });
+  });
+
+  /* ============================================================
+     FORMULAIRE INSCRIPTION
+     ============================================================ */
+  $("formSignup").addEventListener("submit", function (e) {
+    e.preventDefault();
+    hideAlert();
+    var firstNameInput = $("signupFirstName"), lastNameInput = $("signupLastName"), emailInput = $("signupEmail"),
+        passInput = $("signupPassword"), confirmInput = $("signupPasswordConfirm"),
+        consent = $("signupConsent");
+    var firstName = firstNameInput.value.trim(), lastName = lastNameInput.value.trim(),
+        email = emailInput.value.trim(), password = passInput.value, confirm = confirmInput.value;
+    var name = (firstName + " " + lastName).trim();
+    var valid = true;
+
+    if (firstName.length < 2) { setFieldError(firstNameInput, $("signupFirstNameError"), true); valid = false; }
+    else { setFieldError(firstNameInput, $("signupFirstNameError"), false); }
+
+    if (lastName.length < 2) { setFieldError(lastNameInput, $("signupLastNameError"), true); valid = false; }
+    else { setFieldError(lastNameInput, $("signupLastNameError"), false); }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setFieldError(emailInput, $("signupEmailError"), true); valid = false; }
+    else { setFieldError(emailInput, $("signupEmailError"), false); }
+
+    if (password.length < 8) { setFieldError(passInput, $("signupPasswordError"), true); valid = false; }
+    else { setFieldError(passInput, $("signupPasswordError"), false); }
+
+    if (confirm !== password || confirm.length < 8) { setFieldError(confirmInput, $("signupPasswordConfirmError"), true); valid = false; }
+    else { setFieldError(confirmInput, $("signupPasswordConfirmError"), false); }
+
+    if (!consent.checked) { showAlert("error", "Merci d'accepter les Conditions d'utilisation pour continuer."); valid = false; }
+
+    if (!valid || !requireFirebase()) return;
+
+    var btn = $("btnSignup");
+    setLoading(btn, true);
+    createUserWithEmailAndPassword(auth, email, password)
+      .then(function (cred) {
+        return updateProfile(cred.user, { displayName: name })
+          .then(function () {
+            // Le profil Firestore (essai gratuit, etc.) ET l'email de
+            // vérification sont pris en charge côté SERVEUR par les Cloud
+            // Functions onUserCreated / sendVerificationEmailOnCreate —
+            // auth.html ne fait aucune écriture Firestore ni appel
+            // sendEmailVerification() ici (voir docs/ARCHITECTURE.md,
+            // risque P1-9, et docs/DECISIONS.md pour le choix Brevo).
+            $("verifyEmailTarget").textContent = email;
+            return signOut(auth).then(function () { showPanel("verify"); });
+          });
+      })
+      .catch(function (err) {
+        showAlert("error", translateAuthError(err, "signup"));
+      })
+      .finally(function () { setLoading(btn, false); });
+  });
+
+  /* ============================================================
+     MOT DE PASSE OUBLIÉ
+     ============================================================ */
+  $("formReset").addEventListener("submit", function (e) {
+    e.preventDefault();
+    hideAlert();
+    var emailInput = $("resetEmail");
+    var email = emailInput.value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setFieldError(emailInput, $("resetEmailError"), true); return; }
+    setFieldError(emailInput, $("resetEmailError"), false);
+    if (!requireFirebase()) return;
+
+    var btn = $("btnReset");
+    var successMsg = "Si un compte existe avec cette adresse, un lien de réinitialisation vient d'être envoyé.";
+    setLoading(btn, true);
+    sendPasswordResetEmail(auth, email)
+      .then(function () { showAlert("success", successMsg); })
+      .catch(function (err) {
+        // Ne jamais révéler si le compte existe : même message pour
+        // auth/user-not-found que pour un envoi réussi.
+        if (err && err.code === "auth/user-not-found") { showAlert("success", successMsg); }
+        else { showAlert("error", translateAuthError(err, "reset")); }
+      })
+      .finally(function () { setLoading(btn, false); });
+  });
+
+  /* ============================================================
+     VÉRIFICATION EMAIL
+     ============================================================ */
+  $("btnResendVerify").addEventListener("click", function () {
+    if (!pendingUnverifiedUser) {
+      showAlert("info", "Reconnecte-toi pour renvoyer l'email de vérification.");
+      showPanel("login");
+      return;
+    }
+    var btn = $("btnResendVerify");
+    setLoading(btn, true);
+    resendEmailVerification(pendingUnverifiedUser)
+      .then(function () { showAlert("success", "Email de vérification renvoyé."); })
+      .catch(function (err) { showAlert("error", translateAuthError(err, "verify")); })
+      .finally(function () { setLoading(btn, false); });
+  });
+  $("btnVerifySignOut").addEventListener("click", function () {
+    pendingUnverifiedUser = null;
+    if (firebaseReady) { signOut(auth).catch(function () {}); }
+    showPanel("login");
+  });
+
+  /* ============================================================
+     MODALE — CONDITIONS D'UTILISATION
+     ============================================================ */
+  var cguModal = $("cguModal");
+  var cguUpdateDateEl = $("cguUpdateDate");
+  if (cguUpdateDateEl) {
+    cguUpdateDateEl.textContent = new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+  }
+  var CGU_MODAL_ANIM_MS = 180; // miroir de l'animation .modal.closing du tableur
+  function openCguModal() {
+    cguModal.classList.remove("is-closing");
+    cguModal.classList.add("is-open");
+    $("cguModalBody").scrollTop = 0;
+    window.setTimeout(function () { $("cguModalCloseX").focus(); }, 30);
+  }
+  function closeCguModal() {
+    if (!cguModal.classList.contains("is-open")) return;
+    cguModal.classList.remove("is-open");
+    cguModal.classList.add("is-closing");
+    window.setTimeout(function () { cguModal.classList.remove("is-closing"); }, CGU_MODAL_ANIM_MS);
+  }
+  $("openCguModal").addEventListener("click", openCguModal);
+  $("cguModalClose").addEventListener("click", closeCguModal);
+  $("cguModalCloseX").addEventListener("click", closeCguModal);
+  $("cguModalAccept").addEventListener("click", function () {
+    $("signupConsent").checked = true;
+    closeCguModal();
+  });
+  cguModal.addEventListener("click", function (e) { if (e.target === cguModal) closeCguModal(); });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && cguModal.classList.contains("is-open")) closeCguModal();
+  });
+
+  /* ============================================================
+     OUVERTURE DE PAGE : onglet initial + redirect param
+     ============================================================ */
+  var hash = window.location.hash.replace("#", "");
+  if (hash === "inscription") { showPanel("signup"); }
+  else { showPanel("login"); }
+
+  /* Si une session valide et vérifiée existe déjà au chargement de la page
+     (persistance Firebase locale), inutile de laisser l'utilisateur sur
+     l'écran de connexion : on le redirige une seule fois, au tout premier
+     état d'authentification restauré. Les connexions/inscriptions faites
+     depuis cette page gèrent déjà leur propre redirection explicite plus
+     haut, donc ce écouteur ne sert que ce seul cas de session déjà active. */
+  var initialAuthCheckDone = false;
+  if (firebaseReady) {
+    onAuthStateChanged(auth, function (user) {
+      if (initialAuthCheckDone) return;
+      initialAuthCheckDone = true;
+      if (user && user.emailVerified) {
+        window.location.href = getRedirectTarget();
+      }
+    });
+  }
+})();
+</script>
+</body>
+</html>
