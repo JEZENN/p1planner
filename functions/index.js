@@ -115,7 +115,7 @@ function verificationEmailHtml(link) {
       <p style="margin:28px 0;">
         <a href="${link}" style="background:#6d28d9;color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600;display:inline-block;">Confirmer mon adresse</a>
       </p>
-      <p style="color:#9ca3af;font-size:13px;">Si le bouton ne fonctionne pas, copie ce lien dans ton navigateur :<br>${link}</p>
+      <p style="color:#9ca3af;font-size:13px;word-break:break-all;overflow-wrap:anywhere;">Si le bouton ne fonctionne pas, copie ce lien dans ton navigateur :<br><a href="${link}" style="color:#6d28d9;">${link}</a></p>
       <p style="color:#9ca3af;font-size:13px;">Si tu n'es pas à l'origine de cette inscription, ignore simplement cet email.</p>
     </div>
   </body></html>`;

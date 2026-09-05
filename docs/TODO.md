@@ -508,6 +508,32 @@
   automatique : aucun prélèvement ne sera fait à l'expiration."). Vérifié en navigateur pour les deux
   cas.
 
+## 3bis. Écran "vérifie ta boîte mail" refondu (`auth.html`)
+- [x] **Panneau séparé "Renvoyer l'email / Se déconnecter" supprimé** (demande explicite : "je trouve
+  ça étrange") : après inscription, ou après une tentative de connexion avec un compte non vérifié,
+  toute la carte connexion/inscription disparaissait, remplacée par un panneau dédié isolé
+  (`#panelVerify`). Remplacé par : la page de connexion normale reste affichée (onglets
+  Connexion/Inscription toujours visibles), avec une notification info intégrée
+  (`showVerifyNotice()` : réutilise l'alerte globale existante + une nouvelle rangée
+  `#verifyResendRow` avec le bouton "Renvoyer l'email") expliquant qu'un email a été envoyé et qu'il
+  faut le valider avant de se connecter. Le champ email de connexion est pré-rempli avec l'adresse
+  concernée. Bouton "Se déconnecter" retiré (devenu inutile : se reconnecter avec d'autres identifiants
+  remplace nativement la session, sans étape de déconnexion manuelle requise).
+  Logique de renvoi (`pendingUnverifiedUser`, Cloud Function `resendVerificationEmail` avec repli sur
+  le SDK client) **inchangée**, seule la présentation change. Vérifié en navigateur (notification +
+  bouton affichés par-dessus le formulaire de connexion intact et fonctionnel en dessous, email
+  pré-rempli).
+- [x] **Lien de secours de l'email de vérification corrigé** (bug signalé : "le lien dépasse") :
+  `word-break:break-all;overflow-wrap:anywhere` ajouté sur le paragraphe contenant l'URL brute dans
+  `verificationEmailHtml()` (`functions/index.js`), qui n'avait aucune règle de retour à la ligne —
+  un lien Firebase long (avec son `oobCode`) débordait du cadre de l'email. Rendu cliquable au passage
+  (`<a href>` au lieu de texte brut).
+
+## 5sexies. Wording "durée conseillée" (`comptepremium.html`)
+- [x] Demande explicite : "durée maximale confirmée à X mois" → "durée conseillée jusqu'à X mois" dans
+  la confirmation inline après enregistrement de la date de concours (`showExamDateConfirm()`) — plus
+  cohérent avec le fait que cette durée reste un choix de l'utilisateur, pas une limite imposée.
+
 ## 6. Mentions légales
 - [x] Page (`public/mentions-legales.html` — sommaire, cohérente avec l'identité P1Planner, testée)
 - [x] Placeholders contrôlés (aucune donnée inventée, seul le nom du créateur déjà validé est utilisé)

@@ -289,6 +289,8 @@ h1,h2,h3{font-family:var(--font-display);font-weight:600;line-height:1.15;letter
 .alert-success{background:var(--success-soft);border-color:rgba(61,220,151,.35);color:#bdf5da}
 .alert-info{background:var(--primary-soft);border-color:rgba(124,108,246,.35);color:#d6cffc}
 .alert .icon{margin-top:1px;flex-shrink:0}
+.verify-resend-row{display:none;justify-content:center;margin:-.6rem 0 1.2rem}
+.verify-resend-row.is-visible{display:flex}
 
 .switch-line{text-align:center;font-size:.87rem;color:var(--text-muted);margin-top:1.4rem}
 .switch-line button{color:var(--primary-2);font-weight:700}
@@ -408,6 +410,16 @@ h1,h2,h3{font-family:var(--font-display);font-weight:600;line-height:1.15;letter
       </div>
 
       <div class="alert" id="globalAlert" role="alert" aria-live="assertive"></div>
+      <!-- Rangée "renvoyer l'email" : affichée avec l'alerte info de
+           showVerifyNotice() (voir JS) — demande explicite : plus de panneau
+           séparé "renvoyer l'email / se déconnecter" qui remplaçait toute la
+           carte connexion/inscription, jugé déroutant. On reste sur la page
+           de connexion normale, avec cette notification en plus. -->
+      <div class="verify-resend-row" id="verifyResendRow">
+        <button type="button" class="btn btn-ghost btn-sm" id="btnResendVerify">
+          <span class="btn-label">Renvoyer l'email de vérification</span><span class="spinner" aria-hidden="true"></span>
+        </button>
+      </div>
 
       <!-- Les 4 panneaux sont empilés dans la MÊME cellule de grille (voir
            .auth-panels-stage) : la hauteur de la grille s'aligne sur le
@@ -521,18 +533,6 @@ h1,h2,h3{font-family:var(--font-display);font-weight:600;line-height:1.15;letter
         <p class="switch-line"><button type="button" id="linkBackFromReset">← Retour à la connexion</button></p>
       </section>
 
-      <!-- ---------- VÉRIFICATION EMAIL ---------- -->
-      <section class="auth-panel" id="panelVerify" role="tabpanel" aria-labelledby="tabVerify">
-        <div class="verify-icon">
-          <svg class="icon" viewBox="0 0 24 24" style="width:28px;height:28px"><path d="M4 6h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Z"/><path d="M3.5 7 12 13l8.5-6"/></svg>
-        </div>
-        <h2>Vérifie ta boîte mail</h2>
-        <p class="panel-lead">Un email de vérification a été envoyé à <strong id="verifyEmailTarget">ton adresse</strong>. Clique sur le lien pour activer ton compte, puis reconnecte-toi.</p>
-        <button type="button" class="btn btn-ghost" id="btnResendVerify" style="margin-bottom:.9rem">
-          <span class="btn-label">Renvoyer l'email de vérification</span><span class="spinner" aria-hidden="true"></span>
-        </button>
-        <button type="button" class="btn btn-ghost" id="btnVerifySignOut">Se déconnecter</button>
-      </section>
       </div>
 
     </div>
@@ -684,10 +684,10 @@ function resendEmailVerification(user) {
   var panels = {
     login: $("panelLogin"),
     signup: $("panelSignup"),
-    reset: $("panelReset"),
-    verify: $("panelVerify")
+    reset: $("panelReset")
   };
   var tabsBar = document.querySelector(".auth-tabs");
+  var verifyResendRow = $("verifyResendRow");
 
   function showPanel(name) {
     Object.keys(panels).forEach(function (key) {
@@ -701,8 +701,22 @@ function resendEmailVerification(user) {
       tabsBar.setAttribute("data-active", name);
     }
     hideAlert();
+    hideVerifyNotice();
     var firstField = panels[name].querySelector("input");
     if (firstField) { window.setTimeout(function () { firstField.focus(); }, 50); }
+  }
+
+  /* Notification "vérifie ta boîte mail" — demande explicite : plus un
+     panneau séparé qui remplaçait toute la carte (jugé déroutant), mais une
+     alerte info + un bouton de renvoi affichés SUR la page de connexion
+     normale. Doit toujours être appelée APRÈS showPanel("login") : celui-ci
+     appelle hideAlert()/hideVerifyNotice() en interne. */
+  function showVerifyNotice(email) {
+    showAlert("info", "Un email de vérification a été envoyé à " + email + ". Vérifie ta boîte mail (et tes spams), clique sur le lien reçu, puis connecte-toi ici.");
+    verifyResendRow.classList.add("is-visible");
+  }
+  function hideVerifyNotice() {
+    verifyResendRow.classList.remove("is-visible");
   }
 
   $("tabLogin").addEventListener("click", function () { showPanel("login"); });
@@ -833,8 +847,8 @@ function resendEmailVerification(user) {
       .then(function (cred) {
         if (!cred.user.emailVerified) {
           pendingUnverifiedUser = cred.user;
-          $("verifyEmailTarget").textContent = cred.user.email;
-          showPanel("verify");
+          showPanel("login");
+          showVerifyNotice(cred.user.email);
           return;
         }
         window.location.href = getRedirectTarget();
@@ -890,8 +904,11 @@ function resendEmailVerification(user) {
             // auth.html ne fait aucune écriture Firestore ni appel
             // sendEmailVerification() ici (voir docs/ARCHITECTURE.md,
             // risque P1-9, et docs/DECISIONS.md pour le choix Brevo).
-            $("verifyEmailTarget").textContent = email;
-            return signOut(auth).then(function () { showPanel("verify"); });
+            return signOut(auth).then(function () {
+              showPanel("login");
+              $("loginEmail").value = email;
+              showVerifyNotice(email);
+            });
           });
       })
       .catch(function (err) {
@@ -942,12 +959,6 @@ function resendEmailVerification(user) {
       .catch(function (err) { showAlert("error", translateAuthError(err, "verify")); })
       .finally(function () { setLoading(btn, false); });
   });
-  $("btnVerifySignOut").addEventListener("click", function () {
-    pendingUnverifiedUser = null;
-    if (firebaseReady) { signOut(auth).catch(function () {}); }
-    showPanel("login");
-  });
-
   /* ============================================================
      MODALE — CONDITIONS D'UTILISATION
      ============================================================ */

@@ -1176,7 +1176,7 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
         var maxMonths = result && result.data && result.data.maxMonths;
         if (typeof maxMonths === "number") {
           updateMaxMonths(maxMonths);
-          showExamDateConfirm("Date enregistrée : durée maximale confirmée à " + maxMonths + " mois.");
+          showExamDateConfirm("Date enregistrée : durée conseillée jusqu'à " + maxMonths + " mois.");
         } else {
           showAlert("error", "Réponse inattendue du serveur.");
         }
