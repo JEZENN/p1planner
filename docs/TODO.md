@@ -586,6 +586,39 @@
   capture d'écran (header visible en permanence, tamisé par le voile comme n'importe quel autre
   modal — jamais "disparu").
 
+## 5nonies. Décalage du modal — vraie fin de l'histoire, et clarté du statut d'abonnement
+- [x] **Décalage horizontal résiduel trouvé après le "vrai" correctif précédent** : compenser la
+  largeur de la barre à la fois sur `body` ET sur `#topBar` (comme documenté juste avant) était en
+  fait une DOUBLE compensation — `#topBar`, en `position:sticky`, hérite déjà de la largeur réduite de
+  `body` puisqu'il en est un enfant en flux normal. Lui ajouter SON PROPRE `padding-right` en plus
+  décalait tout de 10px de trop vers la gauche (mesuré précisément : `#topBar` retombait à 1117px de
+  large au lieu des 1127px attendus). Corrigé en ne compensant plus QUE `body`. Sticky vérifié intact
+  page scrollée (aucun saut, avant/pendant/après verrouillage identiques).
+- [x] **Initiales d'avatar corrigées** (bug signalé : "JE" au lieu de "JZ" pour Jean Zennaro) :
+  `.slice(0,2)` prenait les 2 premiers CARACTÈRES du nom complet plutôt que la première lettre du
+  prénom ET du nom — corrigé pour matcher `getInitials()` déjà correcte ailleurs (tableur.html).
+- [x] **Statut d'abonnement mensuel ambigu pendant l'essai gratuit** (demande explicite, référence
+  TypixClin fournie pour la clarté attendue — contenu et wording entièrement réécrits pour P1Planner,
+  jamais copiés) — 3 cas distingués dans `renderAccount()`, là où un seul "actif" générique existait :
+  1. **Paiement unique** (essai court-circuité) : inchangé, déjà clair depuis un correctif précédent
+     cette session ("aucun renouvellement automatique").
+  2. **Abonnement mensuel déjà facturé normalement** : message inchangé ("actif, résiliable à tout
+     moment").
+  3. **Abonnement mensuel confirmé PENDANT l'essai gratuit** (nouveau cas, LE bug signalé : "15 jours
+     restants" à côté d'un badge d'abonnement actif donnait l'impression trompeuse que l'accès allait
+     s'arrêter) : détecté via `trialEndsAt` encore dans le futur pour un `planType:monthly` `active`
+     (Stripe `trial_end` est aligné sur ce même `trialEndsAt` à la création du Checkout — pas besoin
+     d'un nouveau champ serveur) — nouveau badge "Abonnement confirmé", message explicite sur
+     l'absence de prélèvement avant la fin de l'essai.
+  4. **Abonnement résilié** (`cancelAtPeriodEnd`, déjà écrit par `syncSubscription()` côté serveur mais
+     JAMAIS transmis au rendu jusqu'ici — champ ajouté dans l'objet passé à `renderAccount()`) :
+     nouveau badge orange "Abonnement résilié", message explicite ("aucun prélèvement ne sera
+     effectué ensuite", réactivable depuis le portail) — c'est le point signalé après une annulation
+     réelle depuis Stripe, qui affichait auparavant le badge "actif" générique sans aucune indication
+     de la résiliation.
+  Vérifié en navigateur pour les 4 cas (`window.renderAccount(...)` avec données simulées, capture
+  d'écran à l'appui pour chacun).
+
 ## 6. Mentions légales
 - [x] Page (`public/mentions-legales.html` — sommaire, cohérente avec l'identité P1Planner, testée)
 - [x] Placeholders contrôlés (aucune donnée inventée, seul le nom du créateur déjà validé est utilisé)

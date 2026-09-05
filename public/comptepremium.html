@@ -547,12 +547,17 @@ main{padding-block:clamp(1.75rem,4vw,3rem) 5rem}
                       </div>
                     </div>
                   </div>
-                  <p class="field-hint">Ton accès pourra couvrir jusqu'à la fin de ce mois-là, sans marge ajoutée. Tu peux changer d'avis plus tard.</p>
                 </div>
                 <button type="button" class="btn btn-primary" id="btnSaveExamDate" style="min-width:180px">
                   <span class="btn-label">Enregistrer la date</span><span class="spinner" aria-hidden="true"></span>
                 </button>
               </div>
+              <!-- Sortie de .exam-date-row (demande explicite) : ce texte
+                   sous le champ de date faisait pencher l'alignement
+                   flex:flex-end vers son propre bas, décalant le bouton
+                   "Enregistrer" trop bas par rapport à la case de date
+                   elle-même. Pleine largeur, sous la rangée entière. -->
+              <p class="field-hint" style="margin-top:.6rem">Ton accès pourra couvrir jusqu'à la fin de ce mois-là, sans marge ajoutée. Tu peux changer d'avis plus tard.</p>
               <p class="exam-date-confirm" id="examDateConfirm" style="display:none">
                 <svg class="icon" viewBox="0 0 24 24" style="stroke:currentColor"><polyline points="20 6 9 17 4 12"/></svg>
                 <span id="examDateConfirmText"></span>
@@ -863,7 +868,20 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
     $("accountName").textContent = normalized.displayName || "Ton compte";
     $("accountEmail").textContent = normalized.email || "";
     $("accountSince").textContent = "Membre depuis le " + fmtDate(normalized.createdAt);
-    var initials = (normalized.displayName || normalized.email || "P1").trim().slice(0, 2).toUpperCase();
+    // Bug réel corrigé : .slice(0,2) prenait les 2 premiers CARACTÈRES du
+    // nom complet ("Jean Zennaro" → "Je") au lieu des initiales prénom+nom
+    // ("JZ") — même logique que getInitials() déjà correcte ailleurs
+    // (tableur.html) : premier caractère du premier ET du dernier mot.
+    var _nameForInitials = (normalized.displayName || "").trim();
+    var initials;
+    if (_nameForInitials) {
+      var _parts = _nameForInitials.split(/\s+/);
+      initials = _parts.length >= 2
+        ? (_parts[0][0] + _parts[_parts.length - 1][0]).toUpperCase()
+        : _nameForInitials.slice(0, 2).toUpperCase();
+    } else {
+      initials = (normalized.email || "P1").trim().slice(0, 2).toUpperCase();
+    }
     $("avatarInitials").textContent = initials;
 
     var heroLeft = $("statusHeroLeft"), heroTag = $("statusHeroTag"), desc = $("statusDesc"), metrics = $("statusDates");
@@ -906,19 +924,56 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
       examDateBlock.style.display = "";
       planSection.style.display = "";
     } else if (p.status === "active") {
-      setTone("active");
-      heroTag.textContent = p.planType === "monthly" ? "Abonné · mensuel" : "Premium actif";
-      desc.textContent = p.planType === "monthly"
-        ? "Ton abonnement mensuel est actif, résiliable à tout moment."
-        : "Ton accès Premium est actif — paiement unique, aucun renouvellement automatique : aucun prélèvement ne sera fait à l'expiration.";
-      addMetric("Statut", p.planType === "monthly" ? "Abonnement mensuel" : "Premium actif");
-      addMetric("Accès jusqu'au", fmtDate(p.accessEnd));
-      addMetric("Jours restants", daysLeftHtml(p.accessEnd));
-      // Demande explicite : plus de changement de formule proposé tant qu'un
-      // accès Premium est déjà actif (paiement unique ou mensuel) — la
-      // formule en cours va simplement à son terme ou se gère via "Gérer
-      // mon abonnement" (résiliation), jamais via un nouveau choix ici.
-      if (p.planType === "monthly") { manageSection.style.display = ""; }
+      var isMonthly = p.planType === "monthly";
+      // Un abonnement mensuel souscrit PENDANT l'essai gratuit démarre avec
+      // trial_end aligné sur trialEndsAt côté Stripe (voir
+      // createCheckoutSession) : aucun prélèvement n'a donc encore eu lieu
+      // tant que cette date n'est pas dépassée — distinct d'un abonnement
+      // mensuel déjà facturé normalement, que "status: active" seul ne
+      // permet pas de distinguer (Stripe "trialing" et "active" sont tous
+      // les deux mappés sur notre "active").
+      var trialEndDate = toJsDate(p.trialEnd);
+      var stillInFreeTrial = isMonthly && trialEndDate && trialEndDate.getTime() > Date.now();
+
+      if (isMonthly && p.cancelAtPeriodEnd) {
+        // Cas : abonnement mensuel résilié (demande explicite, capture
+        // TypixClin à l'appui) — reste actif jusqu'à la fin de la période
+        // déjà couverte (essai ou facturation), sans laisser croire à une
+        // fin de service imminente façon essai gratuit qui s'épuise.
+        setTone("warning");
+        heroTag.textContent = "Abonnement résilié";
+        desc.textContent = "Ton renouvellement automatique est désactivé. Ton accès Premium reste actif jusqu'au " + fmtDate(p.accessEnd) + " — aucun prélèvement ne sera effectué ensuite. Tu peux réactiver le renouvellement à tout moment depuis « Gérer mon abonnement ».";
+        addMetric("Statut", "Résilié");
+        addMetric("Accès jusqu'au", fmtDate(p.accessEnd));
+        addMetric("Jours restants", daysLeftHtml(p.accessEnd));
+        manageSection.style.display = "";
+      } else if (stillInFreeTrial) {
+        // Cas : abonnement mensuel confirmé pendant l'essai — pas encore
+        // prélevé. Sans ce cas, "Jours restants : 15 jours" à côté d'un
+        // badge "Abonné" est ambigu/inquiétant (on dirait que l'accès va
+        // s'arrêter, alors que le renouvellement est déjà en place).
+        setTone("active");
+        heroTag.textContent = "Abonnement confirmé";
+        desc.textContent = "Ton abonnement mensuel est confirmé. Tu profites de ton essai gratuit jusqu'au " + fmtDate(p.trialEnd) + " : aucun prélèvement avant cette date, puis 3,00 €/mois automatiquement. Tu peux annuler à tout moment avant cette échéance depuis « Gérer mon abonnement », sans rien payer.";
+        addMetric("Statut", "Essai + abonnement confirmé");
+        addMetric("Premier prélèvement", fmtDate(p.trialEnd));
+        addMetric("Jours avant 1er prélèvement", daysLeftHtml(p.trialEnd));
+        manageSection.style.display = "";
+      } else {
+        setTone("active");
+        heroTag.textContent = isMonthly ? "Abonné · mensuel" : "Premium actif";
+        desc.textContent = isMonthly
+          ? "Ton abonnement mensuel est actif, résiliable à tout moment."
+          : "Ton accès Premium est actif — paiement unique, aucun renouvellement automatique : aucun prélèvement ne sera fait à l'expiration.";
+        addMetric("Statut", isMonthly ? "Abonnement mensuel" : "Premium actif");
+        addMetric("Accès jusqu'au", fmtDate(p.accessEnd));
+        addMetric("Jours restants", daysLeftHtml(p.accessEnd));
+        // Demande explicite : plus de changement de formule proposé tant
+        // qu'un accès Premium est déjà actif (paiement unique ou mensuel) —
+        // la formule en cours va simplement à son terme ou se gère via
+        // "Gérer mon abonnement" (résiliation), jamais via un nouveau choix.
+        if (isMonthly) { manageSection.style.display = ""; }
+      }
     } else {
       setTone("expired");
       heroTag.textContent = "Accès en lecture seule";
@@ -1190,18 +1245,20 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
      être ouverts l'un par-dessus l'autre (CGV cliqué depuis le
      consentement) : compteur pour ne déverrouiller qu'à la fermeture du
      DERNIER des deux, jamais au milieu.
-     Bug réel corrigé (2 essais) : passer overflow:hidden sur <html> (1er
+     Bug réel corrigé (3 essais) : passer overflow:hidden sur <html> (1er
      essai) casse position:sticky sur `#topBar` — le header "disparaissait"
      (le navigateur perd la référence de scroll de son ancêtre défilant tant
      que <html> est en overflow:hidden). Puis `scrollbar-gutter:auto` (2e
      essai, pour la piste de la barre du modal CGV) réintroduisait le
      décalage horizontal que `scrollbar-gutter:stable` évitait justement
-     (la disparition RÉELLE de la barre élargit le viewport). Le vrai
-     correctif, DÉJÀ établi ailleurs dans le produit (voir tableur.html,
-     `_ednApplyScrollLock`, même bug déjà rencontré et documenté là-bas) :
-     ne toucher qu'à <body>, et compenser la largeur perdue par un
-     padding-right égal, posé sur body ET sur le header sticky (jamais sur
-     <html>, jamais scrollbar-gutter). */
+     (la disparition RÉELLE de la barre élargit le viewport). 3e essai :
+     compenser via padding-right sur `body` ET sur `#topBar` — DOUBLE
+     compensation (`#topBar` est en position:sticky, donc dans le flux
+     normal, il hérite déjà de la largeur réduite de `body` ; lui ajouter
+     SON PROPRE padding-right en plus décalait tout de 10px de trop vers la
+     gauche, mesuré précisément : `#topBar` finissait à 1117px de large au
+     lieu des 1127px attendus). Correction finale : compenser UNIQUEMENT
+     `body`, jamais `#topBar` séparément. */
   var _scrollLockCount = 0;
   function lockPageScroll() {
     _scrollLockCount++;
@@ -1210,7 +1267,6 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
     document.body.style.overflow = "hidden";
     if (scrollbarWidth > 0) {
       document.body.style.paddingRight = scrollbarWidth + "px";
-      if (topBar) topBar.style.paddingRight = scrollbarWidth + "px";
     }
   }
   function unlockPageScroll() {
@@ -1218,7 +1274,6 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
     if (_scrollLockCount === 0) {
       document.body.style.overflow = "";
       document.body.style.paddingRight = "";
-      if (topBar) topBar.style.paddingRight = "";
     }
   }
 
@@ -1423,7 +1478,13 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
             trialEnd: latestEntitlement.trialEndsAt,
             accessEnd: latestEntitlement.premiumUntil || latestEntitlement.writeAccessUntil,
             planType: latestEntitlement.planType,
-            maxMonths: latestEntitlement.maxMonths
+            maxMonths: latestEntitlement.maxMonths,
+            // Déjà écrit par functions/index.js (syncSubscription) mais
+            // jamais transmis jusqu'ici — nécessaire pour distinguer un
+            // abonnement mensuel résilié (reste actif jusqu'à la fin de la
+            // période, aucune donnée perdue) d'un abonnement toujours en
+            // renouvellement normal.
+            cancelAtPeriodEnd: !!latestEntitlement.cancelAtPeriodEnd
           }
         });
         stopActivationPollIfDone();
