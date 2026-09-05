@@ -577,7 +577,8 @@ main{padding-block:clamp(1.75rem,4vw,3rem) 5rem}
                 <tr data-tier="5-99"><td>5 mois et plus</td><td>2,25 €/mois</td></tr>
               </tbody>
             </table>
-            <button type="button" class="btn btn-warm" id="btnBuyUnique" style="width:100%;margin-top:1.4rem">Continuer</button>
+            <p class="status-desc" style="font-size:.8rem;margin-top:.7rem">Paiement unique, sans reconduction : aucun prélèvement récurrent ne sera appliqué.</p>
+            <button type="button" class="btn btn-warm" id="btnBuyUnique" style="width:100%;margin-top:.9rem">Continuer</button>
           </div>
 
           <div id="recurrentPlanBlock" style="display:none">
@@ -909,7 +910,7 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
       heroTag.textContent = p.planType === "monthly" ? "Abonné · mensuel" : "Premium actif";
       desc.textContent = p.planType === "monthly"
         ? "Ton abonnement mensuel est actif, résiliable à tout moment."
-        : "Ton accès Premium est actif.";
+        : "Ton accès Premium est actif — paiement unique, aucun renouvellement automatique : aucun prélèvement ne sera fait à l'expiration.";
       addMetric("Statut", p.planType === "monthly" ? "Abonnement mensuel" : "Premium actif");
       addMetric("Accès jusqu'au", fmtDate(p.accessEnd));
       addMetric("Jours restants", daysLeftHtml(p.accessEnd));

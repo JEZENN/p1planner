@@ -500,6 +500,14 @@
   Vérifié en navigateur (`window.renderAccount(...)` avec données simulées pour chacun des 4 états,
   capture d'écran à l'appui pour chacun).
 
+## 5quinquies. Clarté "pas de prélèvement récurrent" (paiement unique)
+- [x] Demande explicite : préciser qu'un paiement unique n'entraîne aucun renouvellement automatique
+  ni prélèvement futur, à deux endroits — pendant l'achat (`#uniquePlanBlock`, sous le barème
+  dégressif : "Paiement unique, sans reconduction : aucun prélèvement récurrent ne sera appliqué.")
+  et une fois l'accès actif (`renderAccount()`, description du statut : "...aucun renouvellement
+  automatique : aucun prélèvement ne sera fait à l'expiration."). Vérifié en navigateur pour les deux
+  cas.
+
 ## 6. Mentions légales
 - [x] Page (`public/mentions-legales.html` — sommaire, cohérente avec l'identité P1Planner, testée)
 - [x] Placeholders contrôlés (aucune donnée inventée, seul le nom du créateur déjà validé est utilisé)
