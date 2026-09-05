@@ -203,7 +203,12 @@ h2.h-section{font-size:clamp(1.7rem,3.6vw,2.6rem);margin-bottom:.75rem}
   overflow-y:auto;
 }
 .mobile-nav.is-open{opacity:1;transform:none;pointer-events:auto}
-.mobile-nav a{display:block;padding:1rem 0;font-size:1.15rem;font-weight:600;border-bottom:1px solid var(--border);color:var(--text-muted);transition:color .2s,padding-left .2s var(--ease);position:relative}
+/* :not(.btn) : les 2 boutons CTA (Connexion/Essai gratuit) sont aussi des
+   <a> dans ce menu — sans cette exclusion, ils héritaient display:block +
+   padding horizontal nul + une bordure de séparation, au lieu du style
+   .btn (inline-flex, padding, pilule) — sur certains rendus de police, le
+   texte débordait des deux côtés du bouton faute de marge intérieure. */
+.mobile-nav a:not(.btn){display:block;padding:1rem 0;font-size:1.15rem;font-weight:600;border-bottom:1px solid var(--border);color:var(--text-muted);transition:color .2s,padding-left .2s var(--ease);position:relative}
 .mobile-nav a.is-current{color:var(--text);padding-left:.6rem}
 .mobile-nav a.is-current::before{
   content:"";position:absolute;left:0;top:1.1rem;bottom:1.1rem;width:3px;border-radius:2px;background:var(--gradient-brand);

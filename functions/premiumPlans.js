@@ -173,7 +173,7 @@ const PAYMENTS_ENABLED = false;
 
 /* UIDs autorisés à payer malgré PAYMENTS_ENABLED = false, pour tester en
    Stripe Test Mode avant l'ouverture générale. Vide par défaut. */
-const PAYMENTS_TESTER_UIDS = [];
+const PAYMENTS_TESTER_UIDS = ["caaKOz5TAgMb4DT8SvCgTHnQ1W32"];
 
 function paymentsEnabledFor(uid) {
     if (PAYMENTS_ENABLED) return true;

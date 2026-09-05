@@ -428,6 +428,26 @@
   - **QA effectuée** : `node --check` sur `functions/index.js` (OK) ; vérification manuelle de l'équilibre des accolades de `firestore.rules` (OK, pas d'émulateur disponible — Java absent de la machine, donc **les Rules n'ont PAS pu être testées par l'émulateur Firestore réel**, seulement relues attentivement) ; `admin.html` chargé dans un navigateur réel (onglet neuf) — auth-gate testé en conditions réelles (Firebase Auth réel, "Connexion requise" affiché correctement, zéro erreur console) ; rendu de chaque section (Dashboard/Utilisateurs/Abonnements/Sauvegardes/Feedbacks) vérifié visuellement avec des données de test injectées manuellement (captures d'écran) — **le parcours complet avec un vrai compte `isAdmin:true` n'a PAS été testé** (nécessite que l'utilisateur pose lui-même ce champ depuis la Console Firebase, puis un test réel avec de vraies données).
   - **Reste à faire avant un vrai GO** : poser `isAdmin:true` sur un compte de test depuis la Console Firebase ; tester le parcours complet (connexion admin → chaque onglet → une vraie création + restauration de sauvegarde sur un compte de test, JAMAIS sur un compte réel en premier essai) ; tester un aller-retour feedback réel (soumission depuis le tableur → réponse depuis admin.html → réception côté "Mes messages") ; obtenir le GO explicite avant `firebase deploy` (Rules + Functions + Hosting, aucun déploiement fait dans cette session).
 
+## 5bis. Modal CGV + confirmation d'achat (`comptepremium.html`)
+- [x] **Modal de confirmation d'achat refondu** (demande explicite, capture de référence TypixClin fournie —
+  adaptée au contenu et à l'identité visuelle P1Planner, jamais copiée telle quelle) : en-tête icône
+  dégradé + titre + croix ronde (gabarit repris du modal CGU d'`auth.html`), résumé de la formule mis
+  en avant (fond teinté primaire), case à cocher avec mention explicite du **droit de rétractation de
+  14 jours** (renoncé à l'ouverture immédiate de l'accès — article L221-28 13° du Code de la
+  consommation), note "résiliable à tout moment". Ouverture/fermeture **animées** (`is-open`/
+  `is-closing`, calqué sur le pattern déjà en place pour le modal CGU).
+- [x] **Nouveau modal CGV** (`#cgvModal`), contenu réellement rédigé pour P1Planner : identité du
+  vendeur (reprise de `mentions-legales.html`, même personne physique/micro-entreprise que TypixClin —
+  fait réel, pas une pollution technique/données), objet, service vendu, prix et paiement, droit de
+  rétractation, durée et résiliation, réclamations/médiation (CM2C), droit applicable. Ouvert depuis le
+  lien "conditions générales de vente" dans la case à cocher du modal de confirmation.
+  Vérifié en navigateur (les deux modals imbriqués, ouverture/fermeture animées, contenu complet
+  jusqu'en bas, date du jour injectée correctement).
+- [x] **Phrase corrigée par cohérence** (même correctif que sur `index.html`/`comptepremium.html` plus
+  tôt cette session) : §4 du modal CGU d'`auth.html` affirmait "le prix affiché est toujours indicatif"
+  — reformulé pour ne garder que le fait exact (montant confirmé serveur), sans laisser entendre que le
+  prix affiché serait faux.
+
 ## 6. Mentions légales
 - [x] Page (`public/mentions-legales.html` — sommaire, cohérente avec l'identité P1Planner, testée)
 - [x] Placeholders contrôlés (aucune donnée inventée, seul le nom du créateur déjà validé est utilisé)
@@ -472,6 +492,23 @@
   - Vérifié en navigateur : sommaire à 10 entrées correctement numéroté, contenu de chaque section
     relu en entier via extraction de texte de la page rendue (cohérent, aucune coupure, aucun
     `[À COMPLÉTER]` résiduel visible).
+- [x] **Header refondu** (demande explicite, "bouton retour à l'accueil horrible et pas en rapport
+  avec le site") : le lien "← Retour à l'accueil" était du texte brut sans aucun style bouton — cette
+  page n'avait même pas les classes `.btn`/`.btn-primary`/`.btn-ghost` du reste du site. Ajoutées
+  (mêmes valeurs que `comptepremium.html`), lien renommé "← Accueil" en `.btn-ghost`, et nouveau
+  bouton "Découvrir le tableur" (`.btn-primary`, vers `tableur.html`) ajouté à côté, comme demandé.
+
+## 6bis. Bug mobile — boutons du menu débordant (`index.html`)
+- [x] **Trouvé et corrigé** (demande explicite, capture à l'appui) : `.mobile-nav a{...padding:1rem 0;
+  border-bottom:...}` ciblait TOUS les `<a>` du menu mobile, y compris les 2 boutons CTA
+  ("Connexion / Accès au tableur", "Essai gratuit — 15 jours") qui sont aussi des `<a>` — ceux-ci
+  héritaient donc `display:block` + **padding horizontal nul** au lieu du style `.btn` normal
+  (inline-flex, 24px de padding horizontal, forme pilule). Le texte collait alors bord à bord sans
+  aucune marge de sécurité : sur certains rendus de police (texte ne serait-ce qu'1-2px plus large),
+  il déborde visiblement des deux côtés du bouton. Corrigé en excluant `.btn` de la règle générique
+  (`.mobile-nav a:not(.btn)`). Vérifié en navigateur (mobile émulé 375px) : padding restauré à 24px,
+  `scrollWidth === clientWidth` sur les deux boutons (aucun débordement), rendu conforme au reste du
+  site (pilule dégradée / pilule contour).
 
 ## 7. Tableur (`public/tableur.html`)
 - [x] Audit EDN (fait pendant la phase d'audit, exploité pour ce build)

@@ -33,11 +33,20 @@ h1,h2{font-family:var(--font-display);font-weight:600;letter-spacing:-.01em;line
 .skip-link:focus{top:1rem}
 
 .top-bar{height:64px;display:flex;align-items:center;border-bottom:1px solid var(--border);position:sticky;top:0;background:rgba(10,14,26,.9);backdrop-filter:blur(14px);z-index:20}
-.top-bar .wrap{max-width:760px;margin-inline:auto;padding-inline:20px;width:100%;display:flex;align-items:center;justify-content:space-between}
+.top-bar .wrap{max-width:760px;margin-inline:auto;padding-inline:20px;width:100%;display:flex;align-items:center;justify-content:space-between;gap:1rem}
 .brand{display:inline-flex;align-items:center;gap:.55rem;font-family:var(--font-display);font-weight:700;font-size:1rem;text-decoration:none;color:var(--text)}
 .brand-mark{width:28px;height:28px;border-radius:8px;background:var(--gradient-brand);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;color:#fff}
-.top-bar a.back{font-size:.85rem;color:var(--text-muted);text-decoration:none}
-.top-bar a.back:hover{color:var(--text)}
+.top-bar-actions{display:flex;align-items:center;gap:.6rem}
+
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:.6rem 1.1rem;
+  border-radius:var(--radius-pill);font-weight:600;font-size:.85rem;min-height:38px;
+  text-decoration:none!important;white-space:nowrap;transition:transform .2s var(--ease),box-shadow .2s var(--ease),background-color .2s,border-color .2s;
+}
+.btn-primary{background:var(--gradient-brand);color:#fff!important;box-shadow:0 8px 22px -8px rgba(93,73,246,.55)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 12px 26px -8px rgba(93,73,246,.65);color:#fff!important}
+.btn-ghost{background:rgba(255,255,255,.04);color:var(--text)!important;border:1px solid var(--border-strong)}
+.btn-ghost:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.28);color:var(--text)!important}
 
 main{max-width:760px;margin-inline:auto;padding:clamp(2rem,5vw,3.5rem) 20px 5rem}
 .page-head{margin-bottom:2.5rem}
@@ -89,7 +98,10 @@ article strong{color:var(--text);font-weight:600}
       <span class="brand-mark" aria-hidden="true">P1</span>
       P1Planner
     </a>
-    <a href="index.html" class="back">← Retour à l'accueil</a>
+    <div class="top-bar-actions">
+      <a href="index.html" class="btn btn-ghost">← Accueil</a>
+      <a href="tableur.html" class="btn btn-primary">Découvrir le tableur</a>
+    </div>
   </div>
 </header>
 

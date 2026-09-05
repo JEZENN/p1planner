@@ -324,23 +324,57 @@ main{padding-block:clamp(1.75rem,4vw,3rem) 5rem}
 @media (min-width:760px){ .exam-date-row{flex-wrap:nowrap} }
 
 /* ============================================================
-   MODALE CGV
+   MODALE CGV — ouverture/fermeture animées (calqué sur le modal
+   Conditions d'utilisation d'auth.html, même gabarit visuel).
    ============================================================ */
 .modal-backdrop{
   position:fixed;inset:0;background:rgba(4,6,14,.72);backdrop-filter:blur(4px);z-index:150;
   display:none;align-items:center;justify-content:center;padding:1.25rem;
 }
-.modal-backdrop.is-open{display:flex}
-.modal-box{width:100%;max-width:440px;padding:1.75rem}
-.modal-box h2{font-size:1.15rem;margin-bottom:.6rem}
-.modal-box p{color:var(--text-muted);font-size:.9rem;margin-bottom:1.1rem}
+.modal-backdrop.is-open,.modal-backdrop.is-closing{display:flex}
+.modal-backdrop.is-open{animation:modalOverlayIn .2s ease forwards}
+.modal-backdrop.is-closing{animation:modalOverlayOut .18s ease forwards}
+.modal-backdrop.is-open .modal-box{animation:modalContentIn .22s cubic-bezier(.34,1.3,.64,1) forwards}
+.modal-backdrop.is-closing .modal-box{animation:modalContentOut .18s ease forwards}
+@keyframes modalOverlayIn{from{opacity:0}to{opacity:1}}
+@keyframes modalOverlayOut{from{opacity:1}to{opacity:0}}
+@keyframes modalContentIn{from{opacity:0;transform:scale(.94) translateY(14px)}to{opacity:1;transform:scale(1) translateY(0)}}
+@keyframes modalContentOut{from{opacity:1;transform:scale(1) translateY(0)}to{opacity:0;transform:scale(.94) translateY(14px)}}
+@media (prefers-reduced-motion: reduce){
+  .modal-backdrop.is-open,.modal-backdrop.is-closing,
+  .modal-backdrop.is-open .modal-box,.modal-backdrop.is-closing .modal-box{animation:none}
+}
+.modal-box{width:100%;max-width:440px;padding:0;overflow:hidden}
+.modal-head{display:flex;align-items:center;gap:.85rem;padding:1.3rem 3.4rem 1.1rem 1.4rem;position:relative}
+.modal-icon{
+  width:42px;height:42px;border-radius:var(--radius-md);flex-shrink:0;background:var(--gradient-brand);
+  color:#fff;display:flex;align-items:center;justify-content:center;
+}
+.modal-head h2{font-size:1.1rem;line-height:1.25;min-width:0;margin:0}
+.modal-close{
+  position:absolute;top:1.05rem;right:1.1rem;width:32px;height:32px;border-radius:50%;
+  background:var(--danger-soft);color:var(--danger);display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;transition:transform .18s,background .18s,color .18s,box-shadow .18s;
+}
+.modal-close:hover{background:var(--danger);color:#fff;transform:scale(1.12);box-shadow:0 4px 12px rgba(255,107,107,.45)}
+.modal-close:active{transform:scale(.88)}
+.modal-body{padding:0 1.4rem 1.4rem}
+.modal-body>p{color:var(--text-muted);font-size:.9rem;margin-bottom:1.1rem}
 .modal-summary{
-  background:var(--bg-soft);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem;
+  background:var(--primary-soft);border:1px solid rgba(124,108,246,.3);border-radius:var(--radius-sm);padding:1rem 1.1rem;
   margin-bottom:1.2rem;font-size:.88rem;
 }
-.modal-summary-row{display:flex;justify-content:space-between;padding:.25rem 0;color:var(--text-muted)}
+.modal-summary-row{display:flex;justify-content:space-between;align-items:baseline;gap:.75rem;padding:.2rem 0;color:var(--text-muted)}
 .modal-summary-row strong{color:var(--text)}
-.checkbox-row{display:flex;align-items:flex-start;gap:.65rem;margin-bottom:1.4rem}
+.modal-note{
+  display:flex;align-items:flex-start;gap:.55rem;font-size:.82rem;color:var(--text-dim);
+  background:var(--bg-soft);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:.7rem .85rem;margin-bottom:1.3rem;
+}
+.modal-note .icon{width:16px;height:16px;flex-shrink:0;margin-top:1px;color:var(--primary-2)}
+.modal-foot{display:flex;gap:.75rem;padding:1.1rem 1.4rem;border-top:1px solid var(--border)}
+.modal-foot .btn{flex:1}
+.checkbox-row{display:flex;align-items:flex-start;gap:.65rem;margin-bottom:1.1rem}
 /* Checkbox redessinée (voir auth.html) : `accent-color` seul laisse le
    rendu natif "non coché" (carré blanc sur certains navigateurs/OS). */
 .checkbox-row input[type="checkbox"]{
@@ -356,9 +390,25 @@ main{padding-block:clamp(1.75rem,4vw,3rem) 5rem}
 }
 .checkbox-row input[type="checkbox"]:focus-visible{outline:2px solid var(--primary-2);outline-offset:2px}
 .checkbox-row label{font-size:.85rem;color:var(--text-muted)}
-.checkbox-row a{color:var(--primary-2);font-weight:600}
-.modal-actions{display:flex;gap:.75rem}
-.modal-actions .btn{flex:1}
+.cgv-link-btn{color:var(--primary-2);font-weight:600;text-decoration:underline;text-underline-offset:2px}
+.cgv-link-btn:hover{color:var(--text)}
+
+/* ============================================================
+   MODALE — CONDITIONS GÉNÉRALES DE VENTE (contenu)
+   ============================================================ */
+.cgv-modal{max-width:640px;max-height:min(720px,86vh);display:flex;flex-direction:column}
+.cgv-modal .modal-body{overflow-y:auto;padding:0 1.5rem 1.4rem;flex:1;font-size:.88rem;color:var(--text-muted)}
+.cgv-modal .modal-body h3{font-family:var(--font-display);font-size:.98rem;color:var(--text);margin:1.3rem 0 .55rem}
+.cgv-modal .modal-body h3:first-child{margin-top:0}
+.cgv-modal .modal-body p{margin-bottom:.75rem}
+.cgv-modal .modal-body ul{list-style:disc;margin:0 0 .75rem 1.2em;padding:0}
+.cgv-modal .modal-body li{margin-bottom:.35rem}
+.cgv-modal .modal-body li::marker{color:var(--primary-2)}
+.cgv-modal .modal-body strong{color:var(--text)}
+.cgv-modal .modal-body dl{display:grid;grid-template-columns:auto 1fr;gap:.35rem 1rem;margin-bottom:.9rem;font-size:.86rem}
+.cgv-modal .modal-body dt{color:var(--text-dim)}
+.cgv-modal .modal-body dd{color:var(--text)}
+.cgv-modal-updated{color:var(--text-dim);font-size:.78rem;padding-top:.9rem;margin-top:.4rem;border-top:1px solid var(--border)}
 </style>
 </head>
 <body>
@@ -544,17 +594,92 @@ main{padding-block:clamp(1.75rem,4vw,3rem) 5rem}
 <!-- ================= MODALE CONSENTEMENT ================= -->
 <div class="modal-backdrop" id="consentModal" role="dialog" aria-modal="true" aria-labelledby="consentTitle">
   <div class="card modal-box">
-    <h2 id="consentTitle">Confirmer le paiement</h2>
-    <p>Vérifie les détails avant de continuer vers le paiement sécurisé.</p>
-    <div class="modal-summary" id="consentSummary"></div>
-    <div class="checkbox-row">
-      <input type="checkbox" id="consentCheckbox">
-      <label for="consentCheckbox">J'ai lu et j'accepte les <a href="mentions-legales.html" target="_blank" rel="noopener">mentions légales</a> et les conditions de vente de P1Planner.</label>
+    <div class="modal-head">
+      <div class="modal-icon" aria-hidden="true">
+        <svg class="icon" viewBox="0 0 24 24" style="width:20px;height:20px;stroke:currentColor"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+      </div>
+      <h2 id="consentTitle">Avant de continuer</h2>
+      <button type="button" class="modal-close" id="consentModalCloseX" aria-label="Fermer">
+        <svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
     </div>
-    <div class="modal-actions">
+    <div class="modal-body">
+      <div class="modal-summary" id="consentSummary"></div>
+      <div class="checkbox-row">
+        <input type="checkbox" id="consentCheckbox">
+        <label for="consentCheckbox">J'ai lu et j'accepte les <button type="button" class="cgv-link-btn" id="openCgvModal" style="background:none;border:0;padding:0;font:inherit;cursor:pointer">conditions générales de vente</button>. Je demande à bénéficier de l'accès immédiat au service et j'ai noté qu'en contrepartie, mon droit de rétractation de quatorze jours ne s'applique plus une fois l'accès ouvert.</label>
+      </div>
+      <div class="modal-note">
+        <svg class="icon" viewBox="0 0 24 24" style="stroke:currentColor"><circle cx="12" cy="12" r="9"/><path d="M12 8v.01M12 12v4"/></svg>
+        <span>Tu pourras résilier à tout moment ; la résiliation prend effet à la fin de la période déjà payée.</span>
+      </div>
+    </div>
+    <div class="modal-foot">
       <button type="button" class="btn btn-ghost" id="btnConsentCancel">Annuler</button>
       <button type="button" class="btn btn-warm" id="btnConsentConfirm" disabled>
         <span class="btn-label">Confirmer et payer</span><span class="spinner" aria-hidden="true"></span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODALE CGV ================= -->
+<div class="modal-backdrop" id="cgvModal" role="dialog" aria-modal="true" aria-labelledby="cgvModalTitle">
+  <div class="card modal-box cgv-modal">
+    <div class="modal-head">
+      <div class="modal-icon" aria-hidden="true">
+        <svg class="icon" viewBox="0 0 24 24" style="width:20px;height:20px;stroke:currentColor"><path d="M9 12h6M9 16h6M9 8h2"/><path d="M8 3h5l5 5v11a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M13 3v5h5"/></svg>
+      </div>
+      <h2 id="cgvModalTitle">Conditions générales de vente</h2>
+      <button type="button" class="modal-close" id="cgvModalCloseX" aria-label="Fermer">
+        <svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" id="cgvModalBody" tabindex="0">
+      <h3>1. Identité du vendeur</h3>
+      <dl>
+        <dt>Éditeur</dt><dd>Jean ZENNARO, entrepreneur individuel (micro-entreprise)</dd>
+        <dt>SIRET</dt><dd>107 971 764 00017 — RCS Nanterre : 107 971 764</dd>
+        <dt>Adresse</dt><dd>35 rue Jean Le Coz, 92500 Rueil-Malmaison, France</dd>
+        <dt>Email</dt><dd><a href="mailto:typixclin@gmail.com">typixclin@gmail.com</a></dd>
+        <dt>TVA</dt><dd>Non applicable, article 293 B du Code général des impôts</dd>
+      </dl>
+
+      <h3>2. Objet</h3>
+      <p>Les présentes conditions générales de vente régissent l'achat de l'accès Premium à P1Planner, application web de planification des révisions. Elles complètent les conditions d'utilisation acceptées à l'inscription, qui restent applicables au reste du service. En cas de contradiction sur un point relatif à l'achat, les présentes conditions prévalent.</p>
+      <p>Le service s'adresse à des personnes physiques majeures agissant en qualité de consommateur.</p>
+
+      <h3>3. Service vendu</h3>
+      <p>L'accès Premium donne accès à l'écriture illimitée dans le tableur (matières, cours, tours, planning, Programme de la journée, flashcards, notes, cahier d'erreurs, statistiques) au-delà de l'essai gratuit de 15 jours. Deux formules au choix :</p>
+      <ul>
+        <li><strong>Paiement unique</strong>, durée choisie (jusqu'à la fin du mois de ton concours/examens), tarif dégressif : 1 mois à 3,00&nbsp;€/mois, 2 à 4 mois à 2,50&nbsp;€/mois, 5 mois et plus à 2,25&nbsp;€/mois ;</li>
+        <li><strong>Abonnement mensuel</strong> à 3,00&nbsp;€/mois, sans engagement.</li>
+      </ul>
+      <p>Les deux formules ne sont pas cumulables : un paiement unique et un abonnement mensuel ne sont jamais actifs en même temps sur un même compte.</p>
+
+      <h3>4. Prix et paiement</h3>
+      <p>Les prix sont indiqués en euros, toutes taxes comprises (TVA non applicable, voir §1). Le montant exact est calculé et confirmé par nos serveurs au moment du paiement, jamais par ton navigateur. Le paiement est traité par notre prestataire Stripe ; P1Planner ne stocke aucune donnée de carte bancaire.</p>
+
+      <h3>5. Droit de rétractation</h3>
+      <p>Conformément à l'article L221-28 13° du Code de la consommation, le droit de rétractation de 14 jours ne s'applique pas aux contrats de fourniture de contenu numérique non fourni sur un support matériel dont l'exécution a commencé après accord préalable exprès du consommateur, qui a renoncé expressément à son droit de rétractation.</p>
+      <p>En cochant la case de consentement avant paiement, tu demandes expressément à bénéficier de l'accès immédiat à l'accès Premium et reconnais renoncer à ton droit de rétractation dès que l'accès est ouvert.</p>
+
+      <h3>6. Durée et résiliation</h3>
+      <p>Le paiement unique donne accès à l'accès Premium pour la durée choisie, sans reconduction automatique. L'abonnement mensuel est sans engagement : tu peux le résilier à tout moment depuis le portail de facturation accessible dans ton espace compte. La résiliation prend effet à la fin de la période déjà payée ; aucun remboursement au prorata n'est effectué, sauf disposition légale contraire.</p>
+      <p>À l'expiration d'un accès (paiement unique arrivé à terme, résiliation, ou échec de paiement), ton compte repasse en lecture seule : tu conserves l'accès à tout ce que tu as créé, mais tu ne peux plus le modifier. Aucune donnée n'est jamais supprimée du seul fait de cette expiration.</p>
+
+      <h3>7. Réclamations et médiation</h3>
+      <p>Pour toute réclamation : <a href="mailto:typixclin@gmail.com">typixclin@gmail.com</a>. À défaut de réponse satisfaisante, tu peux recourir gratuitement au médiateur de la consommation CM2C (49 rue de Ponthieu, 75008 Paris — <a href="https://www.cm2c.net/declarer-un-litige.php" target="_blank" rel="noopener noreferrer">cm2c.net/declarer-un-litige.php</a>).</p>
+
+      <h3>8. Droit applicable</h3>
+      <p>Les présentes conditions générales de vente sont soumises au droit français. En cas de litige et à défaut de résolution amiable, les tribunaux français sont seuls compétents.</p>
+
+      <p class="cgv-modal-updated">Dernière mise à jour : <span id="cgvUpdateDate"></span>.</p>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn btn-primary" id="cgvModalClose" style="width:100%">
+        <svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px"><polyline points="20 6 9 17 4 12"/></svg>
+        J'ai compris
       </button>
     </div>
   </div>
@@ -1015,6 +1140,7 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
   /* ============================================================
      MODALE DE CONSENTEMENT + CHECKOUT
      ============================================================ */
+  var MODAL_ANIM_MS = 180; // doit correspondre à modalOverlayOut/modalContentOut (CSS)
   var modal = $("consentModal");
   var pendingPlan = null;
   function openConsentModal(summaryHtml, plan) {
@@ -1022,19 +1148,50 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
     $("consentSummary").innerHTML = summaryHtml;
     $("consentCheckbox").checked = false;
     $("btnConsentConfirm").disabled = true;
+    modal.classList.remove("is-closing");
     modal.classList.add("is-open");
     $("consentCheckbox").focus();
   }
   function closeConsentModal() {
+    if (!modal.classList.contains("is-open")) return;
     modal.classList.remove("is-open");
+    modal.classList.add("is-closing");
+    window.setTimeout(function () { modal.classList.remove("is-closing"); }, MODAL_ANIM_MS);
     pendingPlan = null;
   }
   $("consentCheckbox").addEventListener("change", function () {
     $("btnConsentConfirm").disabled = !this.checked;
   });
   $("btnConsentCancel").addEventListener("click", closeConsentModal);
+  $("consentModalCloseX").addEventListener("click", closeConsentModal);
   modal.addEventListener("click", function (e) { if (e.target === modal) closeConsentModal(); });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && modal.classList.contains("is-open")) closeConsentModal(); });
+
+  /* ============================================================
+     MODALE CGV — ouverte depuis le lien dans la case à cocher
+     ============================================================ */
+  var cgvModal = $("cgvModal");
+  var cgvUpdateDateEl = $("cgvUpdateDate");
+  if (cgvUpdateDateEl) {
+    cgvUpdateDateEl.textContent = new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+  }
+  function openCgvModal() {
+    cgvModal.classList.remove("is-closing");
+    cgvModal.classList.add("is-open");
+    $("cgvModalBody").scrollTop = 0;
+    window.setTimeout(function () { $("cgvModalCloseX").focus(); }, 30);
+  }
+  function closeCgvModal() {
+    if (!cgvModal.classList.contains("is-open")) return;
+    cgvModal.classList.remove("is-open");
+    cgvModal.classList.add("is-closing");
+    window.setTimeout(function () { cgvModal.classList.remove("is-closing"); }, MODAL_ANIM_MS);
+  }
+  $("openCgvModal").addEventListener("click", openCgvModal);
+  $("cgvModalClose").addEventListener("click", closeCgvModal);
+  $("cgvModalCloseX").addEventListener("click", closeCgvModal);
+  cgvModal.addEventListener("click", function (e) { if (e.target === cgvModal) closeCgvModal(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && cgvModal.classList.contains("is-open")) closeCgvModal(); });
 
   $("btnBuyUnique").addEventListener("click", function () {
     var months = parseInt(monthsRange.value, 10);
