@@ -568,6 +568,24 @@
   déclenchait donc souvent EN PREMIER, avant la fermeture réelle, annulant l'effet du report. Allongé
   à 2 minutes (le filet reste un vrai dernier recours, `Onb.close()` reste le déclencheur normal).
 
+## 5octies. Verrou de scroll — vraie correction (`comptepremium.html`)
+- [x] **Deux bugs réels, trouvés en cascade sur le même point** (demande explicite : "le modal fait
+  disparaître le header ET la disparition de la barre crée un décalage") :
+  1. Le tout premier correctif (`overflow:hidden` sur `<html>`) cassait `position:sticky` sur
+     `#topBar` — bug DÉJÀ documenté ailleurs dans le produit (voir `tableur.html`,
+     `_ednApplyScrollLock`, commentaire détaillé sur ce même piège) : le navigateur perd la référence
+     de scroll de l'ancêtre défilant tant que `<html>` est en `overflow:hidden`, et l'élément sticky
+     "saute" hors écran.
+  2. Le correctif suivant (`scrollbar-gutter:auto`, pour la piste de barre visible dans le modal CGV)
+     réintroduisait le décalage horizontal que `scrollbar-gutter:stable` évitait justement — la
+     disparition RÉELLE de la barre élargit le viewport de sa largeur.
+  **Vraie correction, reprise du pattern déjà établi et éprouvé dans `tableur.html`** : ne jamais
+  toucher à `<html>`, verrouiller uniquement `<body>`, et compenser la largeur perdue par un
+  `padding-right` égal posé sur `body` ET sur le header sticky. Vérifié par mesure directe (largeur de
+  barre 10px → `topBar` recule de 890 à 880, soit exactement -10px des deux côtés, aucun saut) et
+  capture d'écran (header visible en permanence, tamisé par le voile comme n'importe quel autre
+  modal — jamais "disparu").
+
 ## 6. Mentions légales
 - [x] Page (`public/mentions-legales.html` — sommaire, cohérente avec l'identité P1Planner, testée)
 - [x] Placeholders contrôlés (aucune donnée inventée, seul le nom du créateur déjà validé est utilisé)

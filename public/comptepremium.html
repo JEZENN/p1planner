@@ -1189,29 +1189,36 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
      VERROU DE SCROLL PARTAGÉ — les 2 modals (consentement + CGV) peuvent
      être ouverts l'un par-dessus l'autre (CGV cliqué depuis le
      consentement) : compteur pour ne déverrouiller qu'à la fermeture du
-     DERNIER des deux, jamais au milieu. `scrollbar-gutter:stable` (voir
-     <html> plus haut) garantit qu'aucun décalage de mise en page ne se
-     produit quand la barre de défilement disparaît/réapparaît.
-     ============================================================ */
+     DERNIER des deux, jamais au milieu.
+     Bug réel corrigé (2 essais) : passer overflow:hidden sur <html> (1er
+     essai) casse position:sticky sur `#topBar` — le header "disparaissait"
+     (le navigateur perd la référence de scroll de son ancêtre défilant tant
+     que <html> est en overflow:hidden). Puis `scrollbar-gutter:auto` (2e
+     essai, pour la piste de la barre du modal CGV) réintroduisait le
+     décalage horizontal que `scrollbar-gutter:stable` évitait justement
+     (la disparition RÉELLE de la barre élargit le viewport). Le vrai
+     correctif, DÉJÀ établi ailleurs dans le produit (voir tableur.html,
+     `_ednApplyScrollLock`, même bug déjà rencontré et documenté là-bas) :
+     ne toucher qu'à <body>, et compenser la largeur perdue par un
+     padding-right égal, posé sur body ET sur le header sticky (jamais sur
+     <html>, jamais scrollbar-gutter). */
   var _scrollLockCount = 0;
   function lockPageScroll() {
     _scrollLockCount++;
-    document.documentElement.style.overflow = "hidden";
+    if (_scrollLockCount > 1) return; // déjà verrouillé par l'autre modal
+    var scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
     document.body.style.overflow = "hidden";
-    // Bug réel trouvé : `scrollbar-gutter:stable` (posé sur <html>, voir le
-    // reset plus haut) réserve la piste de la barre même quand overflow
-    // devient hidden — elle restait visible (sans curseur, juste la piste)
-    // pendant qu'un modal était ouvert. Désactivé le temps du verrou ; le
-    // modal recouvre déjà tout l'écran à ce moment-là, un micro-décalage
-    // de layout en dessous n'est jamais visible.
-    document.documentElement.style.scrollbarGutter = "auto";
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = scrollbarWidth + "px";
+      if (topBar) topBar.style.paddingRight = scrollbarWidth + "px";
+    }
   }
   function unlockPageScroll() {
     _scrollLockCount = Math.max(0, _scrollLockCount - 1);
     if (_scrollLockCount === 0) {
-      document.documentElement.style.overflow = "";
       document.body.style.overflow = "";
-      document.documentElement.style.scrollbarGutter = "";
+      document.body.style.paddingRight = "";
+      if (topBar) topBar.style.paddingRight = "";
     }
   }
 
