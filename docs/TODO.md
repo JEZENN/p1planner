@@ -1892,6 +1892,32 @@
   qui a aussi mis au jour puis corrigé un bug bloquant tout le chargement de cette grille) : élément
   `.pdd-status-card[data-status="revision"]` injecté directement, couleurs calculées confirmées
   exactement conformes (fond `#dcfce7`, bordure `#10b981`, texte `#166534`).
+- [x] **Trois corrections mobile (demande explicite, capture à l'appui)** :
+  1. **Icône calendrier trop petite** : sur tactile, `.day-detail-open-btn` ("agrandir") est un carré
+     fixe 24×24px (aucun hover à réduire sur mobile), alors que `.day-j-badge` ("X révision(s) J")
+     gardait sa taille desktop (police 0.6rem, icône 0.55rem) — décalage visuel entre les deux icônes
+     de la même zone. Alignées sous `@media (hover:none),(pointer:coarse)` : hauteur 24px, police et
+     icône 0.72rem, même rayon de bordure.
+  2. **Modal "Organisation de la journée" : la partie J gênait au clavier** : le panneau
+     `#pdd-j-panel` (Révisions J, empilé SOUS la zone de texte en colonne sur mobile, voir
+     `.pdd-content-row`) restait affiché pendant la saisie dans `#pdd-editor`, volant de la place au
+     clavier. Un système existant (`body.tcp-kb-pin`, détecté via `visualViewport`, déjà utilisé pour
+     masquer le panneau "Objectifs" du modal Notes dans le même cas) gère déjà exactement ce
+     scénario — ajouté `#pdd-j-panel` à la liste des panneaux masqués pendant la frappe, réapparaît
+     automatiquement à la fermeture du clavier (aucun état perdu, juste `display:none`).
+  3. **Boutons J + To-Do trop larges sur mobile, écrasant la barre d'onglets** : `.edn-jrev-btn` et
+     `.edn-todo-btn` vivent tous les deux dans `.edn-nav-row`, à 72px chacun sous 768px — quand la
+     Méthode des J est active (bouton J visible), les deux boutons prenaient 144px cumulés sur la
+     largeur disponible pour les onglets (`.app-nav-btn`). Ajouté une règle réduisant les DEUX à 58px
+     UNIQUEMENT quand le bouton J est réellement visible, via
+     `.edn-nav-row:has(.edn-jrev-btn:not([style*="display: none"])) ...` — **piège évité en cours de
+     route** : le bouton J reste TOUJOURS présent dans le DOM (juste `style="display: none;"` posé/
+     retiré par `toggleVisibility()` selon `isJMethodEnabled()`), donc un `:has(.edn-jrev-btn)` seul
+     aurait matché en permanence, y compris méthode des J désactivée — d'où le `:not([style*=...])`
+     supplémentaire, vérifié en simulant les deux états dans un onglet neuf (64px caché / 58px
+     visible, conforme). Ces deux blocs (`.edn-todo-btn`, `.edn-jrev-btn`) vivent dans deux
+     `var CSS = \`...\`;` JS différents (voir l'avertissement backtick plus haut) — édités sans
+     backtick ni accent dans les commentaires ajoutés, par prudence.
 
 ## 7bis. Audit sécurité des données utilisateur et risques de perte de données
 Demande explicite utilisateur : "audit complet de sécurité des données des utilisateurs et des

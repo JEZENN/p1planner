@@ -45847,6 +45847,20 @@ textarea::-moz-selection {
         pointer-events: auto;
         transform: none;
     }
+    /* Bug signalé (mobile) : la pastille J gardait sa taille desktop
+       (0.6rem, icône 0.55rem, pilule fine) à côté du bouton "agrandir"
+       ci-dessus qui, lui, est un carré fixe 24×24px sur tactile (aucun
+       hover à réduire ici) — décalage visuel entre les deux icônes de la
+       même zone d'actions. Alignée sur le même gabarit. */
+    .calendar-day .day-j-badge {
+        height: 24px;
+        padding: 0 0.5rem;
+        font-size: 0.72rem;
+        border-radius: 7px;
+    }
+    .calendar-day .day-j-badge i {
+        font-size: 0.72rem;
+    }
 }
 
 </style>
@@ -51759,6 +51773,24 @@ window.openPlanningDayDetailModal = openModal;
     .edn-todo-btn > i {
         font-size: 1.25rem;
     }
+
+    /* Demande explicite (mobile) : quand la Methode des J est activee,
+       le bouton J apparait A COTE de To-Do dans la meme rangee que les
+       onglets de navigation (.edn-nav-row) - a eux deux ils prenaient
+       trop de largeur et ne laissaient plus assez de place aux onglets.
+       Retreci UNIQUEMENT dans ce cas. Le bouton J reste TOUJOURS dans le
+       DOM (juste cache via style="display: none;" quand la methode est
+       desactivee, voir toggleVisibility() plus bas) - :has(.edn-jrev-btn)
+       seul matcherait donc en permanence. Le :not([style*="display: none"])
+       verifie que le bouton J est bien visible, pas seulement present. */
+    .edn-nav-row:has(.edn-jrev-btn:not([style*="display: none"])) .edn-todo-btn {
+        flex-basis: 58px;
+        width: 58px;
+        min-width: 58px;
+    }
+    .edn-nav-row:has(.edn-jrev-btn:not([style*="display: none"])) .edn-todo-btn > i {
+        font-size: 1.1rem;
+    }
 }
 
 /* iPad portrait et grandes tablettes étroites */
@@ -52654,6 +52686,12 @@ function closeDrawer() {
 }
 @media (max-width: 768px) {
     .edn-jrev-btn { flex-basis: 72px; width: 72px; min-width: 72px; }
+    /* Retreci en meme temps que le bouton To-Do voisin (voir la regle
+       equivalente sur .edn-todo-btn, meme raison pour le :not() ci-dessous
+       - le bouton J reste dans le DOM meme desactive, juste cache en
+       style="display: none;"). */
+    .edn-nav-row:has(.edn-jrev-btn:not([style*="display: none"])) .edn-jrev-btn { flex-basis: 58px; width: 58px; min-width: 58px; }
+    .edn-nav-row:has(.edn-jrev-btn:not([style*="display: none"])) .edn-jrev-btn > i { font-size: 1.1rem; }
 }
 .global-jrev-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:var(--z-modal,10000); opacity:0; visibility:hidden; pointer-events:none; transition:opacity 0.25s ease, visibility 0.25s ease; -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px); }
 .global-jrev-overlay.active { opacity:1; visibility:visible; pointer-events:auto; }
@@ -55034,6 +55072,13 @@ body.tcp-kb-pin .notes-modal-overlay.active .spe-flash-info-panel,
 body.tcp-kb-pin .notes-modal-overlay.active .sdd-notes-right { display: none !important; }
 body.tcp-kb-pin .notes-modal-overlay.active .notes-editor-panel,
 body.tcp-kb-pin .notes-modal-overlay.active .sdd-notes-left { border-bottom: none !important; }
+/* Même traitement pour le panneau "Révisions J" du modal Organisation de la
+   journée (demande explicite) : en colonne sur mobile (voir .pdd-content-row
+   plus haut), il s'affiche SOUS la zone de texte — pendant la saisie, il
+   s'efface complètement pour laisser toute la hauteur libre au clavier et à
+   l'éditeur, et réapparaît dès la fermeture du clavier (display:none ne
+   perd aucun état : #pdd-j-panel-body n'est pas vidé). */
+body.tcp-kb-pin .pdd-overlay.active .pdd-j-panel { display: none !important; }
 body.tcp-kb-pin .notes-modal-overlay.active .notes-editor-area {
     min-height: 0 !important;
     overflow-y: auto !important;
