@@ -448,6 +448,33 @@
   — reformulé pour ne garder que le fait exact (montant confirmé serveur), sans laisser entendre que le
   prix affiché serait faux.
 
+## 5ter. Bug réel de paiement + finitions CGV (`comptepremium.html`)
+- [x] **Bug réel trouvé et corrigé : `translateError()` ne traduisait JAMAIS aucune erreur.** Le SDK
+  Firebase préfixe systématiquement `err.code` par `functions/` (ex: `functions/failed-precondition`),
+  mais la map de traduction utilisait des clés SANS ce préfixe (`"permission-denied"`, `"unavailable"`)
+  — aucune ne pouvait donc jamais matcher, et le message générique "Une erreur est survenue" s'affichait
+  pour TOUTE erreur, y compris les erreurs "métier" déjà rédigées clairement côté serveur (ex: "Indique
+  d'abord ta date de concours/examens..." dans `createCheckoutSession`). C'est très probablement la
+  cause du "bug au paiement" signalé (400 sur `createCheckoutSession` = `failed-precondition`, très
+  probablement faute d'avoir cliqué "Enregistrer la date" avant de payer) : l'erreur réelle et
+  actionnable existait déjà côté serveur mais n'atteignait jamais l'écran. Corrigé : préfixe ajouté sur
+  toutes les clés, et les codes "métier" (`failed-precondition`/`invalid-argument`/`already-exists`/
+  `not-found`) affichent désormais directement `err.message` (déjà en français, déjà actionnable) au
+  lieu d'un texte générique.
+- [x] **Clarté de "Ta date de concours/examens" améliorée** (demande explicite : "l'utilisateur ne va
+  pas comprendre à quoi ça sert") : phrase d'intro ajoutée avant le champ, expliquant explicitement le
+  "pourquoi" (déterminer la durée max disponible en paiement unique) et le barème dégressif (moins cher
+  par mois si plus de mois pris d'un coup) — jusqu'ici seul un texte d'aide sur ce qui se passe APRÈS
+  avoir choisi une date était présent, rien n'expliquait pourquoi la remplir.
+- [x] **Verrou de scroll ajouté aux 2 modals** (bug signalé : la barre de défilement restait visible
+  avec le modal CGV ouvert) : aucun verrou de scroll n'existait DU TOUT sur cette page (ni pour le
+  modal de consentement, ni pour le CGV) — `document.documentElement`/`body` restaient scrollables
+  sous le voile. Ajouté un verrou partagé à compteur (les 2 modals peuvent être ouverts l'un par-dessus
+  l'autre) ; `scrollbar-gutter:stable` étant déjà posé sur `<html>`, masquer la barre ne provoque aucun
+  décalage de mise en page.
+- [x] Phrase "estimation, confirmée au paiement" retirée ici aussi (même correctif que sur `index.html`
+  plus tôt cette session, manqué sur cette page — 2 occurrences : texte HTML par défaut + calcul JS).
+
 ## 6. Mentions légales
 - [x] Page (`public/mentions-legales.html` — sommaire, cohérente avec l'identité P1Planner, testée)
 - [x] Placeholders contrôlés (aucune donnée inventée, seul le nom du créateur déjà validé est utilisé)

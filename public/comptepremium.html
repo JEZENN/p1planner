@@ -491,6 +491,7 @@ main{padding-block:clamp(1.75rem,4vw,3rem) 5rem}
       <!-- ---------- Date de concours ---------- -->
       <section class="section-block" id="examDateSection" aria-labelledby="examHeading" style="display:none">
         <h2 id="examHeading">Ta date de concours / d'examens</h2>
+        <p class="status-desc" style="margin-bottom:1rem;max-width:60ch">Indique cette date pour savoir combien de mois tu peux choisir en <strong>paiement unique</strong> — le tarif est dégressif : plus tu prends de mois d'un coup, moins c'est cher par mois. Pas besoin de cette étape pour l'abonnement mensuel.</p>
         <div class="card exam-date-row">
           <div class="field date-field">
             <label for="examDateBtn">Date approximative du concours ou des examens S2</label>
@@ -544,7 +545,7 @@ main{padding-block:clamp(1.75rem,4vw,3rem) 5rem}
               <span class="price-amount" id="priceAmount">3,00&nbsp;€</span>
               <span class="price-suffix">/ mois, sur <span id="priceMonths">1</span> mois</span>
             </div>
-            <p class="status-desc" id="priceTotal" style="font-size:.85rem">Soit 3,00&nbsp;€ au total — estimation.</p>
+            <p class="status-desc" id="priceTotal" style="font-size:.85rem">Soit 3,00&nbsp;€ au total.</p>
             <div class="price-slider-wrap">
               <label for="monthsRange" class="visually-hidden">Durée en mois</label>
               <input type="range" id="monthsRange" min="1" max="12" value="1" step="1" aria-describedby="priceAmount priceTotal">
@@ -769,11 +770,26 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
     if (code && code.indexOf("api-key-not-valid") !== -1) {
       return "Configuration Firebase manquante (projet non encore relié).";
     }
+    /* Bug réel corrigé : le SDK Firebase préfixe TOUJOURS le code d'erreur
+       par "functions/" (ex: "functions/failed-precondition") — la map
+       ci-dessous cherchait des clés SANS ce préfixe ("permission-denied"),
+       qui ne correspondaient donc JAMAIS à un vrai code reçu. Résultat :
+       le message générique "Une erreur est survenue" s'affichait pour
+       TOUTE erreur, y compris les erreurs "métier" (ex: date de concours
+       manquante) déjà rédigées clairement côté serveur — voir
+       functions/index.js. Corrigé : préfixe ajouté partout, et les codes
+       "métier" (pas des pannes techniques) affichent directement le
+       message serveur (err.message), qui est déjà en français et
+       actionnable, plutôt que de le remplacer par du texte générique. */
+    var passthroughCodes = ["functions/failed-precondition", "functions/invalid-argument", "functions/already-exists", "functions/not-found"];
+    if (passthroughCodes.indexOf(code) !== -1 && err && err.message) {
+      return err.message;
+    }
     var map = {
-      "permission-denied": "Accès refusé — vérifie la configuration du projet.",
-      "unavailable": "Service momentanément indisponible. Réessaie dans un instant.",
-      "functions/not-found": "Cette fonctionnalité n'est pas encore disponible côté serveur.",
-      "functions/unavailable": "Service momentanément indisponible. Réessaie dans un instant."
+      "functions/permission-denied": "Accès refusé — vérifie la configuration du projet.",
+      "functions/unavailable": "Service momentanément indisponible. Réessaie dans un instant.",
+      "functions/internal": "Erreur interne du serveur. Réessaie dans un instant.",
+      "functions/unauthenticated": "Connecte-toi pour continuer."
     };
     return map[code] || "Une erreur est survenue. Réessaie dans un instant.";
   }
@@ -923,7 +939,7 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
     var total = (tier.rate * months).toFixed(2).replace(".", ",");
     priceAmount.textContent = tier.rate.toFixed(2).replace(".", ",") + " €";
     priceMonths.textContent = months;
-    priceTotal.textContent = "Soit " + total + " € au total pour " + months + " mois — estimation, confirmée au paiement.";
+    priceTotal.textContent = "Soit " + total + " € au total pour " + months + " mois.";
     tierRows.forEach(function (row) { row.classList.toggle("active", row.getAttribute("data-tier") === tier.key); });
   }
   function updateMaxMonths(max) {
@@ -1138,6 +1154,28 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
   });
 
   /* ============================================================
+     VERROU DE SCROLL PARTAGÉ — les 2 modals (consentement + CGV) peuvent
+     être ouverts l'un par-dessus l'autre (CGV cliqué depuis le
+     consentement) : compteur pour ne déverrouiller qu'à la fermeture du
+     DERNIER des deux, jamais au milieu. `scrollbar-gutter:stable` (voir
+     <html> plus haut) garantit qu'aucun décalage de mise en page ne se
+     produit quand la barre de défilement disparaît/réapparaît.
+     ============================================================ */
+  var _scrollLockCount = 0;
+  function lockPageScroll() {
+    _scrollLockCount++;
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+  }
+  function unlockPageScroll() {
+    _scrollLockCount = Math.max(0, _scrollLockCount - 1);
+    if (_scrollLockCount === 0) {
+      document.documentElement.style.overflow = "";
+      document.body.style.overflow = "";
+    }
+  }
+
+  /* ============================================================
      MODALE DE CONSENTEMENT + CHECKOUT
      ============================================================ */
   var MODAL_ANIM_MS = 180; // doit correspondre à modalOverlayOut/modalContentOut (CSS)
@@ -1150,6 +1188,7 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
     $("btnConsentConfirm").disabled = true;
     modal.classList.remove("is-closing");
     modal.classList.add("is-open");
+    lockPageScroll();
     $("consentCheckbox").focus();
   }
   function closeConsentModal() {
@@ -1157,6 +1196,7 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
     modal.classList.remove("is-open");
     modal.classList.add("is-closing");
     window.setTimeout(function () { modal.classList.remove("is-closing"); }, MODAL_ANIM_MS);
+    unlockPageScroll();
     pendingPlan = null;
   }
   $("consentCheckbox").addEventListener("change", function () {
@@ -1178,6 +1218,7 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
   function openCgvModal() {
     cgvModal.classList.remove("is-closing");
     cgvModal.classList.add("is-open");
+    lockPageScroll();
     $("cgvModalBody").scrollTop = 0;
     window.setTimeout(function () { $("cgvModalCloseX").focus(); }, 30);
   }
@@ -1186,6 +1227,7 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
     cgvModal.classList.remove("is-open");
     cgvModal.classList.add("is-closing");
     window.setTimeout(function () { cgvModal.classList.remove("is-closing"); }, MODAL_ANIM_MS);
+    unlockPageScroll();
   }
   $("openCgvModal").addEventListener("click", openCgvModal);
   $("cgvModalClose").addEventListener("click", closeCgvModal);
