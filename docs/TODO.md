@@ -619,6 +619,22 @@
   Vérifié en navigateur pour les 4 cas (`window.renderAccount(...)` avec données simulées, capture
   d'écran à l'appui pour chacun).
 
+## 5decies. Paiement unique possible après résiliation (`comptepremium.html`)
+- [x] **Demande explicite** : "pourquoi l'utilisateur ne peut pas prendre un abonnement en paiement
+  unique une fois résilié ?". Vérification faite : **le serveur autorisait déjà exactement ça**
+  (`checkPurchaseConflict()` dans `functions/premiumPlans.js` a une exception explicite : un
+  abonnement mensuel avec `cancelAtPeriodEnd === true` ne compte pas comme "actuellement actif" pour
+  le blocage anti-conflit, et `hasBlockingStripeSubscription(..., {ignoreCanceling:true})` ignore
+  aussi une souscription Stripe déjà en cours de résiliation). Le SEUL blocage venait de l'affichage :
+  `planSection` ("Choisir ma formule") restait masqué dans TOUS les cas "actif", y compris résilié,
+  suite au correctif précédent qui la cachait pour "actif" en général. Corrigé : affichée en plus dans
+  le cas résilié, avec une phrase ajoutée l'explicitant ("... ou choisir un paiement unique dès
+  maintenant pour prendre le relais"). Un nouveau paiement unique confirmé remplace directement
+  l'accès en cours ; l'abonnement résilié, déjà voué à s'arrêter à son terme, ne fait plus rien
+  ensuite (aucune double facturation possible, les deux formules restant mutuellement exclusives par
+  ailleurs). Vérifié en navigateur (capture à l'appui : bandeau résilié + carte de formule accessible
+  ensemble).
+
 ## 6. Mentions légales
 - [x] Page (`public/mentions-legales.html` — sommaire, cohérente avec l'identité P1Planner, testée)
 - [x] Placeholders contrôlés (aucune donnée inventée, seul le nom du créateur déjà validé est utilisé)

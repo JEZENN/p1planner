@@ -942,11 +942,18 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
         // fin de service imminente façon essai gratuit qui s'épuise.
         setTone("warning");
         heroTag.textContent = "Abonnement résilié";
-        desc.textContent = "Ton renouvellement automatique est désactivé. Ton accès Premium reste actif jusqu'au " + fmtDate(p.accessEnd) + " — aucun prélèvement ne sera effectué ensuite. Tu peux réactiver le renouvellement à tout moment depuis « Gérer mon abonnement ».";
+        desc.textContent = "Ton renouvellement automatique est désactivé. Ton accès Premium reste actif jusqu'au " + fmtDate(p.accessEnd) + " — aucun prélèvement ne sera effectué ensuite. Tu peux réactiver le renouvellement à tout moment depuis « Gérer mon abonnement », ou choisir un paiement unique dès maintenant pour prendre le relais.";
         addMetric("Statut", "Résilié");
         addMetric("Accès jusqu'au", fmtDate(p.accessEnd));
         addMetric("Jours restants", daysLeftHtml(p.accessEnd));
         manageSection.style.display = "";
+        // Demande explicite : un abonnement résilié ne doit PAS empêcher de
+        // prendre un paiement unique tout de suite (déjà autorisé côté
+        // serveur, voir checkPurchaseConflict() dans premiumPlans.js — seul
+        // l'affichage bloquait). Un nouveau paiement unique confirmé
+        // remplace directement l'accès en cours ; l'abonnement résilié,
+        // déjà voué à s'arrêter, ne fait ensuite plus rien à son terme.
+        planSection.style.display = "";
       } else if (stillInFreeTrial) {
         // Cas : abonnement mensuel confirmé pendant l'essai — pas encore
         // prélevé. Sans ce cas, "Jours restants : 15 jours" à côté d'un
