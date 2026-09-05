@@ -255,6 +255,8 @@ h1,h2,h3{font-family:var(--font-display);font-weight:600;line-height:1.15;letter
 .field-error{display:none;color:var(--danger);font-size:.8rem;margin-top:.4rem;align-items:center;gap:.35rem}
 .field-error.is-visible{display:flex}
 .field-hint{color:var(--text-dim);font-size:.78rem;margin-top:.4rem}
+.field-success{display:none;color:var(--success);font-size:.8rem;margin-top:.4rem;align-items:center;gap:.35rem}
+.field-success.is-visible{display:flex}
 
 .field-row-between{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.1rem;gap:1rem}
 .link-muted{font-size:.85rem;color:var(--primary-2);font-weight:600}
@@ -498,8 +500,15 @@ h1,h2,h3{font-family:var(--font-display);font-weight:600;line-height:1.15;letter
           </div>
           <div class="field" style="margin-bottom:.5rem">
             <label for="signupPasswordConfirm">Confirme ton mot de passe</label>
-            <input type="password" id="signupPasswordConfirm" name="passwordConfirm" autocomplete="new-password" required minlength="8" placeholder="••••••••" aria-describedby="signupPasswordConfirmError">
+            <div class="field-input-wrap">
+              <input type="password" id="signupPasswordConfirm" name="passwordConfirm" autocomplete="new-password" required minlength="8" class="has-toggle" placeholder="••••••••" aria-describedby="signupPasswordConfirmError signupPasswordConfirmSuccess">
+              <button type="button" class="field-toggle" data-toggle-for="signupPasswordConfirm" aria-label="Afficher le mot de passe" aria-pressed="false">
+                <svg class="icon icon-eye" viewBox="0 0 24 24" style="width:18px;height:18px"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="icon icon-eye-off" viewBox="0 0 24 24" style="width:18px;height:18px;display:none"><path d="M3 3l18 18"/><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 5.2A10.9 10.9 0 0 1 12 5c7 0 11 7 11 7a13.6 13.6 0 0 1-3.2 3.9M6.5 6.6C3.7 8.3 2 12 2 12s4 7 11 7c1.4 0 2.7-.24 3.9-.66"/></svg>
+              </button>
+            </div>
             <div class="field-error" id="signupPasswordConfirmError"><svg class="icon" viewBox="0 0 24 24" style="width:14px;height:14px"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span>Les mots de passe ne correspondent pas.</span></div>
+            <div class="field-success" id="signupPasswordConfirmSuccess"><svg class="icon" viewBox="0 0 24 24" style="width:14px;height:14px"><polyline points="20 6 9 17 4 12"/></svg><span>Les mots de passe correspondent.</span></div>
           </div>
 
           <div class="checkbox-row">
@@ -765,6 +774,30 @@ function resendEmailVerification(user) {
     input.setAttribute("aria-invalid", show ? "true" : "false");
     errorEl.classList.toggle("is-visible", !!show);
   }
+
+  /* ---------- Confirmation de mot de passe : retour en direct ----------
+     Demande explicite : rien n'indiquait que les deux mots de passe
+     correspondaient (seule une erreur apparaissait s'ils ne correspondaient
+     PAS, et seulement après la soumission du formulaire). Vérifié à chaque
+     frappe sur les deux champs, dès que la confirmation n'est pas vide. */
+  (function () {
+    var pwd = $("signupPassword"), confirmPwd = $("signupPasswordConfirm");
+    var errorEl = $("signupPasswordConfirmError"), successEl = $("signupPasswordConfirmSuccess");
+    if (!pwd || !confirmPwd || !errorEl || !successEl) return;
+    function checkMatch() {
+      if (!confirmPwd.value) {
+        errorEl.classList.remove("is-visible");
+        successEl.classList.remove("is-visible");
+        return;
+      }
+      var matches = confirmPwd.value === pwd.value && confirmPwd.value.length >= 8;
+      errorEl.classList.toggle("is-visible", !matches);
+      successEl.classList.toggle("is-visible", matches);
+      confirmPwd.setAttribute("aria-invalid", matches ? "false" : "true");
+    }
+    pwd.addEventListener("input", checkMatch);
+    confirmPwd.addEventListener("input", checkMatch);
+  })();
 
   /* ---------- Redirection anti open-redirect ---------- */
   function sanitizeRedirect(raw) {

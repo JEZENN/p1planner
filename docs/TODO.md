@@ -534,6 +534,40 @@
   la confirmation inline après enregistrement de la date de concours (`showExamDateConfirm()`) — plus
   cohérent avec le fait que cette durée reste un choix de l'utilisateur, pas une limite imposée.
 
+## 5septies. Barre de défilement du modal CGV (`comptepremium.html`)
+- [x] **Bug réel trouvé et corrigé** (signalé après le premier correctif scroll-lock, qui restait
+  incomplet) : `scrollbar-gutter:stable` (posé sur `<html>`, voir le reset) réserve la piste de la
+  barre même quand `overflow` passe à `hidden` — elle restait donc visible (sans curseur, juste la
+  piste réservée) pendant qu'un modal était ouvert, malgré le verrou de scroll déjà en place. Corrigé
+  en désactivant `scrollbar-gutter` (`auto`) le temps du verrou, restauré à la fermeture. Vérifié par
+  mesure directe (`innerWidth - clientWidth` passe de non-nul à `0`) : plus aucune piste réservée
+  pendant qu'un modal est ouvert.
+
+## 3ter. Confirmation visuelle mot de passe (`auth.html`)
+- [x] **Œil masqué sur "Confirme ton mot de passe"** (bug signalé) : ce champ n'avait tout simplement
+  jamais eu de bouton `.field-toggle` (afficher/masquer), contrairement aux deux autres champs mot de
+  passe — ajouté, identique aux autres.
+- [x] **Aucune confirmation quand les mots de passe correspondent** (demande explicite) : seule une
+  erreur apparaissait s'ils NE correspondaient PAS (et seulement après soumission). Ajouté un retour
+  positif en direct (`.field-success`, vérifié à chaque frappe sur les deux champs) : "✓ Les mots de
+  passe correspondent." dès que la confirmation est non vide et correspond.
+
+## 7ter. Deux bugs réels côté tableur (demande explicite, sans capture)
+- [x] **Modal de conversion de barème affiché inutilement à la création du compte** : l'étape
+  "Barème de confiance" de l'assistant de présentation appelait `requestConfidenceScaleChange()`, qui
+  affiche TOUJOURS une modale "Passer la confiance sur X ? Vos données vont être converties..." — non
+  pertinente pour un compte tout juste créé (zéro tour enregistré, rien à convertir). Ajouté un
+  paramètre `skipConfirm` à `requestConfidenceScaleChange(scale, {skipConfirm})`, utilisé uniquement
+  par l'étape d'onboarding ; le switch dans Paramètres (changement en cours d'usage, avec de vraies
+  données) continue d'afficher la confirmation normalement.
+- [x] **Notification "Donnez votre avis" pouvait apparaître pendant que la présentation est encore
+  ouverte** : le mécanisme de report jusqu'à la fermeture de la présentation existait déjà
+  (`_pendingWelcomeNudge` / `_tpxConsumePendingWelcomeNudge()`, appelé par `Onb.close()`), mais son
+  filet de sécurité (si la présentation ne se déclenche/ferme jamais) était fixé à 15 secondes — bien
+  plus court que le temps normal pour parcourir tout l'assistant en le lisant vraiment. Ce filet se
+  déclenchait donc souvent EN PREMIER, avant la fermeture réelle, annulant l'effet du report. Allongé
+  à 2 minutes (le filet reste un vrai dernier recours, `Onb.close()` reste le déclencheur normal).
+
 ## 6. Mentions légales
 - [x] Page (`public/mentions-legales.html` — sommaire, cohérente avec l'identité P1Planner, testée)
 - [x] Placeholders contrôlés (aucune donnée inventée, seul le nom du créateur déjà validé est utilisé)

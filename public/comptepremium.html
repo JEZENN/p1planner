@@ -1198,12 +1198,20 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
     _scrollLockCount++;
     document.documentElement.style.overflow = "hidden";
     document.body.style.overflow = "hidden";
+    // Bug réel trouvé : `scrollbar-gutter:stable` (posé sur <html>, voir le
+    // reset plus haut) réserve la piste de la barre même quand overflow
+    // devient hidden — elle restait visible (sans curseur, juste la piste)
+    // pendant qu'un modal était ouvert. Désactivé le temps du verrou ; le
+    // modal recouvre déjà tout l'écran à ce moment-là, un micro-décalage
+    // de layout en dessous n'est jamais visible.
+    document.documentElement.style.scrollbarGutter = "auto";
   }
   function unlockPageScroll() {
     _scrollLockCount = Math.max(0, _scrollLockCount - 1);
     if (_scrollLockCount === 0) {
       document.documentElement.style.overflow = "";
       document.body.style.overflow = "";
+      document.documentElement.style.scrollbarGutter = "";
     }
   }
 

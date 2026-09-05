@@ -44200,11 +44200,20 @@ document.getElementById('friends-add-input')?.addEventListener('keydown', functi
         if (!udata.feedbackNudgeSeen) {
             if (camp.campaignId) welcomePatch.feedbackCampaignSeen = camp.campaignId;
             window._pendingWelcomeNudge = welcomePatch;
+            // Bug réel trouvé et corrigé (demande explicite) : 15s est plus
+            // court que le temps normal pour parcourir tout l'assistant de
+            // présentation (plusieurs pages, lues par un vrai utilisateur) —
+            // ce filet de sécurité se déclenchait donc AVANT Onb.close() dans
+            // le cas courant, faisant apparaître la notif PENDANT que la
+            // présentation était encore ouverte, au lieu d'être un vrai
+            // dernier recours pour le cas où elle ne se déclenche jamais.
+            // Allongé à 2 minutes ; _tpxConsumePendingWelcomeNudge() reste
+            // sans effet si Onb.close() l'a déjà consommée entre-temps.
             setTimeout(function () {
                 if (window._pendingWelcomeNudge && typeof window._tpxConsumePendingWelcomeNudge === 'function') {
                     window._tpxConsumePendingWelcomeNudge();
                 }
-            }, 15000);
+            }, 120000);
             return;
         }
 
@@ -46997,12 +47006,18 @@ window._applyItemPriority = function(priority, specialtyId, fc) {
     return '<div class="cs-map-grid">' + rows + '</div>';
   }
 
-  window.requestConfidenceScaleChange = async function (newScale) {
+  // `skipConfirm` : demande explicite — à la création du compte (onboarding),
+  // rien n'a encore été enregistré, donc rien à "convertir" : la modale de
+  // confirmation (pensée pour un changement en cours d'usage, avec de vraies
+  // données existantes) n'a pas lieu d'être à ce moment-là. Voir le point
+  // d'appel dans TPXOnboarding (option confidenceScale).
+  window.requestConfidenceScaleChange = async function (newScale, opts) {
+    var skipConfirm = !!(opts && opts.skipConfirm);
     var fromScale = getConfidenceScale();
     if (fromScale === newScale) return;
     var toText = newScale === 10 ? 'sur 10' : 'sur 5';
     var fromText = fromScale === 10 ? 'sur 10' : 'sur 5';
-    var ok = await (typeof window.showCustomConfirm === 'function'
+    var ok = skipConfirm ? true : await (typeof window.showCustomConfirm === 'function'
       ? window.showCustomConfirm({
           type: 'warning',
           icon: 'sliders-h',
@@ -61230,8 +61245,12 @@ function updateSettingsUi() {
                 get: function () { return String(window.getConfidenceScale()); },
                 apply: function (v) {
                     var scale = parseInt(v, 10);
+                    // skipConfirm : demande explicite — à ce stade (création du
+                    // compte), aucun tour n'existe encore, donc rien à
+                    // "convertir" ; la modale de confirmation n'a de sens que
+                    // pour un changement en cours d'usage depuis Paramètres.
                     if (window.getConfidenceScale() !== scale && typeof window.requestConfidenceScaleChange === 'function') {
-                        window.requestConfidenceScaleChange(scale);
+                        window.requestConfidenceScaleChange(scale, { skipConfirm: true });
                     }
                 },
                 options: [
