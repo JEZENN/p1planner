@@ -394,6 +394,20 @@ main{padding-block:clamp(1.75rem,4vw,3rem) 5rem}
 .cgv-link-btn:hover{color:var(--text)}
 
 /* ============================================================
+   BLOC DATE DE CONCOURS — intégré dans la carte "Paiement unique"
+   (plus une section séparée) : regroupé au même endroit, visible
+   uniquement quand cette formule est sélectionnée.
+   ============================================================ */
+.exam-date-block{margin-bottom:1.5rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border)}
+.exam-date-block h3{font-size:.95rem;margin-bottom:.4rem}
+.exam-date-confirm{
+  display:flex;align-items:center;gap:.5rem;margin-top:.9rem;padding:.65rem .85rem;
+  background:var(--success-soft);border:1px solid rgba(61,220,151,.3);border-radius:var(--radius-sm);
+  color:var(--success);font-size:.85rem;font-weight:600;
+}
+.exam-date-confirm .icon{width:16px;height:16px;flex-shrink:0}
+
+/* ============================================================
    MODALE — CONDITIONS GÉNÉRALES DE VENTE (contenu)
    ============================================================ */
 .cgv-modal{max-width:640px;max-height:min(720px,86vh);display:flex;flex-direction:column}
@@ -488,47 +502,6 @@ main{padding-block:clamp(1.75rem,4vw,3rem) 5rem}
         </div>
       </section>
 
-      <!-- ---------- Date de concours ---------- -->
-      <section class="section-block" id="examDateSection" aria-labelledby="examHeading" style="display:none">
-        <h2 id="examHeading">Ta date de concours / d'examens</h2>
-        <p class="status-desc" style="margin-bottom:1rem;max-width:60ch">Indique cette date pour savoir combien de mois tu peux choisir en <strong>paiement unique</strong> — le tarif est dégressif : plus tu prends de mois d'un coup, moins c'est cher par mois. Pas besoin de cette étape pour l'abonnement mensuel.</p>
-        <div class="card exam-date-row">
-          <div class="field date-field">
-            <label for="examDateBtn">Date approximative du concours ou des examens S2</label>
-            <div class="date-picker">
-              <button type="button" class="date-picker-btn" id="examDateBtn" aria-haspopup="dialog" aria-expanded="false">
-                <svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
-                <span id="examDateBtnText">Choisir une date</span>
-              </button>
-              <input type="hidden" id="examDate" value="">
-              <div class="date-picker-pop" id="examDatePicker" role="dialog" aria-label="Choisir une date" hidden>
-                <div class="dp-head">
-                  <button type="button" class="dp-nav" id="dpPrevMonth" aria-label="Mois précédent">
-                    <svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M15 18l-6-6 6-6"/></svg>
-                  </button>
-                  <span class="dp-month-year" id="dpMonthYear">—</span>
-                  <button type="button" class="dp-nav" id="dpNextMonth" aria-label="Mois suivant">
-                    <svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M9 18l6-6-6-6"/></svg>
-                  </button>
-                </div>
-                <div class="dp-weekdays">
-                  <span>lu</span><span>ma</span><span>me</span><span>je</span><span>ve</span><span>sa</span><span>di</span>
-                </div>
-                <div class="dp-days" id="dpDays"></div>
-                <div class="dp-foot">
-                  <button type="button" id="dpClear">Effacer</button>
-                  <button type="button" id="dpToday">Aujourd'hui</button>
-                </div>
-              </div>
-            </div>
-            <p class="field-hint">Ton accès pourra couvrir jusqu'à la fin de ce mois-là, sans marge ajoutée. Tu peux changer d'avis plus tard.</p>
-          </div>
-          <button type="button" class="btn btn-primary" id="btnSaveExamDate" style="min-width:180px">
-            <span class="btn-label">Enregistrer la date</span><span class="spinner" aria-hidden="true"></span>
-          </button>
-        </div>
-      </section>
-
       <!-- ---------- Formule ---------- -->
       <section class="section-block" id="planSection" aria-labelledby="planHeading" style="display:none">
         <h2 id="planHeading">Choisir ma formule</h2>
@@ -541,6 +514,51 @@ main{padding-block:clamp(1.75rem,4vw,3rem) 5rem}
         <div class="card plan-card">
           <div class="plan-card-stage" id="planCardStage">
           <div id="uniquePlanBlock">
+            <!-- ---------- Date de concours (uniquement en paiement unique) ---------- -->
+            <div class="exam-date-block" id="examDateBlock">
+              <h3>Ta date de concours / d'examens</h3>
+              <p class="status-desc" style="margin-bottom:1rem;max-width:60ch">Indique cette date pour savoir combien de mois tu peux choisir — le tarif est dégressif : plus tu prends de mois d'un coup, moins c'est cher par mois.</p>
+              <div class="exam-date-row">
+                <div class="field date-field">
+                  <label for="examDateBtn">Date approximative du concours ou des examens S2</label>
+                  <div class="date-picker">
+                    <button type="button" class="date-picker-btn" id="examDateBtn" aria-haspopup="dialog" aria-expanded="false">
+                      <svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+                      <span id="examDateBtnText">Choisir une date</span>
+                    </button>
+                    <input type="hidden" id="examDate" value="">
+                    <div class="date-picker-pop" id="examDatePicker" role="dialog" aria-label="Choisir une date" hidden>
+                      <div class="dp-head">
+                        <button type="button" class="dp-nav" id="dpPrevMonth" aria-label="Mois précédent">
+                          <svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M15 18l-6-6 6-6"/></svg>
+                        </button>
+                        <span class="dp-month-year" id="dpMonthYear">—</span>
+                        <button type="button" class="dp-nav" id="dpNextMonth" aria-label="Mois suivant">
+                          <svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M9 18l6-6-6-6"/></svg>
+                        </button>
+                      </div>
+                      <div class="dp-weekdays">
+                        <span>lu</span><span>ma</span><span>me</span><span>je</span><span>ve</span><span>sa</span><span>di</span>
+                      </div>
+                      <div class="dp-days" id="dpDays"></div>
+                      <div class="dp-foot">
+                        <button type="button" id="dpClear">Effacer</button>
+                        <button type="button" id="dpToday">Aujourd'hui</button>
+                      </div>
+                    </div>
+                  </div>
+                  <p class="field-hint">Ton accès pourra couvrir jusqu'à la fin de ce mois-là, sans marge ajoutée. Tu peux changer d'avis plus tard.</p>
+                </div>
+                <button type="button" class="btn btn-primary" id="btnSaveExamDate" style="min-width:180px">
+                  <span class="btn-label">Enregistrer la date</span><span class="spinner" aria-hidden="true"></span>
+                </button>
+              </div>
+              <p class="exam-date-confirm" id="examDateConfirm" style="display:none">
+                <svg class="icon" viewBox="0 0 24 24" style="stroke:currentColor"><polyline points="20 6 9 17 4 12"/></svg>
+                <span id="examDateConfirmText"></span>
+              </p>
+            </div>
+
             <div class="price-row">
               <span class="price-amount" id="priceAmount">3,00&nbsp;€</span>
               <span class="price-suffix">/ mois, sur <span id="priceMonths">1</span> mois</span>
@@ -849,8 +867,8 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
 
     var heroLeft = $("statusHeroLeft"), heroTag = $("statusHeroTag"), desc = $("statusDesc"), metrics = $("statusDates");
     metrics.innerHTML = "";
-    var examSection = $("examDateSection"), planSection = $("planSection"), manageSection = $("manageSection");
-    examSection.style.display = "none";
+    var examDateBlock = $("examDateBlock"), planSection = $("planSection"), manageSection = $("manageSection");
+    examDateBlock.style.display = "none";
     planSection.style.display = "none";
     manageSection.style.display = "none";
 
@@ -884,7 +902,7 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
       addMetric("Statut", "Accès gratuit temporaire");
       addMetric("Fin de la période", fmtDate(p.trialEnd));
       addMetric("Jours restants", daysLeftHtml(p.trialEnd));
-      examSection.style.display = "";
+      examDateBlock.style.display = "";
       planSection.style.display = "";
     } else if (p.status === "active") {
       setTone("active");
@@ -895,7 +913,10 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
       addMetric("Statut", p.planType === "monthly" ? "Abonnement mensuel" : "Premium actif");
       addMetric("Accès jusqu'au", fmtDate(p.accessEnd));
       addMetric("Jours restants", daysLeftHtml(p.accessEnd));
-      planSection.style.display = "";
+      // Demande explicite : plus de changement de formule proposé tant qu'un
+      // accès Premium est déjà actif (paiement unique ou mensuel) — la
+      // formule en cours va simplement à son terme ou se gère via "Gérer
+      // mon abonnement" (résiliation), jamais via un nouveau choix ici.
       if (p.planType === "monthly") { manageSection.style.display = ""; }
     } else {
       setTone("expired");
@@ -903,7 +924,7 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
       desc.textContent = "Ton accès Premium est terminé. Tes données restent consultables — rien n'est jamais supprimé.";
       addMetric("Statut", "Lecture seule");
       if (p.accessEnd) { addMetric("Terminé le", fmtDate(p.accessEnd)); }
-      examSection.style.display = "";
+      examDateBlock.style.display = "";
       planSection.style.display = "";
     }
 
@@ -1123,14 +1144,24 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
      vérité pour maxMonths — jamais une valeur calculée uniquement côté
      client qui serait ensuite fait confiance pour le paiement).
      ============================================================ */
+  /* Confirmation affichée DANS le cadre "Ta date de concours" (demande
+     explicite : la notif apparaissait tout en haut de page via
+     showAlert(), invisible sans remonter). Les erreurs restent sur
+     showAlert() — elles doivent rester visibles même si l'utilisateur a
+     déjà quitté la page des yeux entre-temps (chargement réseau, etc.). */
+  var examDateConfirmEl = $("examDateConfirm"), examDateConfirmText = $("examDateConfirmText");
+  function showExamDateConfirm(message) {
+    examDateConfirmText.textContent = message;
+    examDateConfirmEl.style.display = "";
+  }
   $("btnSaveExamDate").addEventListener("click", function () {
     var input = $("examDate");
+    examDateConfirmEl.style.display = "none";
     if (!input.value) { showAlert("error", "Choisis une date avant d'enregistrer."); return; }
     var examDate = new Date(input.value + "T00:00:00");
     var now = new Date();
     var estimate = window.p1ComputeMaxMonthsFromExamDate(examDate, now);
     updateMaxMonths(estimate);
-    showAlert("info", "Durée maximale estimée : " + estimate + " mois (jusqu'à la fin du mois de ton concours). Enregistrement en cours…");
 
     if (!firebaseReady || !functions) {
       showAlert("error", "Configuration Firebase manquante — l'enregistrement n'est pas encore disponible sur cet environnement.");
@@ -1144,7 +1175,7 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
         var maxMonths = result && result.data && result.data.maxMonths;
         if (typeof maxMonths === "number") {
           updateMaxMonths(maxMonths);
-          showAlert("success", "Date enregistrée : durée maximale confirmée à " + maxMonths + " mois.");
+          showExamDateConfirm("Date enregistrée : durée maximale confirmée à " + maxMonths + " mois.");
         } else {
           showAlert("error", "Réponse inattendue du serveur.");
         }

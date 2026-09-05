@@ -475,6 +475,31 @@
 - [x] Phrase "estimation, confirmée au paiement" retirée ici aussi (même correctif que sur `index.html`
   plus tôt cette session, manqué sur cette page — 2 occurrences : texte HTML par défaut + calcul JS).
 
+## 5quater. Restructuration formule + date de concours (`comptepremium.html`)
+- [x] **Fusion "Ta date de concours" dans la carte "Choisir ma formule"** (demande explicite : "un
+  cadre uniquement avec ta date de concours + choisir ma formule avec la date uniquement quand je
+  choisis paiement unique") : l'ancienne section séparée `#examDateSection` a été supprimée, son
+  contenu déplacé en sous-bloc (`#examDateBlock`) EN HAUT de `#uniquePlanBlock` — comme ce bloc fait
+  déjà partie du système d'animation d'onglet existant (`setPlanMode()`), la date de concours
+  apparaît/disparaît maintenant automatiquement avec l'onglet "Paiement unique", sans code
+  supplémentaire pour ce comportement.
+- [x] **Notification déplacée dans le cadre** (bug UX signalé : "elle apparaît tout en haut de page on
+  ne la voit pas directement") : la confirmation de succès de `saveExamDate` utilisait le
+  `showAlert()` global, tout en haut de page — remplacée par une confirmation inline
+  (`#examDateConfirm`, bandeau vert avec icône) affichée directement sous le champ de date. Les
+  erreurs restent sur `showAlert()` (toujours utile qu'elles restent visibles même après un
+  changement de focus).
+- [x] **"Choisir ma formule" masqué quand un accès Premium est déjà actif** (demande explicite),
+  quel que soit le type (paiement unique ou abonnement mensuel) — plus de proposition de "changer de
+  formule" pendant qu'un accès est en cours. `manageSection` ("Gérer mon abonnement") continue de
+  s'afficher normalement pour l'abonnement mensuel (déjà correctement câblé auparavant, vérifié par
+  test direct des 4 états : essai, expiré, actif paiement unique, actif mensuel).
+- [x] **Bug réel corrigé au passage** : `translateError()` (voir plus haut §5ter) — sans ce correctif,
+  aucune des erreurs "métier" (dont "Choisis une date avant d'enregistrer") ne se serait jamais
+  affichée correctement de toute façon.
+  Vérifié en navigateur (`window.renderAccount(...)` avec données simulées pour chacun des 4 états,
+  capture d'écran à l'appui pour chacun).
+
 ## 6. Mentions légales
 - [x] Page (`public/mentions-legales.html` — sommaire, cohérente avec l'identité P1Planner, testée)
 - [x] Placeholders contrôlés (aucune donnée inventée, seul le nom du créateur déjà validé est utilisé)
