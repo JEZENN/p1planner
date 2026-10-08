@@ -717,3 +717,16 @@ contre l'émulateur réel juste avant la rédaction du rapport final.
 - [x] Main au survol du bouton « Matières » activé (backdrop qui le recouvrait), normale ailleurs ; un
   clic referme sans rouvrir, la journée reste ouverte. `pdd-popovers.mjs` **4/4**, contre-épreuve
   (échec avant correctif) + mutants PDD4/PDD5 ; déployé et vérifié (SHA-256 local = live, `570a2443…`).
+
+## Inscription : astérisques/erreurs en direct + recopie du nom (2026-10-08)
+
+- [x] `signup-form.mjs` **3/3** (astérisques, disparition des erreurs, consentement), mutants SGN1-3 détectés ;
+  `referral-ui.mjs` **25/25**.
+- [x] `profile-name-mirror.test.mjs` **9/9** + non-régression Functions **141/141** ; mutants détectés ;
+  déployé (Hosting `auth.html` identique en ligne `c144399e…`, 4 Functions ciblées).
+- [ ] À constater en production : les noms « — » du panneau admin se remplissent à la prochaine
+  connexion/ouverture du tableur de chaque utilisateur (aucune action manuelle).
+
+- [x] Sauvegarde nocturne : bug de démarrage à froid corrigé (`getAuth()` -> `auth_()`), `scheduled-backup-init.test.mjs`
+  avec contre-épreuve ; `backups.test.mjs` auto-nettoyant (12/12 x3). Fonctions : **141/141** à la 1re exécution complète (après la recopie du nom), puis 139-142 selon les exécutions : 1 à 3 tests de CONCURRENCE du parrainage (« Transaction is invalid or closed », émulateur) échouent de façon intermittente -- mesuré SANS mes changements (version HEAD) : 4/8 puis 6/8 exécutions en échec, contre 6/8 puis 3/8 avec eux : instabilité d'environnement préexistante, pas une régression.
+- [ ] À vérifier demain : `firebase functions:log` -> l'exécution de 03:00 de `scheduledUserBackup` crée des sauvegardes.

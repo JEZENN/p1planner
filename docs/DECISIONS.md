@@ -1245,3 +1245,57 @@ local = live, `89ed24bb…`).
   `battery.mjs` 19/19, `j-day-groups.mjs` 4/4, `pop-legend-keyboard.mjs` 12/12, `delete-animation.mjs`
   4/4. CRLF préservé (66 936 / 0 bare LF). Rollback : `rollback/tableur.html.avant-pdd-cursor-2026-10-08`.
   Déployé et vérifié (SHA-256 local = live, `570a2443…`).
+
+## Formulaire d'inscription (astérisques, erreurs qui disparaissent) + nom des utilisateurs dans le panneau admin (2026-10-08)
+
+**1. Formulaire d'inscription (`auth.html`)** -- retour de Jean (capture : erreurs « Merci d'indiquer ton nom »
+restées affichées sous un nom déjà saisi) :
+- Astérisque rouge (`.req-star`, `aria-hidden`, l'attribut `required` suffit aux lecteurs d'écran) sur les 6
+  champs obligatoires (prénom, nom, email, mot de passe, confirmation, conditions) + légende « Champs
+  obligatoires ». Le code de parrainage (facultatif) n'en porte pas. Interprété comme un astérisque (la
+  convention usuelle) et non une croix, qui évoquerait une erreur.
+- Revérification à la frappe, UNIQUEMENT pour un champ déjà marqué invalide (aucune erreur prématurée pendant
+  la première saisie) : l'erreur disparaît dès que la règle de soumission est satisfaite et revient si on
+  re-soumet une valeur invalide. Confirmation du mot de passe : retour en direct déjà existant (inchangé).
+  Le message global « accepte les Conditions » disparaît quand la case est cochée.
+- Tests `signup-form.mjs` **3/3**, mutants **SGN1/SGN2/SGN3** détectés ; `referral-ui.mjs` **25/25**.
+
+**2. Nom absent dans le panneau admin** -- cause (lue dans le code, documentée par les commentaires de
+`onUserCreated`/`resolveReferralDisplayName`) : `auth.html` fait `createUser` PUIS `updateProfile` ;
+`onUserCreated` s'exécute dès la création, donc AVANT que le nom existe, et écrit `displayName:null` dans
+`users/{uid}`. Le nom n'atteignait Firestore que si l'utilisateur le rééditait dans les Paramètres
+(`updateDisplayName`) ou s'il venait de Google. Le panneau admin, la liste d'amis (« Utilisateur ») et les
+noms de filleuls lisent Firestore. Correctif (option 1 choisie par Jean, pas de bouton admin) :
+- `mirrorAuthNameToProfile(uid)` : recopie le nom du compte Auth dans la fiche quand elle n'en a pas ;
+  jamais d'écrasement d'un nom existant, nettoyé (`sanitizeReferralName`, 2-60 car.), jamais bloquant,
+  transactionnel. Appelé à l'inscription (`referralInit`), à chaque connexion vérifiée (`referralMarkActive`,
+  AVANT son retour anticipé pour les comptes sans parrain) et à l'ouverture du tableur (`referralEnsureCode`)
+  : les comptes existants se corrigent à leur prochaine connexion/ouverture, sans toucher à la production.
+- `onUserCreated` ne remet plus un nom déjà recopié à `null` (course possible : `referralInit` peut passer
+  avant le trigger) ; comportement d'origine conservé quand il n'y a ni nom ni fiche.
+- Tests `profile-name-mirror.test.mjs` **9/9** (vrai code via `.run()`), mutants (recopie neutralisée /
+  onUserCreated qui écrase / hook retiré avant le retour anticipé) tous détectés ; non-régression Functions
+  **141/141** (premium-plans, 4 suites parrainage, sauvegardes, nouveau fichier).
+- Déploiement : Hosting (`auth.html`, SHA-256 local = live `c144399e…`) + 4 Functions ciblées
+  (`onUserCreated`, `referralInit`, `referralEnsureCode`, `referralMarkActive`), logs sans erreur.
+  Rollback : `rollback/auth.html.avant-signup-form-2026-10-08`.
+
+### Bug de production trouvé en vérifiant ce déploiement : la sauvegarde nocturne échouait chaque nuit (2026-10-08)
+
+- Les logs Cloud Functions montraient `scheduleduserbackup : The default Firebase app does not exist` aux
+  exécutions de 03:00 (Paris) des 07 et 08/10 -- donc aucune sauvegarde automatique n'a été créée depuis le
+  déploiement du 03/10 (les sauvegardes manuelles admin, elles, fonctionnaient). Cause : `_runScheduledBackups`
+  appelait `getAuth()` directement ; sur une instance froide, rien n'avait encore appelé `db_()`/`auth_()`
+  (seuls à initialiser l'app Admin, voir `ensureApp_`). Les tests existants ne pouvaient pas le voir : leur
+  harnais initialise l'app Admin AVANT de charger `functions/index.js`.
+- Correctif : `getAuth()` -> `auth_()` (une ligne). Nouveau test `scheduled-backup-init.test.mjs` : charge
+  `functions/index.js` dans un processus NEUF, sans aucune initialisation préalable, puis exécute la tâche --
+  contre-épreuve faite (échoue avec `getAuth()`, passe avec `auth_()`).
+- Déployé : `firebase deploy --only functions:scheduledUserBackup`. **À constater** : l'exécution de
+  03:00 (Paris) de cette nuit doit journaliser « N sauvegarde(s) créée(s) » au lieu de l'erreur
+  (`firebase functions:log`).
+- Test `backups.test.mjs` rendu auto-nettoyant (l'identifiant fixe `ACTIVE3` accumulait les données d'une
+  exécution à l'autre : 19 sauvegardes auto résiduelles faussaient le décompte -- faux échec, pas un bug de
+  purge) ; stable sur 3 exécutions consécutives sans nettoyage manuel.
+
+- **Réserve honnête sur les tests de concurrence du parrainage** (`referral-functions` « 2 filleuls activés en concurrence », `referral-audit` F3 « deux alias en Promise.all ») : sur l'émulateur ils échouent désormais de façon intermittente (« 3 INVALID_ARGUMENT: Transaction is invalid or closed »), alors qu'ils passaient en début de journée. Mesuré en A/B : version HEAD (sans la recopie du nom) 4/8 et 6/8 exécutions en échec, version avec recopie 6/8 puis 3/8 (émulateur redémarré à neuf) : le défaut est préexistant et indépendant de ce lot. À investiguer à part : si le message provient du SDK Admin en production et non du seul émulateur, il concernerait deux activations simultanées pour un même parrain.

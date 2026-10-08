@@ -137,7 +137,17 @@ const MUTANTS = [
     to: "this.style.cursor = '';" },
   { id: "PDD5 main sur TOUT le backdrop (pas seulement sur le bouton)", file: "tableur.html", script: "pdd-popovers.mjs", scen: ["P4"],
     from: "this.style.cursor = over ? 'pointer' : '';",
-    to: "this.style.cursor = 'pointer';" }
+    to: "this.style.cursor = 'pointer';" },
+  // ── Formulaire d'inscription (08/10, retour de Jean) ──
+  { id: "SGN1 astérisque du champ Prénom retiré", file: "auth.html", script: "signup-form.mjs", scen: ["F1"],
+    from: '<label for="signupFirstName">Prénom <span class="req-star" aria-hidden="true">*</span></label>',
+    to: '<label for="signupFirstName">Prénom</label>' },
+  { id: "SGN2 revérification en direct des champs désactivée (erreurs qui restent)", file: "auth.html", script: "signup-form.mjs", scen: ["F2"],
+    from: 'if (input.getAttribute("aria-invalid") === "true" && r[2](input.value)) setFieldError(input, err, false);',
+    to: 'if (false) setFieldError(input, err, false);' },
+  { id: "SGN3 message « accepte les Conditions » jamais effacé à la case cochée", file: "auth.html", script: "signup-form.mjs", scen: ["F3"],
+    from: "if (consent.checked && globalAlert.textContent.indexOf(\"Conditions d'utilisation\") !== -1) hideAlert();",
+    to: 'if (false) hideAlert();' }
 ];
 let bad = 0;
 for (const m of MUTANTS.filter((x) => !ONLY || x.id.startsWith(ONLY))) {

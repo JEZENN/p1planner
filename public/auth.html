@@ -257,6 +257,10 @@ h1,h2,h3{font-family:var(--font-display);font-weight:600;line-height:1.15;letter
   width:38px;color:var(--text-dim);border-radius:8px;
 }
 .field-toggle:hover{color:var(--text)}
+/* Champ obligatoire (inscription) : astérisque rouge après le libellé ; les lecteurs d'écran
+   passent par l'attribut required (l'astérisque est aria-hidden). */
+.req-star{color:var(--danger);font-weight:700;margin-left:.2rem}
+.required-legend{color:var(--text-dim);font-size:.78rem;margin:-.9rem 0 1.1rem}
 .field-error{display:none;color:var(--danger);font-size:.8rem;margin-top:.4rem;align-items:center;gap:.35rem}
 .field-error.is-visible{display:flex}
 .field-hint{color:var(--text-dim);font-size:.78rem;margin-top:.4rem}
@@ -472,27 +476,28 @@ h1,h2,h3{font-family:var(--font-display);font-weight:600;line-height:1.15;letter
       <section class="auth-panel" id="panelSignup" role="tabpanel" aria-labelledby="tabSignup">
         <h2>Créer ton compte</h2>
         <p class="panel-lead">15 jours d'essai gratuit, sans carte bancaire.</p>
+        <p class="required-legend"><span class="req-star" aria-hidden="true">*</span> Champs obligatoires</p>
 
         <form id="formSignup" novalidate>
           <div class="field-row-2col">
             <div class="field">
-              <label for="signupFirstName">Prénom</label>
+              <label for="signupFirstName">Prénom <span class="req-star" aria-hidden="true">*</span></label>
               <input type="text" id="signupFirstName" name="given-name" autocomplete="given-name" required minlength="2" placeholder="Ton prénom" aria-describedby="signupFirstNameError">
               <div class="field-error" id="signupFirstNameError"><svg class="icon" viewBox="0 0 24 24" style="width:14px;height:14px"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span>Merci d'indiquer ton prénom.</span></div>
             </div>
             <div class="field">
-              <label for="signupLastName">Nom</label>
+              <label for="signupLastName">Nom <span class="req-star" aria-hidden="true">*</span></label>
               <input type="text" id="signupLastName" name="family-name" autocomplete="family-name" required minlength="2" placeholder="Ton nom" aria-describedby="signupLastNameError">
               <div class="field-error" id="signupLastNameError"><svg class="icon" viewBox="0 0 24 24" style="width:14px;height:14px"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span>Merci d'indiquer ton nom.</span></div>
             </div>
           </div>
           <div class="field">
-            <label for="signupEmail">Adresse email</label>
+            <label for="signupEmail">Adresse email <span class="req-star" aria-hidden="true">*</span></label>
             <input type="email" id="signupEmail" name="email" autocomplete="email" required placeholder="toi@exemple.fr" aria-describedby="signupEmailError">
             <div class="field-error" id="signupEmailError"><svg class="icon" viewBox="0 0 24 24" style="width:14px;height:14px"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span>Adresse email invalide.</span></div>
           </div>
           <div class="field">
-            <label for="signupPassword">Mot de passe</label>
+            <label for="signupPassword">Mot de passe <span class="req-star" aria-hidden="true">*</span></label>
             <div class="field-input-wrap">
               <input type="password" id="signupPassword" name="password" autocomplete="new-password" required minlength="8" class="has-toggle" placeholder="8 caractères minimum" aria-describedby="signupPasswordError signupPasswordHint">
               <button type="button" class="field-toggle" data-toggle-for="signupPassword" aria-label="Afficher le mot de passe" aria-pressed="false">
@@ -504,7 +509,7 @@ h1,h2,h3{font-family:var(--font-display);font-weight:600;line-height:1.15;letter
             <div class="field-error" id="signupPasswordError"><svg class="icon" viewBox="0 0 24 24" style="width:14px;height:14px"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span>8 caractères minimum.</span></div>
           </div>
           <div class="field" style="margin-bottom:.5rem">
-            <label for="signupPasswordConfirm">Confirme ton mot de passe</label>
+            <label for="signupPasswordConfirm">Confirme ton mot de passe <span class="req-star" aria-hidden="true">*</span></label>
             <div class="field-input-wrap">
               <input type="password" id="signupPasswordConfirm" name="passwordConfirm" autocomplete="new-password" required minlength="8" class="has-toggle" placeholder="••••••••" aria-describedby="signupPasswordConfirmError signupPasswordConfirmSuccess">
               <button type="button" class="field-toggle" data-toggle-for="signupPasswordConfirm" aria-label="Afficher le mot de passe" aria-pressed="false">
@@ -526,7 +531,7 @@ h1,h2,h3{font-family:var(--font-display);font-weight:600;line-height:1.15;letter
 
           <div class="checkbox-row">
             <input type="checkbox" id="signupConsent" required>
-            <label for="signupConsent">J'ai lu et j'accepte les <button type="button" class="cgu-link-btn" id="openCguModal">Conditions d'utilisation</button> de P1Planner.</label>
+            <label for="signupConsent">J'ai lu et j'accepte les <button type="button" class="cgu-link-btn" id="openCguModal">Conditions d'utilisation</button> de P1Planner. <span class="req-star" aria-hidden="true">*</span></label>
           </div>
 
           <button type="submit" class="btn btn-primary" id="btnSignup">
@@ -828,6 +833,33 @@ function sendPasswordResetEmailViaBrevo(email) {
     }
     pwd.addEventListener("input", checkMatch);
     confirmPwd.addEventListener("input", checkMatch);
+  })();
+
+  /* ---------- Inscription : les erreurs disparaissent dès que le champ devient valide ----------
+     Retour de Jean (08/10) : après une soumission en échec, les messages restaient affichés même une
+     fois les champs corrigés (ex. « Merci d'indiquer ton nom » sous un nom déjà saisi). Chaque champ
+     est revérifié à la frappe, UNIQUEMENT s'il est déjà marqué invalide (pas d'erreur prématurée
+     pendant la première saisie) ; les règles sont celles de la soumission (voir formSignup). La
+     confirmation du mot de passe a déjà son retour en direct (checkMatch ci-dessus). */
+  (function () {
+    var rules = [
+      ["signupFirstName", "signupFirstNameError", function (v) { return v.trim().length >= 2; }],
+      ["signupLastName", "signupLastNameError", function (v) { return v.trim().length >= 2; }],
+      ["signupEmail", "signupEmailError", function (v) { return /^[^s@]+@[^s@]+.[^s@]+$/.test(v.trim()); }],
+      ["signupPassword", "signupPasswordError", function (v) { return v.length >= 8; }]
+    ];
+    rules.forEach(function (r) {
+      var input = $(r[0]), err = $(r[1]);
+      if (!input || !err) return;
+      input.addEventListener("input", function () {
+        if (input.getAttribute("aria-invalid") === "true" && r[2](input.value)) setFieldError(input, err, false);
+      });
+    });
+    // Cases à cocher : le message global « accepte les Conditions » part dès qu'elle est cochée.
+    var consent = $("signupConsent");
+    if (consent) consent.addEventListener("change", function () {
+      if (consent.checked && globalAlert.textContent.indexOf("Conditions d'utilisation") !== -1) hideAlert();
+    });
   })();
 
   /* ---------- Parrainage : vérification du code saisi ----------
