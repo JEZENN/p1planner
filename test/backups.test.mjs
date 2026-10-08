@@ -265,6 +265,12 @@ describe("Sauvegardes/restauration — Cloud Functions (vrai code)", function ()
     it("ne garde que les 5 dernières sauvegardes AUTOMATIQUES, sans jamais toucher les manuelles/pré-restauration", async () => {
       await seedAdmin("ADM7");
       await importUser("ACTIVE3", { daysAgo: 0 });
+      // Repart d'un état propre : ACTIVE3 est un identifiant FIXE réutilisé d'une exécution à l'autre, ses sauvegardes
+      // résiduelles (19 auto observées) faussaient le décompte attendu (faux échec, pas un bug de purge).
+      for (const d of (await db.collection("users/ACTIVE3/backups").get()).docs) {
+        for (const p of (await d.ref.collection("parts").get()).docs) await p.ref.delete();
+        await d.ref.delete();
+      }
       try {
         // 7 fausses sauvegardes automatiques déjà anciennes (>72h, pour ne pas être re-déduppliquées).
         for (let i = 0; i < 7; i++) {

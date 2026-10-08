@@ -417,6 +417,10 @@ exports.onUserCreated = functionsV1
 
     await db.runTransaction(async (tx) => {
       const entitlementSnap = await tx.get(entitlementRef);
+      const userSnap = await tx.get(userRef);
+      // Nom déjà recopié par mirrorAuthNameToProfile (appelé par auth.html juste après updateProfile,
+      // il peut passer AVANT ce trigger) : on ne le remet JAMAIS à null.
+      const existingName = userSnap.exists ? userSnap.get("displayName") : null;
 
       // Profil : toujours (re)posé avec les valeurs Auth actuelles — pas
       // de risque d'écraser un état applicatif puisque users/{uid} ne
@@ -425,7 +429,7 @@ exports.onUserCreated = functionsV1
         userRef,
         {
           email: user.email || null,
-          displayName: user.displayName || null,
+          displayName: (typeof existingName === "string" && existingName.trim()) ? existingName : (user.displayName || null),
           createdAt: serverNow,
           updatedAt: serverNow
         },
@@ -1402,6 +1406,35 @@ async function applyStripeBonusOrJournal(info) {
   }
 }
 
+/* Recopie le nom du compte d'authentification dans users/{uid}.displayName quand la fiche n'en a pas.
+   Cause (retour de Jean, 08/10 : « je ne vois pas le nom de certains utilisateurs » dans le panneau admin) :
+   auth.html fait createUser PUIS updateProfile ; onUserCreated s'exécute dès la création, donc AVANT que
+   le nom existe, et écrit displayName:null. Le nom n'atteignait Firestore que si l'utilisateur le
+   rééditait dans les Paramètres (updateDisplayName) -- le panneau admin, la liste d'amis et les noms de
+   filleuls lisent pourtant Firestore. Appelé à l'inscription (referralInit), à chaque connexion vérifiée
+   (referralMarkActive) et à l'ouverture du tableur (referralEnsureCode) : les comptes existants se
+   corrigent donc d'eux-mêmes. Jamais d'écrasement d'un nom déjà présent (ex. édité dans les Paramètres),
+   jamais bloquant (toute erreur est avalée), nom nettoyé comme pour les filleuls (2 à 60 caractères). */
+async function mirrorAuthNameToProfile(uid) {
+  try {
+    const ref = db_().doc(`users/${uid}`);
+    const first = await ref.get();
+    const has = (snap) => snap.exists && typeof snap.get("displayName") === "string" && snap.get("displayName").trim() !== "";
+    if (has(first)) return false;
+    const name = sanitizeReferralName((await auth_().getUser(uid)).displayName);
+    if (!name || name.length < 2) return false;
+    return await db_().runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+      if (has(snap)) return false; // posé entre-temps (Paramètres, onUserCreated) : on n'y touche pas
+      tx.set(ref, { displayName: name, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      return true;
+    });
+  } catch (e) {
+    logger.warn(`mirrorAuthNameToProfile(${uid}) ignoré : ${e && e.message}`);
+    return false;
+  }
+}
+
 /* Nom du filleul pour la notification/la liste du parrain. users/{uid}
    .displayName est souvent null à ce stade (onUserCreated s'exécute avant
    updateProfile d'auth.html) : jeton, puis compte Auth, puis profil.
@@ -1469,6 +1502,7 @@ async function listActiveReferralsOf(referrerUid) {
 exports.referralInit = onCall({ region: REGION }, async (request) => {
   if (!request.auth) throw new HttpsError("unauthenticated", "Connexion requise.");
   const uid = request.auth.uid;
+  await mirrorAuthNameToProfile(uid); // nom d'inscription -> fiche (voir mirrorAuthNameToProfile)
   const code = await reserveReferralCode(uid);
 
   const rawReferredBy = request.data && typeof request.data.referredBy === "string" ? request.data.referredBy : null;
@@ -1502,6 +1536,7 @@ exports.referralInit = onCall({ region: REGION }, async (request) => {
    JAMAIS requis par les pages (une ancienne réponse doit rester correcte). */
 exports.referralEnsureCode = onCall({ region: REGION }, async (request) => {
   const auth = requireVerifiedUser(request);
+  await mirrorAuthNameToProfile(auth.uid); // rattrapage des comptes créés avant ce correctif
   const code = await reserveReferralCode(auth.uid);
   const db = db_();
   const entSnap = await db.doc(`entitlements/${auth.uid}`).get();
@@ -1598,6 +1633,7 @@ exports.referralListReferrals = onCall({ region: REGION }, async (request) => {
 exports.referralMarkActive = onCall({ region: REGION, secrets: [STRIPE_SECRET_KEY] }, async (request) => {
   const auth = requireVerifiedUser(request);
   const uid = auth.uid;
+  await mirrorAuthNameToProfile(uid); // AVANT le retour anticipé ci-dessous : concerne aussi les comptes sans parrain
   const db = db_();
   const referralRef = db.doc(`referrals/${uid}`);
   const snap = await referralRef.get();
@@ -2119,7 +2155,11 @@ async function _pruneAutoBackups(uid) {
 }
 
 async function _runScheduledBackups() {
-  const authApi = getAuth();
+  // auth_() et NON getAuth() : getAuth() seul exige une app déjà initialisée. Dans cette tâche planifiée,
+  // rien n'a encore appelé db_()/auth_() au premier tour (instance froide) : « The default Firebase app
+  // does not exist » -> la sauvegarde nocturne échouait CHAQUE NUIT en production (logs des 07 et 08/10).
+  // Les tests ne le voyaient pas : leur harnais initialise l'app lui-même (voir scheduled-backup-init.test.mjs).
+  const authApi = auth_();
   const cutoff = Date.now() - AUTO_BACKUP_ACTIVE_WINDOW_MS;
   let nextPageToken, checked = 0, created = 0, pruned = 0, errors = 0;
   do {
