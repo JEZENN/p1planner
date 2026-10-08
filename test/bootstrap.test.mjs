@@ -6,8 +6,10 @@
    émulateurs via les variables d'environnement ci-dessous —
    AUCUNE donnée réelle du projet Firebase P1Planner n'est touchée.
    ============================================================ */
-process.env.FIREBASE_AUTH_EMULATOR_HOST = "127.0.0.1:9099";
-process.env.FIRESTORE_EMULATOR_HOST = "127.0.0.1:8080";
+// ⚠️ Ports décalés (2026-09-30, voir test/e2e/env-e2e.mjs) : évite toute collision avec les
+// émulateurs TypixClin de Jean tournant en parallèle sur 8080/9099.
+process.env.FIREBASE_AUTH_EMULATOR_HOST = "127.0.0.1:9198";
+process.env.FIRESTORE_EMULATOR_HOST = "127.0.0.1:8280";
 
 import assert from "node:assert/strict";
 import admin from "firebase-admin";
@@ -33,7 +35,7 @@ describe("Bootstrap utilisateur (onUserCreated)", function () {
     if (uid) { await auth.deleteUser(uid).catch(() => {}); }
   });
 
-  it("crée users/{uid}, entitlements/{uid} (trial 30j), billingPrivate/{uid}, userStats/{uid}", async () => {
+  it("crée users/{uid}, entitlements/{uid} (trial 15j), billingPrivate/{uid}, userStats/{uid}", async () => {
     const user = await auth.createUser({ email: `bootstrap-${Date.now()}@example.com`, password: "TestPassword123!" });
     uid = user.uid;
 
@@ -47,7 +49,7 @@ describe("Bootstrap utilisateur (onUserCreated)", function () {
     const trialStart = ent.trialStartedAt.toMillis();
     const trialEnd = ent.trialEndsAt.toMillis();
     const days = Math.round((trialEnd - trialStart) / 86400000);
-    assert.equal(days, 30, "l'essai doit durer exactement 30 jours");
+    assert.equal(days, 15, "l'essai doit durer exactement 15 jours");
 
     const userSnap = await db.doc(`users/${uid}`).get();
     assert.ok(userSnap.exists, "users/{uid} doit être créé");
@@ -87,6 +89,6 @@ describe("Bootstrap utilisateur (onUserCreated)", function () {
     });
 
     const secondSnap = await db.doc(`entitlements/${uid}`).get();
-    assert.equal(secondSnap.data().trialEndsAt.toMillis(), firstTrialEnd, "un retry ne doit jamais accorder 30 jours supplémentaires");
+    assert.equal(secondSnap.data().trialEndsAt.toMillis(), firstTrialEnd, "un retry ne doit jamais accorder 15 jours supplémentaires");
   });
 });

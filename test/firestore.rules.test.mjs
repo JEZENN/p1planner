@@ -38,7 +38,10 @@ before(async function () {
     firestore: {
       rules: readFileSync(join(__dirname, "..", "firestore.rules"), "utf8"),
       host: "127.0.0.1",
-      port: 8080
+      // ⚠️ Port décalé (2026-09-30, voir test/e2e/env-e2e.mjs) : 8080 est occupé en parallèle par
+      // les émulateurs TypixClin de Jean — démarrer avec
+      // `firebase emulators:start --config firebase.emu-alt.json`.
+      port: 8280
     }
   });
 });
@@ -336,8 +339,14 @@ it("régression — tourConfidences sans trou même si le champ n'existait pas e
 });
 
 /* ============================================================
-   backups/{backupId} — filet de sécurité : create/read/delete
-   autorisés (trial actif), update jamais, isolation A/B respectée.
+   backups/{backupId} — filet de sécurité SERVEUR UNIQUEMENT.
+   ⚠️ Audit perte de données (2026-09-30) : avant ce correctif, le propriétaire pouvait
+   créer ET supprimer ses propres sauvegardes (`canWrite(uid)`), pensé pour un système de
+   sauvegarde côté client qui n'a jamais existé — un bug ou un script aurait pu supprimer
+   les vraies sauvegardes. Seules les Cloud Functions (Admin SDK, contournent ces Rules)
+   écrivent désormais dans backups/ et backups/{id}/parts/ ; le client n'a plus QUE la
+   lecture (propriétaire ou admin). Ces tests DOIVENT échouer sur l'ancienne règle
+   (`allow create/delete: if canWrite(uid)`) — c'est exactement ce qu'ils prouvent.
    ============================================================ */
 describe("Sauvegardes (backups)", () => {
   beforeEach(async () => {
@@ -345,11 +354,26 @@ describe("Sauvegardes (backups)", () => {
     await seedUser(USER_B, { writeAccessUntil: future() });
   });
 
-  it("trial actif : créer puis supprimer une sauvegarde → ALLOW", async () => {
+  it("trial actif : le propriétaire ne peut PLUS créer de sauvegarde lui-même → DENY", async () => {
     const db = ctxFor(USER_A).firestore();
     const ref = doc(db, "users", USER_A, "backups", "b1");
-    await assertSucceeds(setDoc(ref, { createdAt: new Date(), snapshot: { subjects: 1 }, isManual: false }));
-    await assertSucceeds(deleteDoc(ref));
+    await assertFails(setDoc(ref, { createdAt: new Date(), snapshot: { subjects: 1 }, isManual: false }));
+  });
+
+  it("trial actif : le propriétaire ne peut PLUS supprimer une sauvegarde existante → DENY", async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), "users", USER_A, "backups", "b1"), { createdAt: new Date() });
+    });
+    const db = ctxFor(USER_A).firestore();
+    await assertFails(deleteDoc(doc(db, "users", USER_A, "backups", "b1")));
+  });
+
+  it("le propriétaire peut LIRE ses propres sauvegardes (transparence) → ALLOW", async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), "users", USER_A, "backups", "b1"), { createdAt: new Date() });
+    });
+    const db = ctxFor(USER_A).firestore();
+    await assertSucceeds(getDoc(doc(db, "users", USER_A, "backups", "b1")));
   });
 
   it("modifier une sauvegarde existante → DENY (immuable)", async () => {
@@ -368,52 +392,88 @@ describe("Sauvegardes (backups)", () => {
     await assertFails(getDoc(doc(dbB, "users", USER_A, "backups", "b1")));
     await assertFails(deleteDoc(doc(dbB, "users", USER_A, "backups", "b1")));
   });
+
+  it("admin (isAdmin=true) peut LIRE la sauvegarde d'un autre utilisateur → ALLOW", async () => {
+    await seedAdmin("admin1");
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), "users", USER_A, "backups", "b1"), { createdAt: new Date() });
+    });
+    const dbAdmin = ctxFor("admin1").firestore();
+    await assertSucceeds(getDoc(doc(dbAdmin, "users", USER_A, "backups", "b1")));
+  });
+
+  it("backups/{id}/parts/{partId} : ni le propriétaire ni un tiers ne peuvent écrire → DENY, lecture propriétaire → ALLOW", async () => {
+    // ⚠️ Piège SDK trouvé en écrivant ce test (@firebase/rules-unit-testing + firebase JS SDK) :
+    // appeler ctx.firestore() DEUX FOIS dans le même withSecurityRulesDisabled(), la 2e fois sur
+    // une sous-collection, casse tout appel .firestore() ULTÉRIEUR sur un autre contexte avec
+    // "Firestore has already been started and its settings can no longer be changed" — même avec
+    // des Rules triviales sur un projet jetable, rien à voir avec la logique de ce fichier.
+    // Réutiliser la MÊME instance résout le problème.
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      const fs = ctx.firestore();
+      await setDoc(doc(fs, "users", USER_A, "backups", "b1"), { createdAt: new Date() });
+      await setDoc(doc(fs, "users", USER_A, "backups", "b1", "parts", "0"), { chunk: "x" });
+    });
+    await assertFails(setDoc(doc(ctxFor(USER_A).firestore(), "users", USER_A, "backups", "b1", "parts", "1"), { chunk: "y" }));
+    await assertFails(deleteDoc(doc(ctxFor(USER_A).firestore(), "users", USER_A, "backups", "b1", "parts", "0")));
+    await assertSucceeds(getDoc(doc(ctxFor(USER_A).firestore(), "users", USER_A, "backups", "b1", "parts", "0")));
+  });
 });
 
 /* ============================================================
-   feedback/{feedbackId} — envoyable même en lecture seule
+   feedbacks/{feedbackId} — envoyable même en lecture seule
    (pas gaté par canWrite), immuable, lecture strictement propriétaire.
-   ============================================================ */
+   Bug de test corrigé (incohérence trouvée en auditant les Rules à la
+   demande de l'utilisateur) : ce bloc ciblait "feedback" au singulier,
+   qui ne correspond ni à firestore.rules (match /feedbacks/{feedbackId},
+   PLURIEL — voir son commentaire, déjà corrigé dans une session
+   précédente) ni au code client réel (tableur.html : addDoc(collection(db,
+   'feedbacks'), ...)). Comme "feedback" singulier ne correspond à AUCUNE
+   règle, il retombait sur le fallback fail-closed racine : tous les
+   assertSucceeds() ci-dessous auraient dû ÉCHOUER si ce fichier avait
+   tourné contre les Rules actuelles — need aussi utiliser le champ réel
+   `userId` (pas `uid`, voir le commentaire de firestore.rules) pour que
+   les règles d'égalité avec request.auth.uid s'appliquent correctement. */
 describe("Feedback utilisateur", () => {
   it("envoyer un feedback même avec un entitlement expiré → ALLOW", async () => {
     await seedUser(USER_A, { writeAccessUntil: past() });
     const db = ctxFor(USER_A).firestore();
-    await assertSucceeds(setDoc(doc(db, "feedback", "f1"), {
-      uid: USER_A, message: "Un souci avec la méthode des J.", createdAt: new Date()
+    await assertSucceeds(setDoc(doc(db, "feedbacks", "f1"), {
+      userId: USER_A, message: "Un souci avec la méthode des J.", createdAt: new Date()
     }));
   });
 
   it("usurper l'uid d'un autre dans un feedback → DENY", async () => {
     await seedUser(USER_A, { writeAccessUntil: future() });
     const db = ctxFor(USER_A).firestore();
-    await assertFails(setDoc(doc(db, "feedback", "f2"), {
-      uid: "quelquun-dautre", message: "Usurpation", createdAt: new Date()
+    await assertFails(setDoc(doc(db, "feedbacks", "f2"), {
+      userId: "quelquun-dautre", message: "Usurpation", createdAt: new Date()
     }));
   });
 
   it("message vide ou trop long → DENY", async () => {
     await seedUser(USER_A, { writeAccessUntil: future() });
     const db = ctxFor(USER_A).firestore();
-    await assertFails(setDoc(doc(db, "feedback", "f3"), { uid: USER_A, message: "", createdAt: new Date() }));
-    await assertFails(setDoc(doc(db, "feedback", "f4"), { uid: USER_A, message: "x".repeat(2001), createdAt: new Date() }));
+    await assertFails(setDoc(doc(db, "feedbacks", "f3"), { userId: USER_A, message: "", createdAt: new Date() }));
+    await assertFails(setDoc(doc(db, "feedbacks", "f4"), { userId: USER_A, message: "x".repeat(2001), createdAt: new Date() }));
   });
 
   it("lire le feedback d'un autre utilisateur → DENY ; modifier/supprimer le sien → DENY", async () => {
     await seedUser(USER_A, { writeAccessUntil: future() });
     await seedUser(USER_B, { writeAccessUntil: future() });
     const dbA = ctxFor(USER_A).firestore();
-    await setDoc(doc(dbA, "feedback", "f5"), { uid: USER_A, message: "Bonjour", createdAt: new Date() });
-    await assertSucceeds(getDoc(doc(dbA, "feedback", "f5")));
+    await setDoc(doc(dbA, "feedbacks", "f5"), { userId: USER_A, message: "Bonjour", createdAt: new Date() });
+    await assertSucceeds(getDoc(doc(dbA, "feedbacks", "f5")));
     const dbB = ctxFor(USER_B).firestore();
-    await assertFails(getDoc(doc(dbB, "feedback", "f5")));
-    await assertFails(updateDoc(doc(dbA, "feedback", "f5"), { message: "Modifié" }));
-    await assertFails(deleteDoc(doc(dbA, "feedback", "f5")));
+    await assertFails(getDoc(doc(dbB, "feedbacks", "f5")));
+    await assertFails(updateDoc(doc(dbA, "feedbacks", "f5"), { message: "Modifié" }));
+    await assertFails(deleteDoc(doc(dbA, "feedbacks", "f5")));
   });
 
   it("email non vérifié envoie un feedback → DENY", async () => {
     await seedUser(USER_A, { writeAccessUntil: future() });
     const db = ctxFor(USER_A, { verified: false }).firestore();
-    await assertFails(setDoc(doc(db, "feedback", "f6"), { uid: USER_A, message: "Test", createdAt: new Date() }));
+    await assertFails(setDoc(doc(db, "feedbacks", "f6"), { userId: USER_A, message: "Test", createdAt: new Date() }));
   });
 });
 
@@ -449,5 +509,83 @@ describe("Agrégats quotidiens (dailyStats)", () => {
     });
     const dbB = ctxFor(USER_B).firestore();
     await assertFails(getDoc(doc(dbB, "users", USER_A, "dailyStats", "2026-09-01")));
+  });
+});
+
+/* ============================================================
+   PARRAINAGE — referralCodes/{code} et referrals/{filleulUid}.
+   Entièrement backend-only : jamais d'écriture cliente (comme
+   billingPrivate), lecture réservée à l'admin (comme billingPrivate).
+   ============================================================ */
+async function seedAdmin(uid) {
+  await testEnv.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), "users", uid), {
+      displayName: "Admin " + uid, email: uid + "@example.com", createdAt: new Date(), isAdmin: true
+    });
+  });
+}
+
+describe("Parrainage (referralCodes / referrals)", () => {
+  it("referralCodes/{code} : propriétaire du code lui-même ne peut PAS le lire → DENY", async () => {
+    await seedUser(USER_A, { writeAccessUntil: future() });
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), "referralCodes", "AB23DE"), { uid: USER_A, createdAt: new Date() });
+    });
+    const db = ctxFor(USER_A).firestore();
+    await assertFails(getDoc(doc(db, "referralCodes", "AB23DE")));
+  });
+
+  it("referralCodes/{code} : admin peut lire ; écriture cliente refusée même pour l'admin", async () => {
+    await seedUser(USER_A, { writeAccessUntil: future() });
+    await seedAdmin("admin1");
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), "referralCodes", "AB23DE"), { uid: USER_A, createdAt: new Date() });
+    });
+    const dbAdmin = ctxFor("admin1").firestore();
+    await assertSucceeds(getDoc(doc(dbAdmin, "referralCodes", "AB23DE")));
+    await assertFails(setDoc(doc(dbAdmin, "referralCodes", "ZZ99ZZ"), { uid: "admin1", createdAt: new Date() }));
+    await assertFails(updateDoc(doc(dbAdmin, "referralCodes", "AB23DE"), { uid: "admin1" }));
+    await assertFails(deleteDoc(doc(dbAdmin, "referralCodes", "AB23DE")));
+  });
+
+  it("referrals/{filleulUid} : ni le filleul ni le parrain ne peuvent le lire ou l'écrire → DENY", async () => {
+    await seedUser(USER_A, { writeAccessUntil: future() }); // filleul
+    await seedUser(USER_B, { writeAccessUntil: future() }); // parrain
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), "referrals", USER_A), {
+        referrerUid: USER_B, code: "AB23DE", createdAt: new Date(), active: false, activatedAt: null
+      });
+    });
+    const dbA = ctxFor(USER_A).firestore(), dbB = ctxFor(USER_B).firestore();
+    await assertFails(getDoc(doc(dbA, "referrals", USER_A)));
+    await assertFails(getDoc(doc(dbB, "referrals", USER_A)));
+    await assertFails(updateDoc(doc(dbA, "referrals", USER_A), { active: true }));
+    await assertFails(setDoc(doc(dbB, "referrals", "fake"), { referrerUid: USER_B, code: "ZZ99ZZ", createdAt: new Date(), active: true }));
+  });
+
+  it("referrals/{filleulUid} : admin peut lire", async () => {
+    await seedUser(USER_A, { writeAccessUntil: future() });
+    await seedAdmin("admin1");
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), "referrals", USER_A), {
+        referrerUid: "someone", code: "AB23DE", createdAt: new Date(), active: true, activatedAt: new Date()
+      });
+    });
+    const dbAdmin = ctxFor("admin1").firestore();
+    await assertSucceeds(getDoc(doc(dbAdmin, "referrals", USER_A)));
+  });
+
+  it("entitlements/{uid} : les champs de parrainage restent bloqués en écriture cliente comme le reste du document", async () => {
+    await seedUser(USER_A, { writeAccessUntil: future() });
+    const db = ctxFor(USER_A).firestore();
+    await assertFails(updateDoc(doc(db, "entitlements", USER_A), { referralActiveCount: 99, referralMonthsGranted: 99 }));
+    await assertFails(updateDoc(doc(db, "entitlements", USER_A), { referralSeenCount: 99 })); // accusé de la notification : serveur seulement
+    await assertFails(updateDoc(doc(db, "entitlements", USER_A), { planType: "referral", status: "active" }));
+  });
+
+  it("users/{uid} : le champ referralCode reste bloqué en écriture cliente comme le reste du document", async () => {
+    await seedUser(USER_A, { writeAccessUntil: future() });
+    const db = ctxFor(USER_A).firestore();
+    await assertFails(updateDoc(doc(db, "users", USER_A), { referralCode: "ZZ99ZZ" }));
   });
 });

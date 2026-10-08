@@ -138,7 +138,13 @@ function checkPurchaseConflict(entitlement, planType) {
         && entitlement.status === "active"
         && entitlement.cancelAtPeriodEnd !== true;
 
-    const currentlyActiveOneTime = entitlement.planType === "onetime"
+    // AUDIT PARRAINAGE (2026-09-27) : un accès OFFERT par le parrainage
+    // (planType 'referral', posé quand le parrain n'avait plus rien) se
+    // comporte comme un accès unique encore valide : sans ce garde-fou, un
+    // achat pendant les mois offerts serait payé sans aucun bénéfice (le
+    // paiement unique ne s'additionne pas, l'abonnement mensuel écraserait
+    // les mois offerts).
+    const currentlyActiveOneTime = (entitlement.planType === "onetime" || entitlement.planType === "referral")
         && entitlement.status === "active"
         && premiumUntilMs > nowMs;
 
@@ -147,6 +153,14 @@ function checkPurchaseConflict(entitlement, planType) {
     if (planType === "onetime") {
         if (currentlyActiveMonthly) {
             return "Tu as déjà un abonnement mensuel actif. Résilie-le d'abord depuis le portail de facturation pour passer à un paiement unique.";
+        }
+        // AUDIT PAIEMENTS : un second paiement unique pendant qu'un accès
+        // unique est encore valide ne prolonge rien (handleOneTimePurchase
+        // ne raccourcit jamais un accès, mais n'additionne pas non plus) —
+        // le client aurait payé sans aucun bénéfice. L'interface masque déjà
+        // ce cas ; ce garde-fou le refuse aussi côté serveur (appel direct).
+        if (currentlyActiveOneTime) {
+            return `Tu as déjà un accès valide jusqu'au ${fmtDate(premiumUntilMs)}. Tu pourras prendre une nouvelle formule à son terme.`;
         }
     } else if (planType === "monthly") {
         if (currentlyActiveOneTime) {
@@ -157,19 +171,88 @@ function checkPurchaseConflict(entitlement, planType) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
+   ACCÈS DÉDUIT D'UN ABONNEMENT STRIPE (fonction PURE, testée)
+   ───────────────────────────────────────────────────────────────────────
+   AUDIT PAIEMENTS : l'ancien code écrivait writeAccessUntil = fin de
+   période Stripe quel que soit le statut. Or (1) sur un renouvellement
+   IMPAYÉ (past_due/unpaid) Stripe a déjà avancé la période d'un mois :
+   l'utilisateur gardait un mois d'écriture sans payer ; (2) sur une
+   résiliation IMMÉDIATE (canceled), current_period_end restait dans le
+   futur : accès conservé jusqu'à l'ancienne échéance.
+   Règles maintenant :
+     - active/trialing         : accès jusqu'à la fin de période.
+     - past_due/unpaid/incomplete : JAMAIS de prolongation — on garde l'accès
+       déjà acquis, avec un délai de grâce de 3 jours (posé une seule fois,
+       paymentIssueGraceUntil) pour laisser jouer les relances Stripe.
+     - canceled/autres         : accès borné à la date réelle de fin
+       (ended_at), sans jamais retirer le reliquat d'essai gratuit.
+   `sub` = { status, periodEndMs, endedAtMs } ; `current` = entitlement
+   Firestore actuel ({} si absent) ; renvoie des millisecondes (null =
+   aucune date). */
+const PAYMENT_ISSUE_GRACE_MS = 3 * 24 * 60 * 60 * 1000;
+function computeSubscriptionAccess(sub, current, nowMs) {
+    const toMs = (v) => (v && v.toMillis ? v.toMillis() : 0);
+    const cur = current || {};
+    const periodEndMs = sub.periodEndMs || 0;
+
+    if (sub.status === "active" || sub.status === "trialing") {
+        return {
+            status: "active",
+            premiumUntilMs: periodEndMs || null,
+            writeAccessMs: periodEndMs || null,
+            graceUntilMs: null
+        };
+    }
+
+    if (sub.status === "incomplete") {
+        // Premier paiement jamais abouti : rien n'a été acquis, aucune grâce.
+        return {
+            status: "payment_issue",
+            premiumUntilMs: toMs(cur.premiumUntil) || null,
+            writeAccessMs: toMs(cur.writeAccessUntil) || null,
+            graceUntilMs: null
+        };
+    }
+
+    if (sub.status === "past_due" || sub.status === "unpaid") {
+        const graceMs = toMs(cur.paymentIssueGraceUntil) || (nowMs + PAYMENT_ISSUE_GRACE_MS);
+        return {
+            status: "payment_issue",
+            premiumUntilMs: toMs(cur.premiumUntil) || null,
+            writeAccessMs: Math.max(toMs(cur.writeAccessUntil), graceMs),
+            graceUntilMs: graceMs
+        };
+    }
+
+    // canceled, incomplete_expired, paused, ... : plus d'abonnement en cours.
+    let baseMs;
+    if (sub.endedAtMs) baseMs = Math.min(periodEndMs || sub.endedAtMs, sub.endedAtMs);
+    else baseMs = Math.min(periodEndMs || nowMs, nowMs);
+    return {
+        status: "expired",
+        premiumUntilMs: baseMs,
+        writeAccessMs: Math.max(baseMs, toMs(cur.trialEndsAt)),
+        graceUntilMs: null
+    };
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
    VERROU SERVEUR DES PAIEMENTS — repris de TypixClin (premiumPlans.js).
    Le frontend n'affiche que ce que le serveur autorise, mais un appel
    direct à createCheckoutSession (console, script) contournerait un
    simple verrou d'UI — CE verrou-ci, vérifié dans la Cloud Function
    elle-même, est la vraie sécurité.
 
-   FERMÉ par défaut : le projet Stripe P1Planner n'existe pas encore (voir
-   docs/TODO.md, "Créer le vrai projet Stripe P1Planner"). Repasser à
-   `true` seulement une fois ce projet créé, les Price ID/secrets posés,
-   et un premier passage de tests réels effectué (Checkout, webhook,
-   portail) — avec le GO explicite de l'utilisateur avant tout déploiement
-   (CLAUDE.md). ═══════════════════════════════════════════════════════ */
-const PAYMENTS_ENABLED = false;
+   OUVERT (GO explicite de l'utilisateur) — projet Stripe P1Planner créé,
+   isolé de TypixClin (comptes Stripe séparés, vérifié), descripteur de
+   relevé bancaire corrigé (affichait à tort "Typixclin"), secrets Live
+   posés (STRIPE_SECRET_KEY/STRIPE_WEBHOOK_SECRET/STRIPE_PRICE_MONTHLY),
+   et tests réels effectués avec une vraie carte en mode Live : paiement
+   unique confirmé (webhook reçu, entitlements mis à jour, UI correcte) ET
+   abonnement mensuel confirmé (idem). PAYMENTS_TESTER_UIDS n'a plus d'effet
+   une fois ce verrou ouvert (il ne servait qu'à restreindre l'accès tant
+   que ce verrou était fermé) — laissé tel quel, inoffensif. ═══════════ */
+const PAYMENTS_ENABLED = true;
 
 /* UIDs autorisés à payer malgré PAYMENTS_ENABLED = false, pour tester en
    Stripe Test Mode avant l'ouverture générale. Vide par défaut. */
@@ -184,6 +267,6 @@ module.exports = {
     ONE_TIME_RATE_TIERS, MONTHLY_RATE_EUROS, MAX_MONTHS_CAP,
     ratePerMonthForOneTime, computeOneTimePriceCents,
     endOfMonthsFromNow, computeOneTimeAccessEnd, computeMaxMonthsFromExamDate,
-    checkPurchaseConflict,
+    checkPurchaseConflict, computeSubscriptionAccess, PAYMENT_ISSUE_GRACE_MS,
     PAYMENTS_ENABLED, PAYMENTS_TESTER_UIDS, paymentsEnabledFor
 };

@@ -37,7 +37,7 @@ const Stripe = require("stripe");
 const {
   computeOneTimePriceCents, computeOneTimeAccessEnd,
   computeMaxMonthsFromExamDate, checkPurchaseConflict, MAX_MONTHS_CAP,
-  paymentsEnabledFor
+  paymentsEnabledFor, computeSubscriptionAccess
 } = require("./premiumPlans");
 
 // Clé API Brevo — jamais dans le code ni le repository (dépôt PUBLIC, voir
@@ -62,14 +62,32 @@ const STRIPE_PRICE_MONTHLY = defineSecret("STRIPE_PRICE_MONTHLY");
 // déterminer les triggers, et un initializeApp() au top-level peut s'y
 // bloquer en essayant de joindre les identifiants par défaut (ADC) —
 // voir https://firebase.google.com/docs/functions/tips#avoid_deployment_timeouts_during_initialization
+// Bug réel corrigé (remonté par l'utilisateur : nom jamais enregistré côté
+// Firestore, e-mail de réinitialisation jamais envoyé) : `db_()` et `auth_()`
+// appelaient chacune `initializeApp()` derrière leur PROPRE variable de cache
+// (`_db`/`_auth`) — la première fonction appelée dans une invocation
+// initialisait l'app avec succès, mais la SECONDE (ex. `updateDisplayName`
+// appelle `auth_()` puis `db_()` ; `sendPasswordResetEmail` appelle `db_()`
+// puis `auth_()`) tombait alors sur `initializeApp()` une deuxième fois et
+// plantait avec `app/duplicate-app` — confirmé dans les logs Cloud Functions
+// (100% des appels de `updateDisplayName` et `sendPasswordResetEmail`
+// échouaient ainsi). Aucune fonction existante n'avait jusqu'ici besoin des
+// deux à la fois dans un même appel, d'où un bug resté invisible. Corrigé en
+// partageant UN SEUL verrou d'initialisation entre les deux fonctions.
+let _appInitialized = false;
+function ensureApp_() {
+  if (!_appInitialized) { initializeApp(); _appInitialized = true; }
+}
 let _db = null;
 function db_() {
-  if (!_db) { initializeApp(); _db = getFirestore(); }
+  ensureApp_();
+  if (!_db) { _db = getFirestore(); }
   return _db;
 }
 let _auth = null;
 function auth_() {
-  if (!_auth) { initializeApp(); _auth = getAuth(); }
+  ensureApp_();
+  if (!_auth) { _auth = getAuth(); }
   return _auth;
 }
 
@@ -121,6 +139,34 @@ function verificationEmailHtml(link) {
   </body></html>`;
 }
 
+function passwordResetEmailHtml(link) {
+  return `<!doctype html><html><body style="font-family:sans-serif;background:#f5f3ff;padding:32px;">
+    <div style="max-width:480px;margin:0 auto;background:#fff;border-radius:16px;padding:32px;">
+      <h1 style="color:#6d28d9;font-size:20px;margin:0 0 16px;">Réinitialise ton mot de passe</h1>
+      <p style="color:#374151;line-height:1.6;">Tu as demandé à réinitialiser le mot de passe de ton compte P1Planner. Clique sur le bouton ci-dessous pour choisir un nouveau mot de passe.</p>
+      <p style="margin:28px 0;">
+        <a href="${link}" style="background:#6d28d9;color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600;display:inline-block;">Choisir un nouveau mot de passe</a>
+      </p>
+      <p style="color:#9ca3af;font-size:13px;word-break:break-all;overflow-wrap:anywhere;">Si le bouton ne fonctionne pas, copie ce lien dans ton navigateur :<br><a href="${link}" style="color:#6d28d9;">${link}</a></p>
+      <p style="color:#9ca3af;font-size:13px;">Si tu n'es pas à l'origine de cette demande, ignore simplement cet email : ton mot de passe ne changera pas.</p>
+    </div>
+  </body></html>`;
+}
+
+function emailChangeVerificationHtml(link, newEmail) {
+  return `<!doctype html><html><body style="font-family:sans-serif;background:#f5f3ff;padding:32px;">
+    <div style="max-width:480px;margin:0 auto;background:#fff;border-radius:16px;padding:32px;">
+      <h1 style="color:#6d28d9;font-size:20px;margin:0 0 16px;">Confirme ta nouvelle adresse e-mail</h1>
+      <p style="color:#374151;line-height:1.6;">Tu as demandé à faire de <strong>${newEmail}</strong> la nouvelle adresse de connexion de ton compte P1Planner. Clique sur le bouton ci-dessous pour confirmer — ton adresse actuelle reste active tant que ce lien n'est pas ouvert.</p>
+      <p style="margin:28px 0;">
+        <a href="${link}" style="background:#6d28d9;color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600;display:inline-block;">Confirmer cette adresse</a>
+      </p>
+      <p style="color:#9ca3af;font-size:13px;word-break:break-all;overflow-wrap:anywhere;">Si le bouton ne fonctionne pas, copie ce lien dans ton navigateur :<br><a href="${link}" style="color:#6d28d9;">${link}</a></p>
+      <p style="color:#9ca3af;font-size:13px;">Si tu n'es pas à l'origine de cette demande, ignore simplement cet email.</p>
+    </div>
+  </body></html>`;
+}
+
 /* ═══════════════════════════════════════════════════════════════════════
    sendVerificationEmailOnCreate — trigger Auth (v1), séparé de
    onUserCreated exprès : l'envoi d'email ne doit jamais faire échouer ni
@@ -154,6 +200,11 @@ exports.sendVerificationEmailOnCreate = functionsV1
    place de sendEmailVerification() du SDK client (mailer par défaut peu
    fiable). Exige un appelant authentifié, non encore vérifié, qui demande
    l'envoi pour SA PROPRE adresse — jamais un email arbitraire.
+
+   Throttle 60s (verificationEmailThrottle/{uid}) ajouté pour pouvoir être
+   appelée AUTOMATIQUEMENT (voir auth.html, à chaque tentative de connexion
+   bloquée par email non vérifié) sans jamais spammer Brevo/le mailer de
+   secours si l'utilisateur retente sa connexion plusieurs fois de suite.
    ═══════════════════════════════════════════════════════════════════════ */
 exports.resendVerificationEmail = onCall(
   { region: REGION, secrets: [BREVO_API_KEY] },
@@ -170,6 +221,14 @@ exports.resendVerificationEmail = onCall(
       // Rien à faire, mais pas une erreur — évite un message confus côté UI.
       return { alreadyVerified: true };
     }
+    const throttleRef = db_().doc(`verificationEmailThrottle/${uid}`);
+    const nowMs = Date.now();
+    const throttleSnap = await throttleRef.get();
+    const lastSentMs = throttleSnap.exists ? throttleSnap.get("lastSentAtMs") : 0;
+    if (typeof lastSentMs === "number" && nowMs - lastSentMs < 60000) {
+      return { sent: true };
+    }
+    await throttleRef.set({ lastSentAtMs: nowMs }, { merge: true });
     try {
       const link = await auth_().generateEmailVerificationLink(userRecord.email);
       await sendBrevoEmail(BREVO_API_KEY.value(), {
@@ -186,11 +245,149 @@ exports.resendVerificationEmail = onCall(
 );
 
 /* ═══════════════════════════════════════════════════════════════════════
+   sendPasswordResetEmail — callable (v2), PUBLIC (pas d'auth requise —
+   c'est justement pour un utilisateur qui ne peut plus se connecter).
+   Remplace sendPasswordResetEmail() du SDK client (bug signalé : "ne
+   fonctionne pas" — même cause que la vérification d'email, le mailer par
+   défaut Firebase peu fiable, déjà contourné ailleurs via Brevo).
+
+   Ne révèle JAMAIS si le compte existe (réponse identique dans tous les
+   cas) — et un throttle par adresse (Firestore, 60s) empêche qu'un appel
+   répété ne spamme la boîte mail d'un tiers dont on connaîtrait l'adresse.
+   ═══════════════════════════════════════════════════════════════════════ */
+exports.sendPasswordResetEmail = onCall(
+  { region: REGION, secrets: [BREVO_API_KEY] },
+  async (request) => {
+    const email = request.data && typeof request.data.email === "string" ? request.data.email.trim() : "";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      throw new HttpsError("invalid-argument", "Adresse email invalide.");
+    }
+    const throttleRef = db_().doc(`passwordResetThrottle/${encodeURIComponent(email.toLowerCase())}`);
+    const nowMs = Date.now();
+    const throttleSnap = await throttleRef.get();
+    const lastSentMs = throttleSnap.exists ? throttleSnap.get("lastSentAtMs") : 0;
+    if (typeof lastSentMs === "number" && nowMs - lastSentMs < 60000) {
+      // Silencieux : ni erreur ni renvoi, pour ne jamais révéler l'existence
+      // du compte ni permettre à un tiers de sonder le throttle.
+      return { sent: true };
+    }
+    await throttleRef.set({ lastSentAtMs: nowMs }, { merge: true });
+    try {
+      const link = await auth_().generatePasswordResetLink(email);
+      await sendBrevoEmail(BREVO_API_KEY.value(), {
+        to: email,
+        subject: "Réinitialise ton mot de passe — P1Planner",
+        html: passwordResetEmailHtml(link)
+      });
+      logger.info(`sendPasswordResetEmail: envoyé à ${email}.`);
+    } catch (e) {
+      // auth/user-not-found notamment : jamais révélé au client, juste loggé.
+      logger.info(`sendPasswordResetEmail: pas d'envoi pour ${email} (${e.code || e.message}).`);
+    }
+    return { sent: true };
+  }
+);
+
+/* ═══════════════════════════════════════════════════════════════════════
+   updateDisplayName — callable (v2), authentifié + vérifié.
+   Met à jour le profil Auth ET users/{uid}.displayName (backend-only en
+   écriture, voir firestore.rules — jamais depuis le client, contrairement
+   à la référence TypixClin qui y écrit directement). Les DEUX sont
+   maintenus synchronisés ici pour que tableur.html (qui lit
+   userInfo.displayName en priorité) ET comptepremium.html/auth.html (qui
+   lisent user.displayName) affichent la même valeur immédiatement.
+   ═══════════════════════════════════════════════════════════════════════ */
+exports.updateDisplayName = onCall({ region: REGION }, async (request) => {
+  const auth = requireVerifiedUser(request);
+  const raw = request.data && typeof request.data.displayName === "string" ? request.data.displayName.trim().replace(/\s+/g, " ") : "";
+  if (raw.length < 2 || raw.length > 60) {
+    throw new HttpsError("invalid-argument", "Le nom doit contenir entre 2 et 60 caractères.");
+  }
+  await auth_().updateUser(auth.uid, { displayName: raw });
+  await db_().doc(`users/${auth.uid}`).set({ displayName: raw, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+  logger.info(`updateDisplayName: ${auth.uid} → "${raw}".`);
+  return { displayName: raw };
+});
+
+/* ═══════════════════════════════════════════════════════════════════════
+   requestEmailChange — callable (v2), authentifié + vérifié.
+   L'appelant doit s'être RÉAUTHENTIFIÉ côté client juste avant (mot de
+   passe actuel confirmé via reauthenticateWithCredential) — cette Function
+   ne vérifie pas le mot de passe elle-même (l'Admin SDK ne le peut pas),
+   elle s'appuie sur la fraîcheur du jeton apportée par cette
+   réauthentification. Génère le lien de confirmation nous-mêmes
+   (generateVerifyAndChangeEmailLink, Admin SDK) plutôt que d'utiliser
+   verifyBeforeUpdateEmail() du SDK client, qui enverrait via le mailer par
+   défaut Firebase (même contournement Brevo que le reste). L'adresse
+   actuelle ne change qu'une fois ce lien ouvert par l'utilisateur.
+   ═══════════════════════════════════════════════════════════════════════ */
+exports.requestEmailChange = onCall(
+  { region: REGION, secrets: [BREVO_API_KEY] },
+  async (request) => {
+    const auth = requireVerifiedUser(request);
+    const newEmail = request.data && typeof request.data.newEmail === "string" ? request.data.newEmail.trim() : "";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
+      throw new HttpsError("invalid-argument", "Adresse email invalide.");
+    }
+    const userRecord = await auth_().getUser(auth.uid);
+    if (newEmail.toLowerCase() === (userRecord.email || "").toLowerCase()) {
+      throw new HttpsError("invalid-argument", "C'est déjà ton adresse actuelle.");
+    }
+    // La fraîcheur du jeton (auth_time récent) confirme la réauthentification
+    // faite juste avant côté client — sans ça, n'importe quel jeton valide
+    // (même ancien) suffirait à déclencher un changement d'adresse.
+    const authTimeSec = request.auth.token && request.auth.token.auth_time;
+    if (!authTimeSec || Date.now() / 1000 - authTimeSec > 300) {
+      throw new HttpsError("failed-precondition", "Reconnecte-toi puis réessaie (session trop ancienne pour cette opération sensible).");
+    }
+    let link;
+    try {
+      link = await auth_().generateVerifyAndChangeEmailLink(userRecord.email, newEmail);
+    } catch (e) {
+      if (e && e.code === "auth/email-already-exists") {
+        throw new HttpsError("already-exists", "Cette adresse est déjà utilisée par un autre compte.");
+      }
+      logger.error(`requestEmailChange: échec de génération du lien pour ${auth.uid} :`, e);
+      throw new HttpsError("internal", "Impossible de préparer ce changement pour le moment.");
+    }
+    await sendBrevoEmail(BREVO_API_KEY.value(), {
+      to: newEmail,
+      subject: "Confirme ta nouvelle adresse e-mail — P1Planner",
+      html: emailChangeVerificationHtml(link, newEmail)
+    });
+    logger.info(`requestEmailChange: lien envoyé à ${newEmail} pour ${auth.uid}.`);
+    return { sent: true };
+  }
+);
+
+/* Resynchronise users/{uid}.email sur l'adresse réelle Firebase Auth.
+   Bug réel corrigé (remonté par l'utilisateur) : un changement d'adresse
+   confirmé via le lien de requestEmailChange est appliqué par Firebase Auth
+   lui-même (le client ouvre le lien, Firebase bascule l'adresse) — rien ne
+   repasse alors par notre code, et le client ne peut de toute façon jamais
+   écrire users/{uid} lui-même (`allow write: if false` inconditionnel, voir
+   firestore.rules). Utilise `request.auth.token.email`, l'adresse VÉRIFIÉE
+   par la signature du jeton Firebase — jamais une valeur transmise par le
+   client — donc pas de risque qu'un appelant s'attribue une adresse
+   arbitraire dans son propre document. Appelée par tableur.html dès qu'un
+   écart est détecté entre users/{uid}.email et l'e-mail Auth courant. */
+exports.syncEmailMirror = onCall({ region: REGION }, async (request) => {
+  const auth = requireVerifiedUser(request);
+  const email = (request.auth.token && request.auth.token.email) || null;
+  await db_().doc(`users/${auth.uid}`).set(
+    { email, updatedAt: FieldValue.serverTimestamp() },
+    { merge: true }
+  );
+  logger.info(`syncEmailMirror: users/${auth.uid}.email resynchronisé sur ${email}.`);
+  return { synced: true };
+});
+
+/* ═══════════════════════════════════════════════════════════════════════
    onUserCreated — trigger Auth (v1, background trigger "at-least-once")
    ───────────────────────────────────────────────────────────────────────
    À la création d'un compte Firebase Authentication, crée côté SERVEUR :
      - users/{uid}            profil d'identité (jamais écrit par le client)
-     - entitlements/{uid}     essai gratuit 30 jours, source de vérité
+     - entitlements/{uid}     essai gratuit 15 jours, source de vérité
      - billingPrivate/{uid}   réservé (Stripe), vide pour l'instant
      - userStats/{uid}        réservé (agrégats), vide pour l'instant
 
@@ -527,10 +724,17 @@ exports.createCheckoutSession = onCall(
 
     if (planType === "onetime") {
       const months = parseInt(request.data && request.data.months, 10);
-      const maxMonths = (entitlement && entitlement.maxMonths) || null;
-      if (!maxMonths) {
-        throw new HttpsError("failed-precondition", "Indique d'abord ta date de concours/examens pour connaître la durée disponible.");
-      }
+      // Bug réel remonté par l'utilisateur : la date de concours ne devrait
+      // pas être obligatoire pour acheter un paiement unique — l'utilisateur
+      // doit pouvoir choisir de l'indiquer ou non. Or le serveur bloquait
+      // quand même tout achat tant qu'elle n'était pas enregistrée, alors
+      // que le curseur de durée côté client propose déjà, lui, un défaut de
+      // 12 mois en son absence (voir updateMaxMonths(p.maxMonths || 12)).
+      // Sans date, le serveur applique désormais ce même défaut de 12 mois
+      // au lieu de refuser l'achat — la date reste utile (elle affine/étend
+      // la durée max disponible jusqu'à MAX_MONTHS_CAP), mais n'est plus
+      // obligatoire (label mis à jour en "(optionnel)" côté front).
+      const maxMonths = (entitlement && entitlement.maxMonths) || 12;
       if (!Number.isInteger(months) || months < 1 || months > maxMonths) {
         throw new HttpsError("invalid-argument", `Durée invalide (1 à ${maxMonths} mois).`);
       }
@@ -585,9 +789,15 @@ exports.createCheckoutSession = onCall(
     const subscriptionData = { metadata: { firebaseUID: auth.uid, planType } };
     const trialEndsAtMs = entitlement && entitlement.trialEndsAt && entitlement.trialEndsAt.toMillis
       ? entitlement.trialEndsAt.toMillis() : 0;
-    const nowSecPlusMargin = Math.floor(Date.now() / 1000) + 60;
+    // AUDIT PAIEMENTS : Stripe Checkout exige que trial_end soit au moins
+    // 48 h dans le futur (sinon la création de la session échoue et
+    // l'utilisateur voit une erreur générique). En deçà, on n'envoie pas
+    // trial_end : le premier prélèvement a lieu tout de suite (le reliquat
+    // d'essai de moins de 2 jours est perdu, cas assumé et rare) plutôt que
+    // de bloquer toute souscription pendant les 2 derniers jours d'essai.
+    const minTrialEndSec = Math.floor(Date.now() / 1000) + 48 * 3600 + 300;
     const trialEndSec = Math.floor(trialEndsAtMs / 1000);
-    if (trialEndSec > nowSecPlusMargin) {
+    if (trialEndSec > minTrialEndSec) {
       subscriptionData.trial_end = trialEndSec;
     }
 
@@ -691,10 +901,29 @@ exports.stripeWebhook = onRequest(
         case "invoice.paid":
         case "invoice.payment_failed": {
           const inv = event.data.object;
-          if (inv.subscription) {
-            const sub = await stripe.subscriptions.retrieve(inv.subscription);
+          // API Stripe récente : la référence d'abonnement a migré de
+          // invoice.subscription vers invoice.parent.subscription_details.
+          const rawSub = inv.subscription
+            || (inv.parent && inv.parent.subscription_details && inv.parent.subscription_details.subscription);
+          const subId = typeof rawSub === "string" ? rawSub : (rawSub && rawSub.id);
+          if (subId) {
+            const sub = await stripe.subscriptions.retrieve(subId);
             await syncSubscription(stripe, sub);
           }
+          break;
+        }
+        // AUDIT PAIEMENTS : remboursement total ou litige (chargeback) d'un
+        // paiement UNIQUE = accès retiré. Nécessite d'activer ces deux
+        // événements sur le point de terminaison webhook dans le Dashboard
+        // Stripe (sans effet tant qu'ils ne sont pas envoyés).
+        case "charge.refunded": {
+          const ch = event.data.object;
+          if (ch.refunded === true) await revokeOneTimeForPaymentIntent(ch.payment_intent, "refunded");
+          break;
+        }
+        case "charge.dispute.created": {
+          const dp = event.data.object;
+          await revokeOneTimeForPaymentIntent(dp.payment_intent, "dispute");
           break;
         }
       }
@@ -771,11 +1000,16 @@ async function handleOneTimePurchase(session) {
       logger.warn(`⚠ Paiement sans bénéfice pour entitlements/${uid} : accès déjà valide au-delà de la durée achetée (session ${session.id}). Vérifier si un remboursement est dû.`);
     }
 
+    // AUDIT PARRAINAGE (2026-09-27) : un essai PROLONGÉ par le parrainage
+    // (trialEndsAt/writeAccessUntil > fin de la durée achetée) ne doit jamais
+    // être RACCOURCI par un achat : writeAccessUntil ne baisse jamais.
+    const existingWriteMs = current.writeAccessUntil && current.writeAccessUntil.toMillis ? current.writeAccessUntil.toMillis() : 0;
+    const finalWriteAccess = existingWriteMs > finalEnd.toMillis() ? current.writeAccessUntil : finalEnd;
     tx.set(entRef, {
       status: "active",
       planType: "onetime",
       premiumUntil: finalEnd,
-      writeAccessUntil: finalEnd,
+      writeAccessUntil: finalWriteAccess,
       cancelAtPeriodEnd: FieldValue.delete(),
       stripeCheckoutSessionId: session.id,
       updatedAt: FieldValue.serverTimestamp()
@@ -792,8 +1026,50 @@ async function handleOneTimePurchase(session) {
   logger.info(`entitlements/${uid} ← paiement unique ${months} mois (session ${session.id}).`);
 }
 
+/* Retire l'accès d'un paiement UNIQUE remboursé en totalité ou contesté
+   (litige). Retrouve l'utilisateur via billingPrivate.stripePaymentIntentId
+   (dernier paiement unique enregistré) : un paiement plus ancien, déjà
+   remplacé, ne correspond à rien et est simplement journalisé. Ne touche
+   jamais aux données utilisateur — seulement writeAccessUntil/status ; le
+   reliquat d'essai gratuit éventuel est conservé. */
+async function revokeOneTimeForPaymentIntent(rawPaymentIntent, reason) {
+  const pi = typeof rawPaymentIntent === "string" ? rawPaymentIntent : (rawPaymentIntent && rawPaymentIntent.id);
+  if (!pi) { logger.info(`revokeOneTime(${reason}) : pas de payment_intent, ignoré.`); return; }
+  const q = await db_().collection("billingPrivate").where("stripePaymentIntentId", "==", pi).limit(1).get();
+  if (q.empty) { logger.info(`revokeOneTime(${reason}) : aucun compte pour ${pi} (paiement ancien ou abonnement), ignoré.`); return; }
+  const uid = q.docs[0].id;
+  const entRef = db_().doc(`entitlements/${uid}`);
+  await db_().runTransaction(async (tx) => {
+    const snap = await tx.get(entRef);
+    const current = snap.exists ? snap.data() : {};
+    if (current.planType !== "onetime" || current.status !== "active") return;
+    const nowMs = Date.now();
+    const trialEndMs = current.trialEndsAt && current.trialEndsAt.toMillis ? current.trialEndsAt.toMillis() : 0;
+    tx.set(entRef, {
+      status: "expired",
+      premiumUntil: Timestamp.fromMillis(nowMs),
+      writeAccessUntil: Timestamp.fromMillis(Math.max(nowMs, trialEndMs)),
+      revokedReason: reason,
+      revokedAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp()
+    }, { merge: true });
+  });
+  logger.warn(`entitlements/${uid} : accès paiement unique retiré (${reason}, ${pi}).`);
+}
+
 /* Écrit l'abonnement mensuel dans entitlements/{uid} + billingPrivate/{uid}. */
 async function syncSubscription(stripe, sub, fallbackUid) {
+  // AUDIT PAIEMENTS : Stripe ne garantit pas l'ordre de livraison des
+  // événements. Se fier à l'objet embarqué dans l'événement pouvait faire
+  // "ressusciter" un abonnement (un customer.subscription.updated tardif
+  // écrasant un .deleted déjà traité). On relit donc TOUJOURS l'état
+  // courant chez Stripe ; repli sur l'objet reçu seulement si la relecture
+  // échoue (l'erreur est journalisée, jamais silencieuse).
+  try {
+    sub = await stripe.subscriptions.retrieve(sub.id);
+  } catch (e) {
+    logger.warn(`syncSubscription: relecture de ${sub.id} impossible, objet d'événement utilisé :`, e.message);
+  }
   let uid = (sub.metadata && sub.metadata.firebaseUID) || fallbackUid;
 
   if (!uid) {
@@ -803,9 +1079,6 @@ async function syncSubscription(stripe, sub, fallbackUid) {
   }
   if (!uid) { logger.warn("Abonnement sans uid identifiable :", sub.id); return; }
 
-  const isActive = ["active", "trialing"].includes(sub.status);
-  const isPaymentIssue = ["past_due", "unpaid", "incomplete"].includes(sub.status);
-
   // API Stripe récente : current_period_end vit dans items.data[0], pas à
   // la racine de l'abonnement (cf. référence TypixClin, même piège évité).
   const rawPeriodEnd = sub.items && sub.items.data && sub.items.data[0]
@@ -814,7 +1087,6 @@ async function syncSubscription(stripe, sub, fallbackUid) {
 
   const entRef = db_().doc(`entitlements/${uid}`);
   const billingRef = db_().doc(`billingPrivate/${uid}`);
-  const status = isActive ? "active" : (isPaymentIssue ? "payment_issue" : "expired");
 
   const applied = await db_().runTransaction(async (tx) => {
     const snap = await tx.get(entRef);
@@ -834,12 +1106,23 @@ async function syncSubscription(stripe, sub, fallbackUid) {
       return false;
     }
 
+    // Accès déduit du statut par une fonction pure et testée
+    // (premiumPlans.computeSubscriptionAccess) : pas de prolongation offerte
+    // sur impayé, pas de reliquat après résiliation immédiate.
+    const access = computeSubscriptionAccess({
+      status: sub.status,
+      periodEndMs: periodEnd ? periodEnd.getTime() : 0,
+      endedAtMs: sub.ended_at ? sub.ended_at * 1000 : 0
+    }, current, Date.now());
+    const toTs = (ms) => (ms ? Timestamp.fromMillis(ms) : null);
+
     tx.set(entRef, {
-      status,
+      status: access.status,
       planType: "monthly",
-      premiumUntil: periodEnd ? Timestamp.fromDate(periodEnd) : null,
-      writeAccessUntil: periodEnd ? Timestamp.fromDate(periodEnd) : null,
+      premiumUntil: toTs(access.premiumUntilMs),
+      writeAccessUntil: toTs(access.writeAccessMs),
       cancelAtPeriodEnd: !!sub.cancel_at_period_end,
+      paymentIssueGraceUntil: access.graceUntilMs ? Timestamp.fromMillis(access.graceUntilMs) : FieldValue.delete(),
       updatedAt: FieldValue.serverTimestamp()
     }, { merge: true });
 
@@ -878,16 +1161,549 @@ exports.sweepExpiredTrials = onSchedule(
       .where("trialEndsAt", "<=", nowTs)
       .limit(500)
       .get();
-    if (snap.empty) return;
+    if (!snap.empty) {
+      const batch = db.batch();
+      snap.docs.forEach((doc) => {
+        batch.set(doc.ref, { status: "expired", updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      });
+      await batch.commit();
+      logger.info(`sweepExpiredTrials: ${snap.size} essai(s) basculé(s) en 'expired'.`);
+    }
 
-    const batch = db.batch();
-    snap.docs.forEach((doc) => {
-      batch.set(doc.ref, { status: "expired", updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-    });
-    await batch.commit();
-    logger.info(`sweepExpiredTrials: ${snap.size} essai(s) basculé(s) en 'expired'.`);
+    // AUDIT PAIEMENTS : un paiement UNIQUE dont la date de fin est passée
+    // restait indéfiniment en status:'active' (affichage "Premium actif"
+    // trompeur, jamais d'accès réel — les Rules se basent sur
+    // writeAccessUntil). Même filet d'affichage que pour les essais. Les
+    // abonnements mensuels ne sont volontairement PAS touchés ici : leur
+    // statut vient uniquement du webhook (un retard de webhook ne doit
+    // jamais couper un abonné qui paie).
+    try {
+      const paid = await db.collection("entitlements")
+        .where("status", "==", "active")
+        .where("premiumUntil", "<=", nowTs)
+        .limit(500)
+        .get();
+      // 'referral' = accès offert par le parrainage à un parrain qui n'avait
+      // plus rien (voir computeReferralCredit) : sans lui, un ex-abonné
+      // mensuel resterait « actif » pour toujours à la fin du bonus.
+      const oneTime = paid.docs.filter((d) => d.get("planType") === "onetime" || d.get("planType") === "referral");
+      if (oneTime.length) {
+        const batch2 = db.batch();
+        oneTime.forEach((doc) => {
+          batch2.set(doc.ref, { status: "expired", updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+        });
+        await batch2.commit();
+        logger.info(`sweepExpiredTrials: ${oneTime.length} paiement(s) unique(s) échu(s) basculé(s) en 'expired'.`);
+      }
+    } catch (e) {
+      logger.error("sweepExpiredTrials (paiements uniques échus) :", e);
+    }
   }
 );
+
+/* ═══════════════════════════════════════════════════════════════════════
+   PARRAINAGE (2026-09-25) — voir functions/referral.js pour la logique
+   pure (alphabet, paliers, calcul de crédit) et les règles Firestore
+   associées (referralCodes/{code}, referrals/{filleulUid}).
+   ───────────────────────────────────────────────────────────────────────
+   Port du système de parrainage le produit frère (conçu/testé/corrigé le
+   2026-09-24 côté le produit frère), adapté au schéma P1Planner : le parrain est
+   crédité sur `entitlements/{uid}` (writeAccessUntil/premiumUntil, pas un
+   sous-champ `premium.*` sur `users/{uid}` comme chez le produit frère) ; son
+   code partageable vit sur `users/{uid}.referralCode` (profil, jamais un
+   droit d'accès). `users/{uid}` et `entitlements/{uid}` ont déjà
+   `allow write: if false` dans firestore.rules — ces nouveaux champs sont
+   donc protégés sans règle supplémentaire.
+
+   Fonctions exportées (5, mêmes rôles que le produit frère) :
+     • referralInit({referredBy?})   — juste après l'inscription, AVANT
+       email vérifié (fenêtre createUser -> signOut de auth.html).
+     • referralEnsureCode()          — rattrapage paresseux (compte créé
+       avant cette fonctionnalité), appelée par comptepremium.html.
+     • referralCheckCode({code})     — SANS authentification, {valid}
+       uniquement, jamais l'identité du parrain.
+     • referralMarkActive()          — après une connexion réussie avec
+       email vérifié : compte le filleul, crédite le parrain.
+     • referralApplyCode({code})     — saisie rétroactive (compte déjà
+       existant, champ laissé vide à l'inscription).
+   ═══════════════════════════════════════════════════════════════════════ */
+const {
+  REFERRAL_CODE_MAX_ATTEMPTS,
+  generateReferralCode, normalizeReferralCode, computeReferralCredit, sanitizeReferralName, referralEmailKey
+} = require("./referral");
+
+/* Réserve un code de parrainage pour `uid` et le renvoie. Idempotent : si
+   l'utilisateur a déjà un code, le renvoie tel quel sans rien écrire.
+   Unicité GARANTIE par Firestore lui-même (tx.get + tx.set échoue de façon
+   cohérente si `referralCodes/{CODE}` existe déjà entre-temps — pas de
+   vérification manuelle hors transaction). */
+async function reserveReferralCode(uid) {
+  const db = db_();
+  const userRef = db.doc(`users/${uid}`);
+  const existing = await userRef.get();
+  const already = existing.exists ? existing.get("referralCode") : null;
+  if (already) return already;
+
+  for (let attempt = 0; attempt < REFERRAL_CODE_MAX_ATTEMPTS; attempt++) {
+    const code = generateReferralCode();
+    const codeRef = db.doc(`referralCodes/${code}`);
+    try {
+      // Deux appels concurrents pour le MÊME compte (inscription + ouverture de
+      // Compte Premium) : la relecture du code DANS la transaction évite qu'un
+      // second code écrase le premier (le code d'un compte ne change jamais).
+      const final = await db.runTransaction(async (tx) => {
+        const codeSnap = await tx.get(codeRef);
+        const userSnap = await tx.get(userRef);
+        const nowHas = userSnap.exists ? userSnap.get("referralCode") : null;
+        if (nowHas) return nowHas;
+        if (codeSnap.exists) throw new Error("REFERRAL_CODE_TAKEN");
+        tx.set(codeRef, { uid, createdAt: FieldValue.serverTimestamp() });
+        tx.set(userRef, { referralCode: code }, { merge: true });
+        return code;
+      });
+      return final;
+    } catch (e) {
+      if (e.message === "REFERRAL_CODE_TAKEN") continue; // collision : on retire un autre code
+      throw e;
+    }
+  }
+  throw new HttpsError("resource-exhausted", "Impossible de générer un code de parrainage, réessayez.");
+}
+
+/* Firestore impose que TOUTES les lectures d'une transaction précèdent
+   TOUTES ses écritures — le crédit est donc scindé en deux :
+   lireEtatParrainPourCredit() (lecture pure, appelée AVANT tout tx.update()
+   dans l'appelant) puis appliquerCreditParrain() (calcul + écriture pure,
+   plus aucune lecture). Voir referralMarkActive/referralApplyCode pour
+   l'ordre exact (lecture referrals -> lecture parrain -> écritures). */
+async function lireEtatParrainPourCredit(tx, referrerUid) {
+  const db = db_();
+  const entitlementsRef = db.doc(`entitlements/${referrerUid}`);
+  const entSnap = await tx.get(entitlementsRef);
+  if (!entSnap.exists) return null; // parrain sans entitlement (ne devrait pas arriver) : rien à créditer
+
+  const billingSnap = await tx.get(db.doc(`billingPrivate/${referrerUid}`));
+  const stripeSubscriptionId = billingSnap.exists ? billingSnap.get("stripeSubscriptionId") : null;
+  return { entitlementsRef, entSnap, stripeSubscriptionId };
+}
+
+/* CORRECTIF SÉCURITÉ appliqué dès l'écriture (même bug trouvé et corrigé
+   sur le produit frère le 2026-09-24, voir functions/referral.js) : le compteur
+   `referralActiveCount` ET `referralMonthsGranted`/les dates d'accès
+   étendues sont calculés PUIS écrits ENSEMBLE, dans le MÊME tx.update(),
+   sur le MÊME document (`entitlements/{referrerUid}`) — jamais un
+   FieldValue.increment() séparé après coup. Deux filleuls du MÊME parrain
+   devenant actifs EN CONCURRENCE relisent alors FORCÉMENT, l'un après
+   l'autre, la valeur déjà mise à jour par le premier (sérialisation
+   native des transactions Firestore, avec retry automatique) : le second
+   calcule un delta de 0, jamais un double-crédit. Seul l'appel réseau
+   Stripe (cas abonnement récurrent) reste hors transaction, cf.
+   grantReferralBonus ci-dessous.
+   Pure écriture : aucune lecture ici (voir lireEtatParrainPourCredit).
+   Quand le bonus ne peut PAS être appliqué automatiquement (abonnement
+   déjà résilié, prélèvement en échec), aucune date n'est touchée et un
+   document billingConflicts/referral_<uid>_<ts> est écrit DANS la même
+   transaction, pour rattrapage manuel. */
+function appliquerCreditParrain(tx, referrerUid, etat) {
+  const { entitlementsRef, entSnap, stripeSubscriptionId } = etat;
+  const toMs = (v) => (v && typeof v.toMillis === "function") ? v.toMillis() : 0;
+  const result = computeReferralCredit({
+    referralActiveCount: entSnap.get("referralActiveCount") || 0,
+    referralMonthsGranted: entSnap.get("referralMonthsGranted") || 0,
+    status: entSnap.get("status") || null,
+    planType: entSnap.get("planType") || null,
+    premiumUntilMs: toMs(entSnap.get("premiumUntil")),
+    writeAccessUntilMs: toMs(entSnap.get("writeAccessUntil")),
+    trialEndsAtMs: toMs(entSnap.get("trialEndsAt")),
+    hasExploitableSubscription: !!stripeSubscriptionId,
+    cancelAtPeriodEnd: entSnap.get("cancelAtPeriodEnd") === true,
+    nowMs: Date.now()
+  });
+
+  const patch = {
+    referralActiveCount: result.newCount,
+    updatedAt: FieldValue.serverTimestamp()
+  };
+  if (result.delta > 0) {
+    patch.referralMonthsGranted = result.newEarned;
+    if (result.patch.writeAccessUntilMs != null) patch.writeAccessUntil = Timestamp.fromMillis(result.patch.writeAccessUntilMs);
+    if (result.patch.premiumUntilMs != null) patch.premiumUntil = Timestamp.fromMillis(result.patch.premiumUntilMs);
+    if (result.patch.trialEndsAtMs != null) patch.trialEndsAt = Timestamp.fromMillis(result.patch.trialEndsAtMs);
+    if (result.patch.status) patch.status = result.patch.status;
+    if (result.patch.planType) patch.planType = result.patch.planType;
+  }
+  tx.update(entitlementsRef, patch);
+
+  if (result.manualCatchUp) {
+    tx.set(db_().doc(`billingConflicts/referral_${referrerUid}_${Date.now()}`), {
+      uid: referrerUid,
+      reason: `referral_bonus_${result.manualCatchUp}`,
+      monthsDue: result.delta,
+      stripeSubscriptionId: stripeSubscriptionId || null,
+      createdAt: FieldValue.serverTimestamp()
+    });
+    logger.warn(`[referral] bonus de ${result.delta} mois NON appliqué automatiquement pour ${referrerUid} (${result.manualCatchUp}) — journalisé dans billingConflicts.`);
+  }
+
+  return {
+    delta: result.delta,
+    manualCatchUp: result.manualCatchUp,
+    stripeSync: result.useStripe ? { referrerUid, delta: result.delta, stripeSubscriptionId } : null
+  };
+}
+
+/* Applique le bonus Stripe RÉCURRENT `delta` (en mois) — la SEULE partie
+   qui ne peut pas vivre dans la transaction Firestore (appel réseau
+   externe). referralActiveCount/referralMonthsGranted sont DÉJÀ écrits,
+   de façon atomique, par appliquerCreditParrain ci-dessus : cette
+   fonction ne touche plus à ces deux champs. Jamais de trial_end réécrit
+   directement en Firestore : le webhook stripeWebhook (déjà en place)
+   resynchronise writeAccessUntil/premiumUntil depuis Stripe à l'événement
+   `customer.subscription.updated` suivant. */
+async function grantReferralBonus(stripe, info) {
+  const { referrerUid, delta, stripeSubscriptionId } = info;
+  const sub = await stripe.subscriptions.retrieve(stripeSubscriptionId);
+  const rawPeriodEnd = sub.items && sub.items.data && sub.items.data[0] ? sub.items.data[0].current_period_end : sub.current_period_end;
+  const baseSec = Math.max(rawPeriodEnd || 0, Math.floor(Date.now() / 1000));
+  await stripe.subscriptions.update(stripeSubscriptionId, {
+    trial_end: baseSec + delta * 30 * 86400,
+    proration_behavior: "none"
+  });
+  await db_().doc(`entitlements/${referrerUid}`).update({ updatedAt: FieldValue.serverTimestamp() });
+}
+
+/* Journalise dans billingConflicts (même collection que le webhook) un
+   bonus de parrainage qui n'a PAS pu être appliqué côté Stripe : sans cela
+   le parrain verrait « N mois gagnés » (déjà écrit dans la transaction)
+   sans aucun effet réel, et rien ne le signalerait. Ne lève JAMAIS. */
+async function journalReferralBonusIssue(referrerUid, reason, delta, extra) {
+  try {
+    await db_().doc(`billingConflicts/referral_${referrerUid}_${Date.now()}`).set(Object.assign({
+      uid: referrerUid, reason, monthsDue: delta, createdAt: FieldValue.serverTimestamp()
+    }, extra || {}));
+  } catch (e) {
+    logger.error(`[referral] journalisation impossible pour ${referrerUid} :`, e);
+  }
+}
+
+/* Bonus Stripe hors transaction : un échec (Stripe indisponible, abonnement
+   introuvable côté Stripe...) ne fait JAMAIS échouer l'appel du filleul —
+   il est journalisé pour rattrapage manuel (billingConflicts). */
+async function applyStripeBonusOrJournal(info) {
+  try {
+    const stripe = new Stripe(STRIPE_SECRET_KEY.value(), { maxNetworkRetries: 2 });
+    await grantReferralBonus(stripe, info);
+  } catch (e) {
+    logger.error(`[referral] échec grantReferralBonus pour ${info.referrerUid} :`, e);
+    await journalReferralBonusIssue(info.referrerUid, "referral_stripe_sync_failed", info.delta, {
+      stripeSubscriptionId: info.stripeSubscriptionId || null,
+      error: String((e && e.message) || e).slice(0, 300)
+    });
+  }
+}
+
+/* Nom du filleul pour la notification/la liste du parrain. users/{uid}
+   .displayName est souvent null à ce stade (onUserCreated s'exécute avant
+   updateProfile d'auth.html) : jeton, puis compte Auth, puis profil.
+   Calculé HORS transaction, jamais bloquant, toujours nettoyé. */
+async function resolveReferralDisplayName(request) {
+  const uid = request.auth.uid;
+  let name = sanitizeReferralName(request.auth.token && request.auth.token.name);
+  if (name) return name;
+  try {
+    const u = await auth_().getUser(uid);
+    name = sanitizeReferralName(u.displayName);
+    if (name) return name;
+  } catch (e) { /* repli suivant */ }
+  try {
+    const s = await db_().doc(`users/${uid}`).get();
+    if (s.exists) name = sanitizeReferralName(s.get("displayName"));
+  } catch (e) { /* aucun nom : la notification restera sans nom */ }
+  return name || null;
+}
+
+/* Clé d'e-mail (voir referralEmailKey) d'un compte : Auth d'abord, profil ensuite.
+   Hors transaction, jamais bloquant (null si introuvable : la garde est alors sautée). */
+async function emailKeyOfUser(uid) {
+  try { const u = await auth_().getUser(uid); const k = referralEmailKey(u.email); if (k) return k; } catch (e) { /* repli */ }
+  try { const d = await db_().doc(`users/${uid}`).get(); if (d.exists) return referralEmailKey(d.get("email")); } catch (e) { /* aucune garde */ }
+  return null;
+}
+/* null = OK ; sinon 'same_inbox' (même boîte que le parrain) ou 'duplicate_inbox'
+   (même boîte qu'un autre filleul déjà compté de ce parrain). Lecture DANS la transaction. */
+async function inboxBlockReason(tx, referrerUid, filleulUid, filleulKey, parrainKey) {
+  if (!filleulKey) return null;
+  if (parrainKey && parrainKey === filleulKey) return "same_inbox";
+  const dup = await tx.get(db_().collection("referrals").where("referrerUid", "==", referrerUid).where("emailKey", "==", filleulKey).limit(2));
+  return dup.docs.some((d) => d.id !== filleulUid) ? "duplicate_inbox" : null;
+}
+
+const toMsSafe = (v) => (v && typeof v.toMillis === "function") ? v.toMillis() : 0;
+const NEW_REFERRALS_MAX = 5;
+const LIST_REFERRALS_MAX = 100;
+
+/* Filleuls ACTIFS d'un parrain, plus récents d'abord. Requête sur un seul
+   champ (index automatique, aucun index composite à déployer) ; le filtre
+   `active` et le tri se font en mémoire (borné à 500 documents). */
+async function listActiveReferralsOf(referrerUid) {
+  const snap = await db_().collection("referrals").where("referrerUid", "==", referrerUid).limit(500).get();
+  return snap.docs
+    .filter((d) => d.get("active") === true)
+    .map((d) => ({ uid: d.id, name: sanitizeReferralName(d.get("filleulName")), atMs: toMsSafe(d.get("activatedAt")) }))
+    .sort((a, b) => b.atMs - a.atMs);
+}
+
+/* Appelée par auth.html juste après la création du compte (avant le
+   signOut() qui suit la vérification email) — request.auth existe donc
+   déjà, mais SANS email vérifié. PAS de requireVerifiedUser() ici,
+   volontairement : ce serait toujours refusé à cet instant précis et
+   aucun code ne serait jamais réservé. Réserve le code du NOUVEAU compte,
+   et si un code de parrain a été saisi et validé côté client (blocage
+   strict, voir auth.html), enregistre la relation (encore inactive :
+   referralMarkActive s'occupe de compter le filleul). Ne lève JAMAIS
+   d'erreur pour un code invalide/inconnu — l'inscription ne doit jamais
+   échouer à cause du parrainage.
+   « Un seul parrain à vie » : la lecture de referrals/{uid} ET l'écriture
+   se font DANS la même transaction (deux appels concurrents avec deux
+   codes différents ne peuvent plus s'écraser). */
+exports.referralInit = onCall({ region: REGION }, async (request) => {
+  if (!request.auth) throw new HttpsError("unauthenticated", "Connexion requise.");
+  const uid = request.auth.uid;
+  const code = await reserveReferralCode(uid);
+
+  const rawReferredBy = request.data && typeof request.data.referredBy === "string" ? request.data.referredBy : null;
+  const enteredCode = normalizeReferralCode(rawReferredBy);
+  if (enteredCode) {
+    const db = db_();
+    const codeSnap = await db.doc(`referralCodes/${enteredCode}`).get(); // immuable une fois créé
+    const referrerUid = codeSnap.exists ? codeSnap.get("uid") : null;
+    // referrerUid === uid : normalement impossible (le code de CE compte
+    // vient d'être généré ci-dessus, après la saisie) — gardé par sécurité.
+    if (referrerUid && referrerUid !== uid) {
+      const referralRef = db.doc(`referrals/${uid}`);
+      await db.runTransaction(async (tx) => {
+        const already = await tx.get(referralRef);
+        if (already.exists) return; // déjà lié : jamais de second parrain
+        tx.set(referralRef, {
+          referrerUid, code: enteredCode,
+          createdAt: FieldValue.serverTimestamp(),
+          active: false, activatedAt: null
+        });
+      });
+    }
+  }
+  return { referralCode: code };
+});
+
+/* Appelée par comptepremium.html / tableur.html : garantit que le compte a
+   un code (compte créé avant ce déploiement, jamais passé par referralInit)
+   et renvoie code + compteurs en un seul aller-retour, plus les nouveaux
+   filleuls non encore « vus » (notification). Les champs ajoutés ne sont
+   JAMAIS requis par les pages (une ancienne réponse doit rester correcte). */
+exports.referralEnsureCode = onCall({ region: REGION }, async (request) => {
+  const auth = requireVerifiedUser(request);
+  const code = await reserveReferralCode(auth.uid);
+  const db = db_();
+  const entSnap = await db.doc(`entitlements/${auth.uid}`).get();
+  // alreadyReferred : le client ne peut PAS lire referrals/{uid} lui-même
+  // (Rules : lecture réservée à isAdminUser()) — c'est donc ici, côté
+  // serveur, qu'on le lui indique, pour savoir s'il faut encore lui
+  // proposer le champ "code d'une autre personne" (cf. referralApplyCode).
+  const refSnap = await db.doc(`referrals/${auth.uid}`).get();
+  const activeCount = (entSnap.exists && entSnap.get("referralActiveCount")) || 0;
+  const rawSeen = (entSnap.exists && entSnap.get("referralSeenCount")) || 0;
+  const seenCount = Math.max(0, Math.min(Number.isFinite(rawSeen) ? Math.floor(rawSeen) : 0, activeCount));
+
+  let newReferrals = [];
+  if (activeCount > seenCount) {
+    try {
+      const rows = await listActiveReferralsOf(auth.uid);
+      newReferrals = rows.slice(0, Math.min(activeCount - seenCount, NEW_REFERRALS_MAX))
+        .map((r) => ({ name: r.name, at: r.atMs || null }));
+    } catch (e) {
+      logger.warn("referralEnsureCode : liste des nouveaux filleuls indisponible :", e);
+    }
+  }
+  return {
+    referralCode: code,
+    referralActiveCount: activeCount,
+    referralMonthsGranted: (entSnap.exists && entSnap.get("referralMonthsGranted")) || 0,
+    alreadyReferred: refSnap.exists,
+    referralSeenCount: seenCount,
+    newReferrals
+  };
+});
+
+/* Vérification en direct depuis le formulaire d'inscription (validation
+   pendant la frappe, ~400ms de debounce côté auth.html). Appelable SANS
+   authentification (l'inscription n'a pas encore eu lieu à ce stade) :
+   c'est pourquoi elle ne renvoie QUE {valid}, jamais l'identité du parrain
+   (uid, nom...), pour limiter ce qu'un appel non authentifié peut
+   apprendre. */
+exports.referralCheckCode = onCall({ region: REGION }, async (request) => {
+  const raw = request.data && typeof request.data.code === "string" ? request.data.code : "";
+  const normalized = normalizeReferralCode(raw);
+  if (!normalized) return { valid: false };
+  const snap = await db_().doc(`referralCodes/${normalized}`).get();
+  return { valid: snap.exists };
+});
+
+/* Accusé de réception de la notification « nouveau filleul » :
+   referralSeenCount = referralActiveCount, écrit CÔTÉ SERVEUR (users et
+   entitlements sont write:false côté client, et settings/preferences exige
+   canWrite — un compte expiré ne pourrait pas écrire). Aucun paramètre :
+   la valeur ne peut jamais être falsifiée par le client. */
+exports.referralMarkSeen = onCall({ region: REGION }, async (request) => {
+  const auth = requireVerifiedUser(request);
+  const entRef = db_().doc(`entitlements/${auth.uid}`);
+  let seen = 0;
+  await db_().runTransaction(async (tx) => {
+    const snap = await tx.get(entRef);
+    if (!snap.exists) return;
+    seen = snap.get("referralActiveCount") || 0;
+    if ((snap.get("referralSeenCount") || 0) !== seen) tx.update(entRef, { referralSeenCount: seen });
+  });
+  return { referralSeenCount: seen };
+});
+
+/* Liste des filleuls ACTIFS du parrain (tuile cliquable + modal) : uid pris
+   dans le jeton, aucun paramètre. Ne renvoie JAMAIS d'uid ni d'e-mail :
+   {name, code, at} seulement — le code (re-validé en sortie) permet de le
+   saisir à son tour dans le champ rétroactif. 100 lignes max + total réel. */
+exports.referralListReferrals = onCall({ region: REGION }, async (request) => {
+  const auth = requireVerifiedUser(request);
+  const rows = await listActiveReferralsOf(auth.uid);
+  const page = rows.slice(0, LIST_REFERRALS_MAX);
+  const db = db_();
+  let userSnaps = [];
+  if (page.length) {
+    userSnaps = await db.getAll(...page.map((r) => db.doc(`users/${r.uid}`)));
+  }
+  const referrals = page.map((r, i) => {
+    const u = userSnaps[i];
+    const name = r.name || (u && u.exists ? sanitizeReferralName(u.get("displayName")) : null);
+    const code = u && u.exists ? normalizeReferralCode(u.get("referralCode")) : null;
+    return { name: name || null, code: code || null, at: r.atMs || null };
+  });
+  return { total: rows.length, referrals };
+});
+
+/* Appelée par auth.html juste après une connexion RÉUSSIE avec email
+   vérifié (avant la redirection). Idempotente et silencieuse : sans
+   parrain, ou filleul déjà comptabilisé, ne fait rien (aucune erreur,
+   aucun impact sur la connexion en cours). C'est ce passage à active:true
+   qui compte le filleul et déclenche la récompense du parrain dès que son
+   compteur atteint un nouveau palier (cf. REFERRAL_TIERS dans
+   referral.js). */
+exports.referralMarkActive = onCall({ region: REGION, secrets: [STRIPE_SECRET_KEY] }, async (request) => {
+  const auth = requireVerifiedUser(request);
+  const uid = auth.uid;
+  const db = db_();
+  const referralRef = db.doc(`referrals/${uid}`);
+  const snap = await referralRef.get();
+  if (!snap.exists || snap.get("active") === true || snap.get("blocked")) { // blocked : déjà écarté (boîte mail en double), inutile de recommencer à chaque connexion
+    return { activated: false, bonusMonths: 0 };
+  }
+  const referrerUid = snap.get("referrerUid");
+  const filleulName = await resolveReferralDisplayName(request); // hors transaction, jamais bloquant
+  const filleulKey = referralEmailKey(auth.token && auth.token.email);
+  const parrainKey = filleulKey ? await emailKeyOfUser(referrerUid) : null;
+
+  // Bascule active:true + crédite le parrain (appliquerCreditParrain,
+  // compteur ET dates/statut ENSEMBLE) dans UNE transaction — protège
+  // contre deux appels qui se chevauchent. Le calcul Stripe éventuel ne
+  // peut PAS vivre dans cette transaction (appel réseau externe) : il est
+  // fait juste après, à partir de credit.stripeSync.
+  let credit = null;
+  await db.runTransaction(async (tx) => {
+    // ── Lectures d'abord (règle Firestore : toutes les lectures d'une
+    //    transaction précèdent toutes ses écritures) ──
+    const freshSnap = await tx.get(referralRef);
+    if (!freshSnap.exists || freshSnap.get("active") === true) return; // déjà traité entre-temps
+    const etatParrain = await lireEtatParrainPourCredit(tx, referrerUid);
+    const blocked = await inboxBlockReason(tx, referrerUid, uid, filleulKey, parrainKey);
+
+    // ── Puis écritures ──
+    // Le filleul est marqué actif dans TOUS les cas dès qu'on dépasse la
+    // garde ci-dessus — y compris si le parrain est introuvable (compte
+    // supprimé), sinon ce même filleul serait retenté à CHAQUE connexion.
+    const patch = { active: true, activatedAt: FieldValue.serverTimestamp() };
+    if (filleulName) patch.filleulName = filleulName;
+    if (filleulKey) patch.emailKey = filleulKey;
+    if (blocked) { patch.active = false; patch.blocked = blocked; patch.blockedAt = FieldValue.serverTimestamp(); }
+    tx.update(referralRef, patch);
+    if (blocked) { logger.warn(`[referral] filleul ${uid} non compté pour ${referrerUid} (${blocked}).`); return; }
+    if (etatParrain) credit = appliquerCreditParrain(tx, referrerUid, etatParrain);
+  });
+
+  if (credit && credit.stripeSync) await applyStripeBonusOrJournal(credit.stripeSync);
+  return { activated: true, bonusMonths: credit ? credit.delta : 0 };
+});
+
+/* Un compte DÉJÀ existant (créé avant le parrainage, ou qui a simplement
+   laissé le champ vide à l'inscription) peut renseigner après-coup le
+   code de la personne qui l'a fait découvrir P1Planner. Appelée par
+   comptepremium.html. C'est le PROPRIÉTAIRE du code (le parrain) qui est
+   crédité — jamais celui qui le saisit ici.
+   SÉCURITÉ : une fois qu'un compte a un document referrals/{uid} — qu'il
+   vienne de referralInit (inscription) OU d'ICI — il ne peut plus JAMAIS
+   en obtenir un second. referralInit et referralApplyCode écrivent dans
+   le MÊME document et vérifient TOUS LES DEUX son existence À L'INTÉRIEUR
+   d'une transaction avant d'écrire quoi que ce soit : impossible de
+   changer ou dupliquer son parrain, y compris en cas de double-clic. */
+exports.referralApplyCode = onCall({ region: REGION, secrets: [STRIPE_SECRET_KEY] }, async (request) => {
+  const auth = requireVerifiedUser(request);
+  const uid = auth.uid;
+  const raw = request.data && typeof request.data.code === "string" ? request.data.code : "";
+  const normalized = normalizeReferralCode(raw);
+  if (!normalized) throw new HttpsError("invalid-argument", "Code de parrainage invalide.");
+
+  const db = db_();
+  const codeSnap = await db.doc(`referralCodes/${normalized}`).get();
+  if (!codeSnap.exists) throw new HttpsError("not-found", "Ce code de parrainage n'existe pas.");
+  const referrerUid = codeSnap.get("uid");
+  if (referrerUid === uid) throw new HttpsError("failed-precondition", "Vous ne pouvez pas utiliser votre propre code.");
+
+  const filleulName = await resolveReferralDisplayName(request); // hors transaction, jamais bloquant
+  const filleulKey = referralEmailKey(auth.token && auth.token.email);
+  const parrainKey = filleulKey ? await emailKeyOfUser(referrerUid) : null;
+  const referralRef = db.doc(`referrals/${uid}`);
+  let credit = null;
+  let outcome = "ok"; // 'ok' | 'already_linked' | 'referrer_missing' | 'blocked'
+  await db.runTransaction(async (tx) => {
+    // ── Lectures d'abord ──
+    // Relecture FRAÎCHE de referrals/{uid} (jamais la valeur lue avant) :
+    // c'est elle, pas un `if` en dehors, qui protège contre un parrainage
+    // déjà établi (par referralInit ou par un appel précédent ici même).
+    const freshSnap = await tx.get(referralRef);
+    if (freshSnap.exists) { outcome = "already_linked"; return; }
+    const etatParrain = await lireEtatParrainPourCredit(tx, referrerUid);
+    if (!etatParrain) { outcome = "referrer_missing"; return; }
+    if (await inboxBlockReason(tx, referrerUid, uid, filleulKey, parrainKey)) { outcome = "blocked"; return; } // rien n'est écrit : un autre code reste possible
+
+    // ── Puis écritures ──
+    const doc = {
+      referrerUid, code: normalized,
+      createdAt: FieldValue.serverTimestamp(),
+      active: true, activatedAt: FieldValue.serverTimestamp(),
+      retroactive: true
+    };
+    if (filleulName) doc.filleulName = filleulName;
+    if (filleulKey) doc.emailKey = filleulKey;
+    tx.set(referralRef, doc);
+    credit = appliquerCreditParrain(tx, referrerUid, etatParrain);
+  });
+
+  if (outcome === "already_linked") throw new HttpsError("failed-precondition", "Vous avez déjà renseigné un code de parrainage : impossible d'en changer.");
+  if (outcome === "referrer_missing") throw new HttpsError("not-found", "Ce code de parrainage n'est plus valide.");
+  if (outcome === "blocked") throw new HttpsError("failed-precondition", "Ce code ne peut pas être utilisé avec ce compte.");
+
+  if (credit && credit.stripeSync) await applyStripeBonusOrJournal(credit.stripeSync);
+  return { ok: true };
+});
+
+// Tests uniquement (jamais posé en production) : expose des fonctions internes au harnais test/lib/referral-harness.mjs.
+if (process.env.P1_TEST_EXPORTS === "1") exports.__test = { handleOneTimePurchase };
 
 /* ═══════════════════════════════════════════════════════════════════════
    ADMIN — sauvegarde / restauration pour un utilisateur (admin.html)
@@ -917,8 +1733,21 @@ exports.sweepExpiredTrials = onSchedule(
    ═══════════════════════════════════════════════════════════════════════ */
 const ADMIN_BACKUP_SUBCOLLECTIONS = [
   "subjects", "courses", "notes", "flashcards", "errorEntries",
-  "trainingItems", "tasks", "calendarDays", "dailyStats"
+  "trainingItems", "tasks", "calendarDays", "dailyStats",
+  // D2 (audit sauvegardes/pertes, 2026-09-30) : cahier d'erreurs des ENTRAÎNEMENTS
+  // (notesEntrainements) manquait ici — jamais sauvegardé ni restaurable jusqu'ici.
+  "notesEntrainements"
 ];
+
+// D2 : `tourLogs`/`reviews`/`attempts` (journaux append-only imbriqués sous chaque cours/
+// flashcard/entraînement — voir firestore.rules) sont volontairement EXCLUS de la sauvegarde.
+// Justification : ce sont des journaux d'audit DÉRIVÉS (jamais modifiés ni supprimés par
+// l'application elle-même, contrairement aux documents primaires ci-dessus qui PEUVENT être
+// archivés/écrasés par erreur) — le risque P0 qu'une sauvegarde couvre (écrasement accidentel
+// d'un état encore utile) ne les concerne pas de la même façon. Les inclure exigerait de lister
+// EXHAUSTIVEMENT chaque cours/flashcard/entraînement pour en lire les sous-collections (N+1
+// lectures, potentiellement des milliers pour un utilisateur très actif) pour un bénéfice de
+// protection marginal. Choix à documenter/reconsidérer avec Jean si le besoin se confirme.
 
 async function requireAdmin(request) {
   const auth = requireVerifiedUser(request);
@@ -936,19 +1765,178 @@ async function snapshotUserSubcollections(uid) {
     const col = await db.collection(`users/${uid}/${name}`).get();
     snapshot[name] = col.docs.map((d) => ({ id: d.id, data: d.data() }));
   }
+  // D2 : users/{uid}/settings/preferences (catalogues personnalisés de ressources/supports/
+  // types/plateformes, deletedDefaultIds, barème...) est un DOCUMENT UNIQUE, pas une sous-
+  // collection — absent de ADMIN_BACKUP_SUBCOLLECTIONS (qui ne sait itérer que des collections),
+  // donc jamais sauvegardé ni restauré jusqu'ici. Snapshoté séparément, sous une clé dédiée.
+  const prefsSnap = await db.doc(`users/${uid}/settings/preferences`).get();
+  snapshot.settingsPreferences = prefsSnap.exists ? prefsSnap.data() : null;
   return snapshot;
 }
 
-async function writeBatchedDocs(uid, subcollection, entries) {
+function _tpxByteSize(obj) {
+  try { return Buffer.byteLength(JSON.stringify(obj), "utf8"); }
+  catch (e) { return Infinity; } // objet non serialisable : traiter comme "trop gros", jamais comme "OK"
+}
+
+// D3 (audit sauvegardes/pertes, 2026-09-30) : Firestore refuse tout document dépassant 1 Mo.
+// L'ancienne protection (_buildSafeBackupSnapshot) RETIRAIT "notes" au-delà de 750 Ko pour
+// rester sous cette limite — une vraie perte dans la sauvegarde elle-même (jamais dans le
+// planning primaire de l'utilisateur, mais le filet de sécurité devenait silencieusement
+// incomplet, sans que personne ne puisse le savoir avant d'en avoir besoin). Remplacé par un
+// découpage en plusieurs documents `backups/{id}/parts/{n}` d'environ 600 Ko chacun : plus RIEN
+// n'est jamais retiré, quelle que soit la taille réelle. Découpage par CARACTÈRES (pas par
+// octets) : une chaîne JS se tranche toujours à une limite de code unit UTF-16 valide, donc
+// jamais en plein milieu d'un caractère — avec 150 000 caractères/partie, même le pire cas
+// (caractères astraux à 4 octets) reste à ~600 Ko, tandis qu'un JSON très majoritairement ASCII
+// (le cas réel ici) reste très en-dessous. BACKUP_MAX_PARTS est un garde-fou pour un cas
+// pathologique (des dizaines de Mo de JSON), jamais atteint en usage normal — contrairement à
+// l'ancien seuil de 750 Ko, franchissable par un utilisateur actif avec quelques images en note.
+const BACKUP_PART_CHARS = 150000;
+const BACKUP_MAX_PARTS = 500;
+
+function _splitJsonIntoParts(jsonString) {
+  const parts = [];
+  for (let i = 0; i < jsonString.length; i += BACKUP_PART_CHARS) parts.push(jsonString.slice(i, i + BACKUP_PART_CHARS));
+  return parts.length ? parts : [""];
+}
+
+// Retourne { parts, docCount } ou { docCount, tooLarge: true } (cas pathologique uniquement,
+// voir BACKUP_MAX_PARTS ci-dessus). Ne lève jamais d'exception.
+async function _buildBackupSnapshot(uid) {
+  const snapshot = await snapshotUserSubcollections(uid);
+  const docCount = Object.keys(snapshot).reduce((n, k) => n + (Array.isArray(snapshot[k]) ? snapshot[k].length : 0), 0);
+  const parts = _splitJsonIntoParts(JSON.stringify(snapshot));
+  if (parts.length > BACKUP_MAX_PARTS) {
+    logger.error(`_buildBackupSnapshot: snapshot de ${uid} beaucoup trop volumineux (${parts.length} parties, plafond ${BACKUP_MAX_PARTS}) -- sauvegarde abandonnee.`);
+    return { docCount, tooLarge: true };
+  }
+  return { parts, docCount };
+}
+
+// Écrit le document de tête (métadonnées, format v2) puis ses parties par lots de 400 (marge
+// sous la limite Firestore de 500 écritures/batch). `meta` : createdAt/createdBy/createdByUid/
+// label — jamais docCount/format/partCount, calculés ici.
+async function _writeBackupDocument(uid, meta, built) {
+  const backupRef = db_().collection(`users/${uid}/backups`).doc();
+  await backupRef.set(Object.assign({}, meta, { format: "v2", partCount: built.parts.length, docCount: built.docCount }));
+  const CHUNK = 400;
+  for (let i = 0; i < built.parts.length; i += CHUNK) {
+    const batch = db_().batch();
+    for (let j = i; j < Math.min(i + CHUNK, built.parts.length); j++) {
+      batch.set(backupRef.collection("parts").doc(String(j)), { chunk: built.parts[j] });
+    }
+    await batch.commit();
+  }
+  return backupRef;
+}
+
+// Reconstruit le snapshot complet d'une sauvegarde, quel que soit son format :
+// - v2 (ce correctif) : parties reassemblées dans l'ordre NUMÉRIQUE des ids ("0","1",...,"10" —
+//   un tri lexicographique échouerait, "10" < "2" en chaîne) ;
+// - v1 (avant ce correctif) : `snapshot` inline sur le document de tête, jamais de
+//   notesEntrainements ni settingsPreferences (n'existaient pas encore).
+async function _readBackupSnapshot(backupSnap) {
+  const backup = backupSnap.data();
+  if (backup.format === "v2") {
+    const partsSnap = await backupSnap.ref.collection("parts").get();
+    if (partsSnap.size !== backup.partCount) {
+      throw new HttpsError("data-loss", `Sauvegarde corrompue : ${partsSnap.size}/${backup.partCount} partie(s) trouvée(s).`);
+    }
+    const ordered = partsSnap.docs.slice().sort((a, b) => Number(a.id) - Number(b.id));
+    return JSON.parse(ordered.map((d) => d.data().chunk).join(""));
+  }
+  return backup.snapshot || null;
+}
+
+// `extraFields`, optionnel : fusionne des champs supplementaires (ex.
+// restoredAt) dans CHAQUE document ecrit -- voir adminRestoreBackup, qui
+// l'utilise pour tamponner les cours restaures et permettre au client de
+// detecter qu'une restauration a eu lieu (protection anti-course avec un
+// onglet reste ouvert, voir p1WriteTourSlot/p1JCheckpointAction cote client).
+// Mode "replace" (historique) : réécrit purement et simplement CHAQUE document de la sauvegarde.
+async function writeBatchedDocs(uid, subcollection, entries, extraFields) {
   const db = db_();
   const CHUNK = 400; // marge sous la limite Firestore de 500 écritures/batch
   for (let i = 0; i < entries.length; i += CHUNK) {
     const batch = db.batch();
     for (const entry of entries.slice(i, i + CHUNK)) {
-      batch.set(db.doc(`users/${uid}/${subcollection}/${entry.id}`), entry.data);
+      const data = extraFields ? Object.assign({}, entry.data, extraFields) : entry.data;
+      batch.set(db.doc(`users/${uid}/${subcollection}/${entry.id}`), data);
     }
     await batch.commit();
   }
+}
+
+// D5 (audit sauvegardes/pertes, 2026-09-30) : mode "compléter" (par défaut, demande explicite de
+// Jean) — ne réécrit QUE ce qui manque réellement dans l'état actuel :
+//   - document absent de l'état actuel -> recréé tel quel ;
+//   - document archivé depuis la sauvegarde (backup non archivé) -> désarchivé ET son contenu
+//     restauré (un document archivé est gelé depuis son archivage côté application, donc aucun
+//     risque d'écraser une édition récente) ;
+//   - pour les collections à contenu textuel (BACKUP_CONTENT_FIELD) : un contenu ACTUELLEMENT
+//     VIDE alors que la sauvegarde en avait un -> rempli.
+// Tout document déjà présent, non archivé et non vide n'est JAMAIS touché — c'est la différence
+// avec le mode "replace" (historique, réécrit indistinctement tout ce que contient la
+// sauvegarde), toujours disponible explicitement pour "revenir à l'état de la sauvegarde".
+// A6/L6 (audit 02/10, comparaison au modèle EDN TableurEnLigne.html, tpx-catalogs-core) : même
+// logique de fusion que côté client (p1MergeCatalogArrays/p1MergeIdList, voir
+// public/tableur.html) -- union par id, le plus grand horodatage `u` gagne pour les 4
+// catalogues personnalisables ; union simple (jamais un id retiré) pour deletedDefaultIds. Sert
+// à la restauration "compléter" des settings/preferences, voir plus bas : avant ce correctif,
+// settingsPreferences n'était restauré QUE si le document était totalement ABSENT, donc une
+// entrée de catalogue perdue (bug client, voir L1) ne revenait jamais dès que le compte avait
+// ne serait-ce qu'UN SEUL réglage enregistré (quasi toujours le cas en pratique).
+const SETTINGS_CATALOG_FIELDS = ["customResources", "customSupports", "customTrainTypes", "customTrainPlateformes"];
+function _mergeCatalogArraysServer(a, b) {
+  const byId = {}; const order = [];
+  [].concat(Array.isArray(a) ? a : [], Array.isArray(b) ? b : []).forEach((e) => {
+    if (!e || typeof e !== "object" || typeof e.id !== "string" || !e.id) return;
+    if (!Object.prototype.hasOwnProperty.call(byId, e.id)) { order.push(e.id); byId[e.id] = e; }
+    else if ((e.u || 0) >= (byId[e.id].u || 0)) byId[e.id] = e;
+  });
+  return order.map((id) => byId[id]);
+}
+function _mergeIdListServer(a, b) {
+  const seen = {}; const out = [];
+  [].concat(Array.isArray(a) ? a : [], Array.isArray(b) ? b : []).forEach((id) => {
+    if (typeof id !== "string" && typeof id !== "number") return;
+    const k = String(id);
+    if (!seen[k]) { seen[k] = true; out.push(id); }
+  });
+  return out;
+}
+const BACKUP_CONTENT_FIELD = { notes: "html", notesEntrainements: "html", errorEntries: "html" };
+function _isEmptyContent(v) {
+  return v === undefined || v === null || (typeof v === "string" && (v.trim() === "" || v.trim() === "<br>"));
+}
+async function _restoreEntriesComplete(uid, name, entries, extraFields) {
+  const db = db_();
+  const contentField = BACKUP_CONTENT_FIELD[name];
+  const CHUNK = 300; // lectures (getAll) + écritures par lot, marge sous les limites Firestore
+  let restored = 0;
+  for (let i = 0; i < entries.length; i += CHUNK) {
+    const slice = entries.slice(i, i + CHUNK);
+    const refs = slice.map((e) => db.doc(`users/${uid}/${name}/${e.id}`));
+    const snaps = refs.length ? await db.getAll(...refs) : [];
+    const batch = db.batch();
+    let any = false;
+    slice.forEach((entry, idx) => {
+      const snap = snaps[idx];
+      const currentlyMissing = !snap.exists;
+      const currentlyArchived = snap.exists && !!snap.data().archivedAt;
+      const backupIsArchived = !!entry.data.archivedAt;
+      const currentlyEmpty = !!contentField && snap.exists && !currentlyArchived && _isEmptyContent(snap.data()[contentField]);
+      const backupHasContent = !!contentField && !_isEmptyContent(entry.data[contentField]);
+      const shouldRestore = currentlyMissing || (currentlyArchived && !backupIsArchived) || (currentlyEmpty && backupHasContent);
+      if (!shouldRestore) return;
+      const data = extraFields ? Object.assign({}, entry.data, extraFields) : entry.data;
+      batch.set(refs[idx], data, { merge: true });
+      any = true; restored++;
+    });
+    if (any) await batch.commit();
+  }
+  return restored;
 }
 
 exports.adminCreateBackup = onCall({ region: REGION }, async (request) => {
@@ -963,26 +1951,27 @@ exports.adminCreateBackup = onCall({ region: REGION }, async (request) => {
     throw new HttpsError("not-found", "Utilisateur introuvable.");
   }
 
-  const snapshot = await snapshotUserSubcollections(targetUid);
-  const docCount = Object.values(snapshot).reduce((n, arr) => n + arr.length, 0);
-  const backupRef = db_().collection(`users/${targetUid}/backups`).doc();
-  await backupRef.set({
+  const built = await _buildBackupSnapshot(targetUid);
+  if (built.tooLarge) {
+    throw new HttpsError("resource-exhausted", "Cette sauvegarde est beaucoup trop volumineuse pour être enregistrée. Le planning de l'utilisateur n'est pas affecté ; contacter le support technique.");
+  }
+  const backupRef = await _writeBackupDocument(targetUid, {
     createdAt: FieldValue.serverTimestamp(),
     createdBy: "admin",
     createdByUid: admin.uid,
-    label: (typeof label === "string" && label.trim()) ? label.trim().slice(0, 200) : `Sauvegarde manuelle (${docCount} document(s))`,
-    docCount,
-    snapshot
-  });
+    label: (typeof label === "string" && label.trim()) ? label.trim().slice(0, 200) : `Sauvegarde manuelle (${built.docCount} document(s))`
+  }, built);
 
-  logger.info(`adminCreateBackup: ${admin.uid} → sauvegarde ${backupRef.id} pour ${targetUid} (${docCount} docs).`);
-  return { backupId: backupRef.id, docCount };
+  logger.info(`adminCreateBackup: ${admin.uid} → sauvegarde ${backupRef.id} pour ${targetUid} (${built.docCount} docs, ${built.parts.length} partie(s)).`);
+  return { backupId: backupRef.id, docCount: built.docCount };
 });
 
 exports.adminRestoreBackup = onCall({ region: REGION }, async (request) => {
   const admin = await requireAdmin(request);
   const targetUid = request.data && request.data.targetUid;
   const backupId = request.data && request.data.backupId;
+  // D5 : "merge" (compléter, par défaut) ou "replace" (revenir à l'état de la sauvegarde).
+  const mode = (request.data && request.data.mode === "replace") ? "replace" : "merge";
   if (!targetUid || !backupId) {
     throw new HttpsError("invalid-argument", "targetUid et backupId requis.");
   }
@@ -991,35 +1980,185 @@ exports.adminRestoreBackup = onCall({ region: REGION }, async (request) => {
   if (!backupSnap.exists) {
     throw new HttpsError("not-found", "Sauvegarde introuvable.");
   }
-  const backup = backupSnap.data();
-  const snapshot = backup && backup.snapshot;
+  const snapshot = await _readBackupSnapshot(backupSnap);
   if (!snapshot || typeof snapshot !== "object") {
-    throw new HttpsError("failed-precondition", "Cette sauvegarde n'a pas de contenu exploitable (ancien format ou vide).");
+    throw new HttpsError("failed-precondition", "Cette sauvegarde n'a pas de contenu exploitable (vide).");
   }
 
   // Filet de sécurité anti-écrasement accidentel : l'état ACTUEL est
   // sauvegardé avant toute restauration, même sans demande explicite —
   // une restauration reste ainsi toujours réversible depuis cet onglet.
-  const preRestoreSnapshot = await snapshotUserSubcollections(targetUid);
-  const preRestoreDocCount = Object.values(preRestoreSnapshot).reduce((n, arr) => n + arr.length, 0);
-  await db_().collection(`users/${targetUid}/backups`).doc().set({
+  // Bug de robustesse corrigé : si ce filet lui-même ne peut pas être écrit
+  // (snapshot beaucoup trop volumineux), on abandonne la restauration
+  // PLUTÔT QUE de la rendre irréversible sans le dire — mieux vaut un admin
+  // qui réessaie que perdre la seule trace de l'état d'avant restauration.
+  const preRestoreBuilt = await _buildBackupSnapshot(targetUid);
+  if (preRestoreBuilt.tooLarge) {
+    throw new HttpsError("resource-exhausted", "Restauration annulée : la sauvegarde de sécurité de l'état actuel (avant restauration) est beaucoup trop volumineuse à créer. Aucune donnée n'a été modifiée.");
+  }
+  await _writeBackupDocument(targetUid, {
     createdAt: FieldValue.serverTimestamp(),
     createdBy: "admin_auto_pre_restore",
     createdByUid: admin.uid,
-    label: `Auto — juste avant restauration de la sauvegarde ${backupId}`,
-    docCount: preRestoreDocCount,
-    snapshot: preRestoreSnapshot
-  });
+    label: `Auto — juste avant restauration (${mode === "replace" ? "remplacement" : "complétion"}) de la sauvegarde ${backupId}`
+  }, preRestoreBuilt);
 
+  // Bug de perte de donnees corrige (protection anti-course multi-onglets) :
+  // un onglet utilisateur reste ouvert AVANT cette restauration continue de
+  // croire a son etat local (potentiellement plus recent) -- sans marqueur,
+  // sa prochaine ecriture sur un cours restaure (p1WriteTourSlot/
+  // p1JCheckpointAction, transaction cote client) fusionnerait son edition
+  // par-dessus l'etat restaure, reintroduisant exactement ce que la
+  // restauration voulait effacer, en silence. `restoredAt` sur chaque cours
+  // restaure permet au client de detecter ce cas precis et d'abandonner
+  // son edition locale au lieu de la fusionner.
+  const restoredAtStamp = FieldValue.serverTimestamp();
   let restoredDocs = 0;
+  const perCollectionCounts = {};
   for (const name of ADMIN_BACKUP_SUBCOLLECTIONS) {
     const entries = Array.isArray(snapshot[name]) ? snapshot[name] : [];
-    if (entries.length) {
-      await writeBatchedDocs(targetUid, name, entries);
-      restoredDocs += entries.length;
+    if (!entries.length) continue;
+    const extra = name === "courses" ? { restoredAt: restoredAtStamp } : undefined;
+    let n;
+    if (mode === "replace") { await writeBatchedDocs(targetUid, name, entries, extra); n = entries.length; }
+    else { n = await _restoreEntriesComplete(targetUid, name, entries, extra); }
+    perCollectionCounts[name] = n;
+    restoredDocs += n;
+  }
+
+  // D2/D5 : settings/preferences (document unique, voir snapshotUserSubcollections ci-dessus) —
+  // en mode "compléter", uniquement s'il est actuellement absent (jamais d'écrasement d'un
+  // catalogue personnalisé plus récent que la sauvegarde) ; en mode "replace", toujours réécrit.
+  if (snapshot.settingsPreferences && typeof snapshot.settingsPreferences === "object") {
+    const prefRef = db_().doc(`users/${targetUid}/settings/preferences`);
+    if (mode === "replace") {
+      await prefRef.set(snapshot.settingsPreferences);
+      perCollectionCounts.settingsPreferences = 1;
+    } else {
+      const curPrefSnap = await prefRef.get();
+      if (!curPrefSnap.exists) {
+        await prefRef.set(snapshot.settingsPreferences);
+        perCollectionCounts.settingsPreferences = 1;
+      } else {
+        // A6/L6 : le document existe déjà (cas quasi systématique en pratique) -- fusionne les 4
+        // catalogues + deletedDefaultIds au lieu de ne rien restaurer du tout. Les AUTRES
+        // réglages (thème, pagination, barème de confiance...) restent hors périmètre de ce
+        // correctif, comportement inchangé pour eux (non écrasés en mode compléter).
+        const cur = curPrefSnap.data() || {};
+        const patch = {};
+        let changed = false;
+        SETTINGS_CATALOG_FIELDS.forEach((f) => {
+          if (!Array.isArray(snapshot.settingsPreferences[f])) return;
+          const merged = _mergeCatalogArraysServer(cur[f], snapshot.settingsPreferences[f]);
+          if (JSON.stringify(merged) !== JSON.stringify(cur[f] || [])) { patch[f] = merged; changed = true; }
+        });
+        if (Array.isArray(snapshot.settingsPreferences.deletedDefaultIds)) {
+          const mergedIds = _mergeIdListServer(cur.deletedDefaultIds, snapshot.settingsPreferences.deletedDefaultIds);
+          if (JSON.stringify(mergedIds) !== JSON.stringify(cur.deletedDefaultIds || [])) { patch.deletedDefaultIds = mergedIds; changed = true; }
+        }
+        if (changed) {
+          await prefRef.set(patch, { merge: true });
+          perCollectionCounts.settingsPreferences = 1;
+        }
+      }
     }
   }
 
-  logger.warn(`adminRestoreBackup: ${admin.uid} a restauré la sauvegarde ${backupId} pour ${targetUid} (${restoredDocs} documents réécrits). État précédent conservé automatiquement.`);
-  return { restoredDocs };
+  // D6 (audit sauvegardes/pertes, 2026-09-30) : restoredAt (ci-dessus) ne protégeait QUE
+  // courses/{fc} (via p1WriteTourSlot/p1JCheckpointAction côté client) — un onglet resté ouvert
+  // AVANT cette restauration pouvait réécrire par-dessus l'état restauré pour n'importe quelle
+  // AUTRE collection (matières, tâches, planning, entraînements, notes...), en silence. Ce champ
+  // sur le document users/{uid} lui-même est lu par un listener déjà actif côté client
+  // (applyUserSettings) : sa valeur change à chaque restauration, déclenchant un simple
+  // rechargement de page qui couvre TOUTES les collections d'un coup, sans avoir à ajouter la
+  // même protection restoredAt/pageLoadedAt à chaque fonction d'écriture une par une.
+  await db_().doc(`users/${targetUid}`).set({ restoreEpoch: restoredAtStamp }, { merge: true });
+
+  logger.warn(`adminRestoreBackup: ${admin.uid} a restauré (${mode}) la sauvegarde ${backupId} pour ${targetUid} (${restoredDocs} documents). État précédent conservé automatiquement.`);
+  return { restoredDocs, mode, perCollectionCounts };
 });
+
+/* ═══════════════════════════════════════════════════════════════════════
+   D1 (audit sauvegardes/pertes, 2026-09-30) — sauvegarde automatique nocturne.
+   Avant ce correctif : AUCUNE sauvegarde automatique n'existait, adminCreateBackup n'étant
+   déclenchable que manuellement depuis admin.html. Tâche planifiée : pour chaque utilisateur
+   authentifié actif dans les 3 derniers jours (Auth listUsers, paginé — metadata.lastRefreshTime/
+   lastSignInTime comme source d'activité, Auth étant la seule source fiable d'un "dernier accès"
+   sans avoir à instrumenter chaque page), crée une sauvegarde automatique si la dernière
+   automatique a plus de 72h, puis ne garde que les 5 dernières automatiques (jamais les
+   manuelles ni les "avant restauration", filtrées par createdBy).
+   Limite connue (documentée, pas silencieuse) : la purge des sauvegardes "avant restauration"
+   de plus de 90 jours mentionnée dans la mission n'est PAS implémentée ici (nécessiterait son
+   propre balayage périodique) — seule la rétention des 5 dernières automatiques l'est.
+   ═══════════════════════════════════════════════════════════════════════ */
+const AUTO_BACKUP_MIN_INTERVAL_MS = 72 * 3600 * 1000;
+const AUTO_BACKUP_ACTIVE_WINDOW_MS = 3 * 24 * 3600 * 1000;
+const AUTO_BACKUP_KEEP = 5;
+
+async function _shouldCreateAutoBackup(uid) {
+  const snap = await db_().collection(`users/${uid}/backups`)
+    .where("createdBy", "==", "auto").orderBy("createdAt", "desc").limit(1).get();
+  if (snap.empty) return true;
+  const last = snap.docs[0].data().createdAt;
+  const lastMs = (last && typeof last.toMillis === "function") ? last.toMillis() : 0;
+  return (Date.now() - lastMs) > AUTO_BACKUP_MIN_INTERVAL_MS;
+}
+
+async function _pruneAutoBackups(uid) {
+  const snap = await db_().collection(`users/${uid}/backups`)
+    .where("createdBy", "==", "auto").orderBy("createdAt", "desc").get();
+  const toDelete = snap.docs.slice(AUTO_BACKUP_KEEP);
+  for (const d of toDelete) {
+    const partsSnap = await d.ref.collection("parts").get();
+    const batch = db_().batch();
+    partsSnap.docs.forEach((p) => batch.delete(p.ref));
+    batch.delete(d.ref);
+    await batch.commit();
+  }
+  return toDelete.length;
+}
+
+async function _runScheduledBackups() {
+  const authApi = getAuth();
+  const cutoff = Date.now() - AUTO_BACKUP_ACTIVE_WINDOW_MS;
+  let nextPageToken, checked = 0, created = 0, pruned = 0, errors = 0;
+  do {
+    const page = await authApi.listUsers(1000, nextPageToken);
+    nextPageToken = page.pageToken;
+    for (const u of page.users) {
+      const lastRefresh = u.metadata.lastRefreshTime ? new Date(u.metadata.lastRefreshTime).getTime() : 0;
+      const lastSignIn = u.metadata.lastSignInTime ? new Date(u.metadata.lastSignInTime).getTime() : 0;
+      if (Math.max(lastRefresh, lastSignIn) < cutoff) continue;
+      checked++;
+      try {
+        if (!(await _shouldCreateAutoBackup(u.uid))) continue;
+        const built = await _buildBackupSnapshot(u.uid);
+        if (built.tooLarge) {
+          errors++;
+          logger.error(`scheduledUserBackup: sauvegarde auto de ${u.uid} abandonnee (trop volumineuse).`);
+          continue;
+        }
+        await _writeBackupDocument(u.uid, {
+          createdAt: FieldValue.serverTimestamp(), createdBy: "auto", createdByUid: null,
+          label: `Sauvegarde automatique (${built.docCount} document(s))`
+        }, built);
+        created++;
+        pruned += await _pruneAutoBackups(u.uid);
+      } catch (e) {
+        errors++;
+        logger.error(`scheduledUserBackup: echec pour ${u.uid} :`, e);
+      }
+    }
+  } while (nextPageToken);
+  logger.info(`scheduledUserBackup: ${checked} utilisateur(s) actif(s) examine(s), ${created} sauvegarde(s) creee(s), ${pruned} ancienne(s) purgee(s), ${errors} erreur(s).`);
+  return { checked, created, pruned, errors };
+}
+
+exports.scheduledUserBackup = onSchedule({ schedule: "0 3 * * *", timeZone: "Europe/Paris", region: REGION }, _runScheduledBackups);
+
+// Tests uniquement (jamais posé en production) : même mécanisme que P1_TEST_EXPORTS plus haut —
+// expose la logique interne pour un déclenchement direct depuis les tests, sans dépendre de
+// l'émulateur Cloud Scheduler (jugé peu fiable dans cet environnement, voir fn-bridge.mjs).
+if (process.env.P1_TEST_EXPORTS === "1") {
+  exports.__backupTest = { _runScheduledBackups, _buildBackupSnapshot, _readBackupSnapshot, _shouldCreateAutoBackup, _pruneAutoBackups };
+}

@@ -143,6 +143,24 @@ service cloud.firestore {
         allow delete: if false;
       }
 
+      /* ---------- notes du cahier d'erreurs ENTRAÎNEMENTS (tableur.html,
+         loadTrainNoteFromFirestore/saveTrainNoteFromFirestore) ----------
+         Bug réel corrigé (remonté par l'utilisateur, capture à l'appui) :
+         cette sous-collection était utilisée par le client (getDoc/setDoc
+         sur users/{uid}/notesEntrainements/{id}) sans AUCUNE règle dédiée
+         ici — elle retombait donc systématiquement sur le fallback
+         fail-closed racine (`allow read, write: if false`), pas seulement
+         en cas de coupure réseau. Résultat : "Cette note n'a pas pu être
+         chargée" pour 100% des utilisateurs, à chaque ouverture, et aucune
+         sauvegarde n'a jamais pu être écrite sur Firestore pour cette
+         fonctionnalité (échec silencieux, voir le catch de
+         saveTrainNoteFromFirestore). Même schéma que notes/errorEntries. */
+      match /notesEntrainements/{trainId} {
+        allow read: if isSelfVerified(uid);
+        allow create, update: if canWrite(uid);
+        allow delete: if false;
+      }
+
       /* ---------- entraînements (suivi externe) ---------- */
       match /trainingItems/{trainingId} {
         allow read: if isSelfVerified(uid);
@@ -187,14 +205,25 @@ service cloud.firestore {
          ce n'est pas une perte de données, la donnée primaire reste
          intacte dans subjects/courses/etc. */
       match /backups/{backupId} {
-        // Lecture admin ajoutée pour admin.html (onglet Sauvegardes) — la
-        // CRÉATION reste réservée au propriétaire OU à la Cloud Function
-        // adminCreateBackup/adminRestoreBackup (Admin SDK, contourne ces
-        // Rules) : jamais de règle d'écriture élargie à isAdminUser() ici.
+        // ⚠️ Audit perte de données (2026-09-30, demande explicite de Jean) : ce match
+        // autorisait AUPARAVANT `create`/`delete` au propriétaire (`canWrite(uid)`), pensé à
+        // l'origine pour un système de sauvegarde CLIENT qui n'a jamais existé (le tableur
+        // n'écrit rien dans backups/ — voir functions/index.js). En pratique, ça laissait un
+        // client (bug ou script) créer de fausses sauvegardes ou, pire, SUPPRIMER les vraies.
+        // Les sauvegardes sont maintenant exclusivement écrites par les Cloud Functions
+        // (adminCreateBackup, adminRestoreBackup, la tâche planifiée nocturne — Admin SDK,
+        // contourne ces Rules) : plus aucune écriture cliente, sous aucune condition. Lecture
+        // seule pour le propriétaire (transparence) et l'admin (onglet Sauvegardes).
         allow read: if isSelfVerified(uid) || isAdminUser();
-        allow create: if canWrite(uid);
-        allow update: if false;
-        allow delete: if canWrite(uid);
+        allow create, update, delete: if false;
+
+        // Découpage d'une sauvegarde volumineuse en plusieurs documents ≤ 700 Ko chacun
+        // (voir _buildSafeBackupSnapshot / adminCreateBackup) — même principe que le document
+        // de tête ci-dessus : écrit UNIQUEMENT par les Cloud Functions.
+        match /parts/{partId} {
+          allow read: if isSelfVerified(uid) || isAdminUser();
+          allow create, update, delete: if false;
+        }
       }
     }
 
@@ -257,6 +286,48 @@ service cloud.firestore {
        pour l'auteur) + une exception étroite pour ajouter une réponse
        admin (voir hasOnly() plus bas — arrayUnion côté admin.html).
        ============================================================ */
+    /* ============================================================
+       PARRAINAGE (2026-09-25) — entièrement côté serveur (Admin SDK) :
+         referralCodes/{CODE}   CODE (6 caractères, alphabet sans 0/O/1/I)
+                                -> { uid, createdAt }. Sert UNIQUEMENT à
+                                réserver un code de façon garantie unique
+                                (l'ID de document Firestore ne peut pas être
+                                créé deux fois par un create() en collision) ;
+                                jamais lu ni écrit par le client — les Cloud
+                                Functions referralInit/referralEnsureCode/
+                                referralCheckCode font le lien code<->uid
+                                (réservation, ou simple vérification pour
+                                referralCheckCode qui ne renvoie que
+                                {valid}, jamais l'identité du parrain).
+         referrals/{filleulUid} journal 1 filleul = 1 document (clé = son
+                                propre uid, donc jamais compté deux fois) :
+                                { referrerUid, code, createdAt, active,
+                                activatedAt, retroactive? }. Créé par
+                                referralInit à l'inscription (active:false)
+                                ou par referralApplyCode pour une saisie
+                                rétroactive (active:true immédiatement) ;
+                                passé à active:true par referralMarkActive
+                                à la 1re connexion vérifiée du filleul —
+                                c'est ce passage qui incrémente les
+                                compteurs du parrain (sur entitlements/{uid},
+                                voir plus haut) et déclenche sa récompense.
+       Un compte ne peut être lié qu'à UN SEUL parrain, à vie : les Cloud
+       Functions vérifient l'existence de ce document DANS une transaction
+       avant d'écrire quoi que ce soit (jamais sur une lecture faite en
+       dehors) — les Rules n'ont donc qu'à refuser toute écriture cliente,
+       sans condition, comme billingPrivate ci-dessus.
+       Lecture admin seule (support/audit) ; jamais le propriétaire
+       lui-même (referralEnsureCode le renseigne déjà côté serveur).
+       ============================================================ */
+    match /referralCodes/{code} {
+      allow read: if isAdminUser();
+      allow write: if false;
+    }
+    match /referrals/{filleulUid} {
+      allow read: if isAdminUser();
+      allow write: if false;
+    }
+
     match /feedbacks/{feedbackId} {
       // Volontairement PAS gaté par canWrite(uid) : un utilisateur en
       // lecture seule (essai/Premium expiré) doit pouvoir signaler un

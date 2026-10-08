@@ -7,6 +7,30 @@
         { "fieldPath": "subjectId", "order": "ASCENDING" },
         { "fieldPath": "order", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "entitlements",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "trialEndsAt", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "entitlements",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "premiumUntil", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "backups",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "createdBy", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
