@@ -25,7 +25,7 @@
   - [x] Contenu créateur vérifié (3ème P1 major UE2/UE3, 275e/~10500 EDN, interne anesthésie-réa Paris)
 - [x] `firestore.rules` + `storage.rules` écrites (isolation uid, `entitlements`/`billingPrivate`/`userStats`/`achievements` jamais écrits par le client, soft-delete uniquement) — **22 tests Emulator réels, tous verts** (`test/firestore.rules.test.mjs`, incluant matrice A/B explicite et test de concurrence sur la validation de Tours)
 - [x] **Vrai projet Firebase P1Planner connecté** (config trouvée dans `CLAUDE.md`, projectId `p1planner` vérifié explicitement dans le code avant toute utilisation) — `auth.html`, `comptepremium.html`, `tableur.html` utilisent la vraie config, plus de `REPLACE_ME`
-- [x] Bootstrap utilisateur (`functions/index.js`, `onUserCreated`) — **3 tests Emulator réels, tous verts** (`test/bootstrap.test.mjs`) : création `users`/`entitlements`/`billingPrivate`/`userStats`, essai 30 jours exact, fonctionne sans displayName, idempotence prouvée
+- [x] Bootstrap utilisateur (`functions/index.js`, `onUserCreated`) — **3 tests Emulator réels, tous verts** (`test/bootstrap.test.mjs`) : création `users`/`entitlements`/`billingPrivate`/`userStats`, essai 15 jours exact, fonctionne sans displayName, idempotence prouvée
 - [ ] Spécifier et implémenter `createCheckoutSession`/`createCustomerPortalSession`/`stripeWebhook` (reporté volontairement — voir mission "pas Stripe maintenant sauf besoin bloquant")
 - [ ] Créer le vrai projet Stripe P1Planner (Price IDs, webhook signé)
 
@@ -428,6 +428,16 @@
   - **QA effectuée** : `node --check` sur `functions/index.js` (OK) ; vérification manuelle de l'équilibre des accolades de `firestore.rules` (OK, pas d'émulateur disponible — Java absent de la machine, donc **les Rules n'ont PAS pu être testées par l'émulateur Firestore réel**, seulement relues attentivement) ; `admin.html` chargé dans un navigateur réel (onglet neuf) — auth-gate testé en conditions réelles (Firebase Auth réel, "Connexion requise" affiché correctement, zéro erreur console) ; rendu de chaque section (Dashboard/Utilisateurs/Abonnements/Sauvegardes/Feedbacks) vérifié visuellement avec des données de test injectées manuellement (captures d'écran) — **le parcours complet avec un vrai compte `isAdmin:true` n'a PAS été testé** (nécessite que l'utilisateur pose lui-même ce champ depuis la Console Firebase, puis un test réel avec de vraies données).
   - **Reste à faire avant un vrai GO** : poser `isAdmin:true` sur un compte de test depuis la Console Firebase ; tester le parcours complet (connexion admin → chaque onglet → une vraie création + restauration de sauvegarde sur un compte de test, JAMAIS sur un compte réel en premier essai) ; tester un aller-retour feedback réel (soumission depuis le tableur → réponse depuis admin.html → réception côté "Mes messages") ; obtenir le GO explicite avant `firebase deploy` (Rules + Functions + Hosting, aucun déploiement fait dans cette session).
 
+  **RÉSOLU (2026-09-30, audit sauvegardes/pertes, demande explicite de Jean)** : l'onglet Sauvegardes est remis
+  dans `admin.html` — `adminCreateBackup`/`adminRestoreBackup` ne sont plus orphelines. Le tableur crée
+  maintenant réellement des sauvegardes AUTOMATIQUES (`scheduledUserBackup`, nocturne, comptes actifs <3j) en
+  plus des manuelles depuis l'onglet ; restauration avec choix du mode « compléter »/« remplacer » + bilan par
+  collection. Voir `docs/DECISIONS.md`, section « Audit "protection des données"... » pour le détail complet
+  (D1/D2/D3/D5). Déployé après GO explicite de Jean, testé réellement (`test/backups.test.mjs` 9/9,
+  `test/e2e/referral-ui.mjs` A2). Le parcours complet a été testé avec un VRAI compte `isAdmin:true` de test
+  (émulateur), pas encore avec un compte de production réel — à faire par Jean lui-même (voir le rapport final
+  de cette mission pour la liste de vérifications).
+
 ## 5bis. Modal CGV + confirmation d'achat (`comptepremium.html`)
 - [x] **Modal de confirmation d'achat refondu** (demande explicite, capture de référence TypixClin fournie —
   adaptée au contenu et à l'identité visuelle P1Planner, jamais copiée telle quelle) : en-tête icône
@@ -634,6 +644,401 @@
   ensuite (aucune double facturation possible, les deux formules restant mutuellement exclusives par
   ailleurs). Vérifié en navigateur (capture à l'appui : bandeau résilié + carte de formule accessible
   ensemble).
+
+## 5undecies. Suites du "paiement unique après résiliation" (`comptepremium.html`)
+- [x] **Bug réel** : la case "résilié" affichait de nouveau `planSection`, mais avait oublié de
+  réafficher `examDateBlock` (le champ "Ta date de concours", désormais imbriqué DANS
+  `#uniquePlanBlock`) — la carte "Choisir ma formule" apparaissait donc sans le champ de date
+  nécessaire pour choisir une durée. Corrigé (`examDateBlock.style.display = ""` ajouté dans la
+  branche résiliée). Vérifié via un rendu simulé (`window.renderAccount()` appelé directement avec un
+  état résilié synthétique).
+- [x] **Demande explicite** : en résilié, l'onglet "Abonnement mensuel" laissait cliquer "Continuer" et
+  retombait sur l'erreur serveur générique `Tu as déjà un abonnement en cours.` (le serveur refuse un
+  nouveau Checkout mensuel tant que l'ancien abonnement Stripe existe encore, résiliation ou non — seul
+  `ignoreCanceling` s'applique au paiement unique). Remplacé par une notice explicite directement dans
+  l'onglet (`#recurrentReactivateNotice`, masque `#recurrentBuyBlock`) : *"Ton abonnement mensuel est
+  résilié mais reste actif jusqu'à son terme — il n'y a rien à racheter. Pour annuler cette résiliation
+  ... utilise « Gérer mon abonnement » ci-dessous."* Vérifié via rendu simulé (4 états : résilié, actif
+  non résilié, paiement unique, essai — seul le premier active la notice).
+- [x] **Clarté demandée** : lever l'ambiguïté quand un paiement unique est acheté pendant un essai
+  gratuit encore en cours (le badge "X jours restants" pouvait laisser croire que l'accès payant
+  n'activait qu'à la fin de l'essai). Le serveur démarre en réalité toujours `premiumUntil` à partir de
+  MAINTENANT (`handleOneTimePurchase()`, `now = new Date()` au moment de la confirmation du paiement,
+  jamais lié au trial). Ajouté une puce explicite dans `.info-list` : *"Un paiement unique démarre
+  immédiatement à la confirmation du paiement, aujourd'hui — même pendant un essai gratuit encore en
+  cours, il ne se met jamais en attente de sa fin."*
+- [x] **Régression réelle, cause différente du bug des 3 essais précédents** : le décalage horizontal
+  au verrouillage du scroll (modals CGV/consentement) était réapparu. Cause : `body` a un
+  `overflow-x:hidden` permanent (CSS), qui combiné à `scrollbar-gutter:stable` sur `<html>` fait que la
+  largeur réelle de la page ne change JAMAIS quand on bascule `body.style.overflow` — le
+  `padding-right` de compensation ajouté au fix précédent créait donc lui-même un décalage de 10px au
+  lieu d'en corriger un. Corrigé : `lockPageScroll()`/`unlockPageScroll()` ne touchent plus qu'à
+  `overflow`, plus de `paddingRight` du tout. Vérifié par mesure précise (`getBoundingClientRect()` sur
+  `#topBar` via `.top-bar`) avant/pendant/après ouverture réelle du modal CGV, dans un navigateur frais :
+  largeur strictement identique (1127px) dans les 3 états, contre 1117px pendant avec l'ancien code.
+
+## 5duodecies. Mot de passe oublié fiable + "Mon compte" dans le tableur
+- [x] **Mot de passe oublié ne fonctionnait pas** : même cause racine que l'ancien souci de
+  vérification d'e-mail (mailer par défaut de Firebase Auth peu fiable pour ce projet). Ajouté
+  `functions/index.js::sendPasswordResetEmail` (callable publique, lien généré côté serveur via
+  `generatePasswordResetLink()`, envoyé par Brevo, throttlée par email via
+  `passwordResetThrottle/{email}`). `auth.html` appelle maintenant cette Cloud Function en priorité
+  (`sendPasswordResetEmailViaBrevo()`), avec repli sur le SDK client uniquement si la fonction est
+  techniquement indisponible. **Cloud Function écrite et vérifiée (`node --check`), pas encore
+  déployée ni testée en conditions réelles (e-mail reçu) — à faire avant de considérer le bug clos.**
+- [x] **"Mon compte" dans les paramètres du tableur** (nom / e-mail / mot de passe), demande explicite
+  avec renvoi vers l'implémentation de référence TypixClin (`TableurEnLigne.html`, ~lignes
+  52900-53550). **Bug découvert en cours de route** : une version de cette carte existait déjà dans
+  `tableur.html` (lignes ~54076+) mais était une copie quasi verbatim de TypixClin — texte visible
+  mentionnant littéralement "un compte TypixClin", commentaires "EDN / ECOS", classes `tpx-acc-*`, ET
+  surtout une écriture directe `setDoc(doc(db,'users',uid), {displayName}, {merge:true})` **rejetée par
+  les Firestore Rules de P1Planner** (`allow write: if false` inconditionnel sur `users/{uid}`) —
+  le changement de nom était donc entièrement non fonctionnel en production. Corrigé intégralement :
+  - Nom affiché → nouvelle Cloud Function `updateDisplayName` (Admin SDK, met à jour Auth + Firestore).
+  - Adresse e-mail → nouvelle Cloud Function `requestEmailChange` (lien généré côté serveur, envoyé par
+    Brevo) au lieu de `verifyBeforeUpdateEmail()` client (mailer par défaut) ; ré-authentification
+    cliente conservée avant l'appel.
+  - Mot de passe → inchangé (SDK client pur, aucune Cloud Function nécessaire) ; "Mot de passe oublié ?"
+    appelle la Cloud Function `sendPasswordResetEmail` ci-dessus.
+  - `syncMailMirror()` (miroir Firestore de l'email, échouait silencieusement en permanence sous les
+    Rules de P1Planner, contrairement à TypixClin où c'est temporaire) supprimée entièrement.
+  - Toutes les classes `tpx-acc-*` renommées `acc-*` (CSS + HTML + JS), mention "TypixClin" retirée du
+    texte visible, commentaires "EDN/ECOS" réécrits pour P1Planner (isolation P0,
+    voir CLAUDE.md). Un second point d'écriture oublié (`injectSettings()`, qui replace la carte tout
+    en bas des paramètres) référençait aussi l'ancienne classe — corrigé.
+  - Vérifié en navigateur frais (`node --check` sur le module + carte injectée réellement affichée dans
+    le modal Paramètres, ouverture animée des panneaux e-mail/mot de passe, bascule de l'œil
+    fonctionnelle, position toujours en dernière carte confirmée par script).
+  **Déployé (GO utilisateur) — bug réel supplémentaire trouvé et corrigé à ce moment-là**, voir
+  [[5tredecies]] ci-dessous : `updateDisplayName` échouait 100 % du temps en production.
+
+## 5tredecies. Bug réel de démarrage — `app/duplicate-app` sur `db_()`/`auth_()` (`functions/index.js`)
+- [x] **Bug critique découvert après déploiement**, remonté par l'utilisateur ("erreur puis après
+  rafraîchissement ça fonctionne" sur le nom, lien de réinitialisation jamais reçu). Confirmé dans les
+  logs Cloud Functions réels (`firebase functions:log`) : `updateDisplayName` échouait à **100 % des
+  appels** avec `FirebaseAppError: app/duplicate-app`, et `sendPasswordResetEmail` idem
+  ("pas d'envoi ... (app/duplicate-app)", avalé silencieusement par son propre try/catch — d'où
+  aucune erreur visible côté client, juste aucun email).
+  Cause : `db_()` et `auth_()` appelaient chacune `initializeApp()` derrière leur PROPRE variable de
+  cache (`_db`/`_auth`). Dans un conteneur neuf, la PREMIÈRE des deux appelée dans une même invocation
+  réussit (aucune app enregistrée), mais la SECONDE retombe sur `initializeApp()` alors qu'une app
+  par défaut existe déjà → crash. `updateDisplayName` appelle `auth_()` puis `db_()` (crash sur
+  `db_()`) ; `sendPasswordResetEmail` appelle `db_()` (throttle Firestore) puis `auth_()` (génération
+  du lien) — crash inversé, sur `auth_()`. Comme le cache de la fonction qui plante n'est jamais posé
+  (le crash survient avant l'affectation), le bug se reproduisait à CHAQUE appel, pas seulement au
+  premier après un cold start. Aucune fonction existante n'appelait jusqu'ici les deux à la fois dans
+  un même appel, d'où un bug resté invisible malgré ce pattern présent depuis le début du fichier.
+  Corrigé en partageant un seul verrou d'initialisation (`ensureApp_()`) entre `db_()` et `auth_()`.
+  **Vérifié réellement, pas juste supposé** : après redéploiement, appel direct de
+  `sendPasswordResetEmail` (curl sur l'URL Cloud Run publique) → logs montrent
+  `sendPasswordResetEmail: envoyé à jean.zennaro@free.fr.` (plus aucune trace de
+  `app/duplicate-app`) ; `requestEmailChange` et `updateDisplayName` confirmés sur la nouvelle révision
+  active (`*-00002-*`) sans erreur dans les logs suivants.
+- [x] **Suite, remontée par l'utilisateur** : `users/{uid}.email` ne se mettait jamais à jour après un
+  changement d'adresse confirmé (Firebase Auth applique le changement lui-même via le lien, sans
+  repasser par notre code ; le client ne peut de toute façon jamais écrire `users/{uid}`). Ajouté
+  `syncEmailMirror` (Cloud Function, utilise l'e-mail VÉRIFIÉ du jeton `request.auth.token.email`,
+  jamais une valeur cliente) — `tableur.html` la déclenche automatiquement dès qu'un écart est détecté
+  entre `users/{uid}.email` et l'adresse Auth courante (pas à chaque connexion). Corrige aussi
+  l'affichage `admin.html` (Users), qui lisait ce même champ potentiellement périmé.
+- [x] **Clarté demandée** : les messages de succès "lien envoyé" (changement d'e-mail, mot de passe
+  oublié, carte "Mon compte" du tableur) précisent maintenant explicitement que le changement ne sera
+  pris en compte dans l'app qu'à la prochaine connexion.
+
+## 5quaterdecies. Filet de secours si le quota Brevo (300/jour, plan gratuit) est dépassé
+- [x] **Demande explicite, anticipation d'un pic d'inscriptions (campagne marketing)** : le premier
+  email de vérification (`sendVerificationEmailOnCreate`, trigger serveur automatique à l'inscription)
+  n'a aucun repli possible en cas d'échec Brevo — c'est une fonction 100% serveur, qui ne peut pas
+  invoquer le mailer par défaut de Firebase (celui-ci n'existe que côté SDK client). Plutôt que de
+  dupliquer l'envoi à l'inscription (risque de doubler la consommation du quota Brevo en
+  fonctionnement normal, donc contre-productif), le filet est posé au moment naturel où TOUT
+  utilisateur non vérifié repasse forcément : la tentative de connexion bloquée. `auth.html` déclenche
+  maintenant automatiquement `resendEmailVerification()` (Brevo puis repli SDK client déjà existant)
+  à chaque connexion refusée pour email non vérifié — silencieux, aucune alerte si ça échoue puisque
+  le bouton "Renvoyer" manuel reste le canal avec retour explicite. Ajouté un throttle serveur 60s
+  (`verificationEmailThrottle/{uid}` dans `resendVerificationEmail`) pour ne jamais spammer si la
+  personne retente sa connexion plusieurs fois de suite. Résultat concret : même si le tout premier
+  email échoue (quota dépassé), la première tentative de connexion qui suit relance automatiquement
+  l'envoi, avec repli garanti vers le mailer Firebase si Brevo est toujours indisponible — sans que
+  l'utilisateur ait besoin de savoir que le bouton "Renvoyer" existe.
+  Utilisateur a choisi de rester sur le plan Brevo gratuit (300/jour) plutôt que de passer payant —
+  ce filet est le compromis retenu pour ce choix.
+
+## 5quindecies. Date de concours à tort obligatoire pour un paiement unique (`functions/index.js`)
+- [x] **Bug réel remonté par l'utilisateur** : "Indique d'abord ta date de concours/examens..." bloquait
+  tout achat en paiement unique tant que la date n'était pas enregistrée, alors que le champ est
+  censé être facultatif — le curseur de durée côté client propose déjà, lui, un défaut de 12 mois en
+  l'absence de date (`updateMaxMonths(p.maxMonths || 12)`), mais `createCheckoutSession` exigeait quand
+  même `entitlement.maxMonths` et refusait sinon (`failed-precondition`). Front et serveur n'étaient pas
+  alignés. Corrigé : le serveur applique désormais le même défaut de 12 mois en l'absence de date
+  (`MAX_MONTHS_CAP` = 36 reste le plafond absolu, même avec une date qui autoriserait davantage). Label
+  du champ complété avec "(optionnel)" dans `comptepremium.html` pour que ce soit visible directement.
+  Vérifié : `node --check`, rendu réel du label en navigateur (via `window.renderAccount()`), déployé
+  (Functions + Hosting).
+
+## 5sexdecies. Bugs mobiles + bug réel de synchronisation (demande explicite, captures à l'appui)
+- [x] **"Mes cours" (tableur.html), barre de filtres à 3 lignes sur mobile** : cause réelle trouvée —
+  `#reference-dropdown` (l'ancien réglage "Périmètre du tableur", supprimé du HTML dans une session
+  précédente) gardait sa cellule dans la grille CSS mobile, laissant "Ressources" seul sur sa propre
+  ligne. Grille repensée en 3 colonnes/2 lignes (Ressources rejoint Matières/Statuts), "Ressources"
+  passe en icône seule sur mobile (`.label-full`, motif déjà utilisé ailleurs dans le fichier).
+  Vérifié en viewport mobile réel (375px) : confirmé à exactement 2 lignes désormais.
+- [x] **comptepremium.html, en-tête mobile cassé** : `.btn` n'a jamais eu de `white-space:nowrap`, le
+  texte de "Mon tableur" se repliait sur deux lignes dans sa pastille dès que l'espace manquait,
+  donnant un bandeau tassé contre le logo. "Déconnexion" passe en icône seule sur mobile (≤480px),
+  "Mon tableur" ne replie plus jamais son texte. Vérifié en viewport mobile réel.
+- [x] **Bouton "fermer" (X) du header du tableur, mobile** : c'était en réalité le bouton du menu
+  hamburger mobile (`#mobile-menu-btn`, icône bascule bars/times), devenu inutile depuis que le panneau
+  qu'il ouvrait (`#mobile-menu`) a été vidé de tout contenu dans une session précédente ("P1Planner n'a
+  qu'un seul outil"). Bouton, panneau vide et JS associé supprimés entièrement (pas juste masqués).
+- [x] **Bug réel de synchronisation multi-appareils (feedback)** : la pastille de notification des
+  réponses admin revenait après lecture, surtout en changeant d'appareil. Cause trouvée : le module
+  écrivait `feedbackSeenMap` sur `users/{uid}` directement — un document backend-only
+  (`allow write: if false` inconditionnel) — l'écriture Firestore échouait donc SILENCIEUSEMENT à
+  chaque fois (catch vide), seul le cache localStorage (propre à chaque appareil, jamais partagé)
+  fonctionnait. Corrigé en ciblant `users/{uid}/settings/preferences` à la place (seul sous-document
+  où l'utilisateur peut réellement écrire, voir `canWrite()`), avec `setDoc(...,{merge:true})` au lieu
+  de `updateDoc()` (le document peut ne pas encore exister). Vérifié : `node --check` sur le module,
+  aucune autre référence à l'ancien chemin trouvée dans le fichier.
+- [x] Reformulation du texte d'accroche `index.html` (paragraphe lead) jugé "bizarre" après la
+  réécriture SEO précédente — deux propositions mal articulées autour d'un même sujet, corrigé en une
+  phrase plus naturelle sans perdre la formulation ciblée ("organiser sa première année de médecine").
+  Tout vérifié en navigateur avant déploiement (aucune erreur console sur les 5 pages principales,
+  rendu visuel confirmé pour chaque correctif), déployé (Hosting).
+
+## 5septendecies. Bugs mode sombre + bypass Premium sur la Méthode des J (demande explicite, captures à l'appui)
+- [x] **Bug réel de bypass Premium corrigé** : `openSpecialtyModal()` (créer/modifier une matière) et
+  `openItemModal()` (créer/modifier un cours) ne testaient que `requireCustom()` (officiel vs
+  sur-mesure — sans rapport avec le statut d'accès), aucune vérification Premium/lecture seule. Un
+  compte à l'essai expiré pouvait donc toujours créer/modifier/supprimer des matières et des cours.
+  Corrigé : `canPerformAction('subject')`/`canPerformAction('course')` ajoutés en toute première
+  ligne des deux fonctions, actions enregistrées dans `TPX_PREMIUM_BLOCKED_ACTIONS` + dictionnaire de
+  message hors-ligne.
+- [x] **Même bug étendu au modal "Cours à revoir ce jour-là" et aux actions Valider/Reporter d'un
+  rappel J** (`openDayJModal`, `_jHandleValidate`, `_jHandleAction` — ces deux derniers partagés avec
+  le tiroir latéral "Révisions J") : aucun des trois n'était gardé. Nouvelle action `'j-review'`
+  ajoutée à `TPX_PREMIUM_BLOCKED_ACTIONS` + message hors-ligne, gardée en première ligne des trois
+  fonctions. Choix délibéré : le tiroir latéral reste consultable en lecture seule (voir ce qui est
+  dû), seules les actions de mutation (Valider/Reporter) sont bloquées — cohérent avec le reste de
+  l'application.
+- [x] **Bug réel de thème sombre corrigé — carte "Révisions J" et modal "Cours à revoir ce jour-là"
+  rendus en clair/pastel quel que soit le thème actif (capture à l'appui)** : cause racine identique
+  dans les 6 endroits touchés — un `[data-theme="dark"]` forçait `background`/`border`/`color` avec
+  `var(--gray-700)`, `var(--gray-800)`, `var(--gray-200)`, `var(--gray-300)` ou `var(--gray-100)`.
+  Or ces jetons sont des jetons de **texte**, volontairement inversés en thème sombre (ex.
+  `--gray-800` devient clair, `--gray-700` devient clair, pour rester lisible en texte sur fond
+  sombre) — les utiliser comme fond/bordure de carte ou comme couleur d'un bouton produisait l'effet
+  inverse de celui recherché (carte claire au lieu de sombre ; bordure blanche au lieu de sombre ;
+  texte sombre-sur-sombre donc invisible). Dans la plupart des cas la règle de BASE (non préfixée
+  `[data-theme="dark"]`) utilisait déjà la bonne variable et s'adaptait toute seule — le forçage en
+  trop était à la fois redondant et faux ; simplement supprimé. Corrigé à ces 6 endroits précis
+  (`tableur.html`) :
+  - `.j-due-card` (fond carte "Révisions J") — fond forcé en clair, corrigé en `#1e293b`.
+  - `.j-due-item` (fond + bordure d'une ligne) — bordure blanche forcée, corrigée en `#334155`.
+  - `.j-due-item-name` (nom du cours) — texte sombre-sur-sombre, override supprimé.
+  - `.j-due-menu-validate button` (bordure) + `button b` (libellé) — bordure blanche + texte
+    sombre-sur-sombre, bordure corrigée en `#334155`, override du libellé supprimé.
+  - `.j-due-menu-postpone button` (libellés +1J/+2J/…) — texte sombre-sur-sombre, override supprimé.
+  - `.day-j-modal-header` (bordure du modal) — bordure blanche forcée, corrigée en `#334155`.
+  - `.day-j-modal-date` (titre du modal, ex. "Lundi 7 septembre") — texte sombre-sur-sombre donc
+    invisible, override supprimé.
+  - `.j-due-btn-postpone` (bouton "Reporter") — texte à peine visible, override de couleur supprimé.
+  Vérifié en navigateur réel (thème forcé en dark, carte/menus/modal injectés et capturés en
+  capture d'écran) : carte et modal bien sombres, tous les textes et boutons nettement lisibles,
+  plus de contour blanc. **Suite donnée à l'audit large demandé ensuite par l'utilisateur — voir
+  section 5octodecies : 3 autres occurrences confirmées et corrigées** (`.auth-btn`, `.j-custom-row`,
+  `.j-custom-input`, ces deux derniers dans l'encart "Personnalisé" de Paramètres > Méthode des J).
+- [x] **Bug réel de timing de l'animation de succès corrigé (check vert trop tôt pendant l'onboarding
+  du premier tour)** : en mode compact (`doAdd()`), le check vert plein écran s'affichait tout de
+  suite et sans condition, alors que le modal "Choisir le rythme des révisions J" (premier tour +
+  méthode des J activée) ne s'ouvre que plus tard, dans le `.then()` de l'écriture — le check
+  apparaissait donc AVANT le paramétrage des J au lieu d'après. Le mode détaillé (modal de
+  confiance) avait déjà ce correctif (`_mayOpenJModal`/`window._jPendingSuccessCheckmark`, déféré
+  jusqu'à `closeJFirstTourModal()`) — appliqué à l'identique au mode compact : précalcul de
+  `_mayOpenJModalCompact` avant l'écriture, check différé via le même flag global si le modal J va
+  s'ouvrir, affiché immédiatement sinon (comportement inchangé pour tous les autres cas). Vérifié :
+  `new Function()` sur les 47 blocs `<script>` du fichier (aucune nouvelle erreur), rechargement
+  réel en navigateur (aucune erreur console), fonctions `compactTourAdd`/`openCompactConfPicker`
+  toujours exposées après coup.
+  **Reste à vérifier avec un vrai compte de test** (pas fait ici, faute de données de cours réelles
+  dans l'environnement de test) : la séquence complète tap → check différé → modal J → check à la
+  fermeture, de bout en bout en conditions réelles.
+
+## 5octodecies. Bug réel P0 — `notesEntrainements` sans Rule Firestore (cahier d'erreurs entraînements ne charge jamais), + audit large demandé par l'utilisateur
+- [x] **Bug réel corrigé — "Cette note n'a pas pu être chargée" pour TOUTE note du cahier d'erreurs
+  entraînements, pour tout utilisateur, à chaque ouverture (capture à l'appui)** : ce n'était PAS un
+  problème de connexion comme le message l'affichait. `firestore.rules` n'avait **aucune** règle
+  pour `users/{uid}/notesEntrainements/{id}` (confirmé par recherche exhaustive du fichier) — chaque
+  `getDoc()`/`setDoc()` client sur ce chemin retombait donc sur le fallback fail-closed racine
+  (`allow read, write: if false`), jamais sur une vraie erreur réseau. Résultat : aucune note de ce
+  module n'a jamais pu être ni lue ni sauvegardée sur Firestore depuis son introduction — le code
+  client (`loadTrainNoteFromFirestore`/`saveTrainNoteFromFirestore`, `tableur.html`) était lui-même
+  correct et prudent (il distingue bien "erreur" de "note vide", pour ne jamais écraser une note
+  existante illisible), le problème était entièrement côté Rules. Corrigé : bloc
+  `match /notesEntrainements/{trainId}` ajouté, même schéma que `notes`/`errorEntries` (lecture
+  propriétaire, écriture gatée par `canWrite(uid)`, pas de suppression physique).
+  **Déployé (GO explicite reçu) via `firebase deploy --only firestore:rules`** — confirmé par
+  Firebase lui-même ("rules file compiled successfully" + "released rules firestore.rules to
+  cloud.firestore"), projet cible `p1planner` revérifié dans `.firebaserc` avant déploiement.
+  **Reste à confirmer par l'utilisateur** : ouverture réelle d'une note du cahier d'erreurs
+  entraînements dans l'app en production — pas testable ici faute d'un vrai compte connecté.
+- [x] **Deuxième bug réel de même nature trouvé en élargissant la recherche (PAS corrigé, à
+  trancher avec l'utilisateur avant d'y toucher)** : le système "Amis" (`openFriendsModal`,
+  `sendFriendRequest`, `acceptFriendRequest`, etc.) écrit avec `batch.update()` directement sur
+  `users/{uid}.friends` / `.friendRequestsSent` / `.friendRequestsReceived` — **y compris sur le
+  document d'un AUTRE utilisateur** (le destinataire de la demande). Or `match /users/{uid} { allow
+  write: if false; }` bloque INCONDITIONNELLEMENT tout écriture cliente sur ce document, avec un
+  commentaire explicite ("jamais depuis le client, même en écriture partielle") — ce n'est pas un
+  oubli isolé comme `notesEntrainements`, c'est un conflit d'architecture direct avec un principe P0
+  déjà posé (ce même document peut porter `isAdmin`). Aucune Cloud Function ne prend le relais
+  (vérifié : aucune occurrence de "friend" dans `functions/index.js`). Le système "Amis" est donc
+  probablement inutilisable en production depuis son introduction, alors qu'il est bien accessible
+  depuis l'UI (`+ Ajouter un ami` dans le panneau de partage de notes). **Décision de l'utilisateur
+  (session suivante) : pas de système d'amis pour l'instant, ne pas corriger.** Le code mort
+  (`openFriendsModal`/`sendFriendRequest`/`acceptFriendRequest`/etc. dans `tableur.html`, CSS
+  `.friends-*`) reste en place mais non prioritaire — à retirer ou à réparer (Rule finement
+  restreinte, ou mieux, Cloud Function pour l'écriture cross-uid) seulement si cette fonctionnalité
+  est un jour relancée. Ne pas la considérer comme un bug à corriger d'ici là.
+- [x] **Incohérence de test trouvée et corrigée (pas un bug de production)** : `test/firestore.rules
+  .test.mjs`, bloc "Feedback utilisateur", ciblait la collection `feedback` au singulier — ne
+  correspond ni à `firestore.rules` (`match /feedbacks/{feedbackId}`, PLURIEL, déjà corrigé dans une
+  session précédente) ni au code client réel (`tableur.html` : `addDoc(collection(db, 'feedbacks'
+  ), ...)`). Ces 5 tests auraient donc dû ÉCHOUER (tous les `assertSucceeds` retombant sur le
+  fallback fail-closed) si le fichier avait tourné contre les Rules actuelles — suite de tests non
+  représentative de la réalité, corrigée pour utiliser `feedbacks` + le champ réel `userId` (pas
+  `uid`).
+- [x] **Audit large demandé explicitement** ("recherche des incohérences" sur l'anti-motif
+  `--gray-700/800/200` en thème dark, voir section précédente) : recherche exhaustive de ce même
+  anti-motif dans tout le fichier. 3 autres occurrences confirmées et corrigées (même diagnostic
+  que la section précédente — jeton de TEXTE utilisé comme fond/bordure, ou inversement — la règle
+  de base s'adaptait déjà seule dans les 3 cas, le forçage était redondant et faux) :
+  - `.auth-btn` (bouton rond de connexion) — fond/texte clairs forcés en dark, override supprimé.
+  - `.j-custom-row` (encart "Personnalisé", Paramètres > Méthode des J) — fond/bordure clairs forcés,
+    override supprimé.
+  - `.j-custom-input` (champ de saisie des intervalles personnalisés) — fond/bordure clairs ET texte
+    saisi sombre-sur-clair forcés (triple inversion), override supprimé.
+  Vérifié en navigateur réel (thème forcé en dark, éléments injectés et capturés en capture d'écran) :
+  encart et champ de saisie bien sombres, texte saisi nettement lisible.
+  **Non exécuté cette session** : le test unitaire des Rules (`npm run test:rules` contre `npm run
+  emulators`) n'a pas pu être lancé — l'émulateur Firestore nécessite Java, absent de cet
+  environnement (`Could not spawn 'java -version'`). Le correctif `notesEntrainements` est donc
+  validé seulement par lecture attentive et par comparaison stricte avec le schéma déjà vérifié de
+  `notes`/`errorEntries` (même structure exacte), PAS par une exécution réelle des tests.
+- [x] **Système "Amis" : décision explicite de l'utilisateur — pas de système d'amis pour l'instant,
+  ne pas corriger.** Le code mort reste en place, non prioritaire.
+- [x] **4ᵉ occurrence du même anti-motif dark trouvée après retour utilisateur réel (capture à
+  l'appui, testé en local après le premier lot de correctifs)** : `.j-day-group-label` avait déjà été
+  rehaussé pour le thème dark, mais pas `.j-day-group-date` (la date entre parenthèses, ex.
+  "(6 sept.)") ni `.j-day-group-chevron` — restés sur `var(--gray-400)` sans override, qui devient
+  `#6b7280` en dark : contraste insuffisant sur le fond très sombre du tiroir, quasi illisible.
+  Rehaussés d'un cran (`var(--gray-500)`, `#9ca3af` en dark) en gardant la hiérarchie visuelle
+  (libellé plus clair que la date, comme en mode clair). Vérifié en navigateur réel (couleur calculée
+  confirmée `rgb(156, 163, 175)`, capture avant/après).
+- [x] **Déployé (GO explicite) : `firebase deploy --only hosting`**, confirmé par Firebase
+  ("release complete", https://p1planner.web.app) — les 3 fixes dark-mode du lot précédent + les 3
+  occurrences supplémentaires trouvées à l'audit + le fix du timing du check vert sont maintenant
+  tous en production. Seul le système "Amis" reste volontairement non traité (décision utilisateur).
+- [x] **Bug réel plus profond trouvé APRÈS ce déploiement (retour utilisateur, capture à l'appui :
+  "Aujourd'hui" toujours illisible malgré le fix)** : `.j-day-group-label` utilisait
+  `var(--gray-200, #e5e7eb)`. Diagnostiqué via `getComputedStyle()` en conditions réelles sur le site
+  déployé : couleur réellement appliquée = `rgb(55,65,81)` (#374151), PAS le `#e5e7eb` voulu — cause
+  racine différente des bugs précédents : la syntaxe `var(prop, fallback)` n'utilise le fallback QUE
+  si `prop` est absente/invalide, jamais pour "préférer" une valeur différente de la vraie — et
+  `--gray-200` EST bien défini en dark (à `#374151`, une valeur sombre), donc le fallback `#e5e7eb`
+  n'a jamais été atteignable. Corrigé en forçant la valeur littéralement (`color: #e5e7eb;`, sans
+  passer par `var()`). **Recherché et vérifié qu'aucune autre règle dark de ce fichier n'a la même
+  panne** (`var(--gray-N, #hex)` où le hex fallback diffère de la vraie valeur dark de `--gray-N`) —
+  toutes les autres occurrences trouvées ont soit un fallback qui correspond exactement à la vraie
+  valeur (inoffensif), soit sont hors d'un bloc `[data-theme="dark"]` (fallback défensif standard,
+  normal). Revérifié en navigateur (`getComputedStyle` → `rgb(229,231,235)` = #e5e7eb, capture
+  avant/après), re-déployé sur Hosting, présence du correctif reconfirmée sur le fichier réellement
+  servi par `https://p1planner.web.app` (pas seulement en local).
+  **Point de vigilance pour la suite** : `Cache-Control: max-age=3600` sur `tableur.html` côté
+  Hosting (pas de config `headers` dans `firebase.json`) — après un déploiement, un onglet déjà
+  ouvert ou une visite dans l'heure qui suit peut encore servir l'ancienne version tant que le
+  navigateur ne revalide pas ; un rechargement forcé (Ctrl+Maj+R) contourne ça pour vérifier tout de
+  suite. Pas changé cette session (pas demandé, et changer le cache Hosting mérite une décision
+  séparée) — à garder en tête pour ne pas re-diagnostiquer ce même faux négatif plus tard.
+
+## 5novodecies. Hover flashcards + 3 bugs mobiles (demande explicite, captures à l'appui)
+- [x] **Effet de survol demandé sur le bouton "Modifier" (crayon) pendant une session flashcards**
+  (`.flash-session-edit-btn`) : reprend maintenant la même mécanique que `.notes-action-btn` (header
+  des modals notes) — cercle replié par défaut, se déploie en pilule au survol pour révéler le
+  libellé "Modifier" (`<span class="flash-session-edit-label">`), uniquement sur devices à hover réel
+  (`@media (hover: hover)`, pas sur tactile). `border-radius` passé de `50%` (cercle fixe,
+  incompatible avec un déploiement en pilule) à `17px` (moitié de la hauteur, forme "stadium" stable
+  replié ou déployé). Vérifié en navigateur réel (hover simulé, capture avant/après montrant le
+  déploiement effectif).
+- [x] **Bug réel corrigé — en-tête "Cours" (`#page-items`) sur 3 lignes au lieu de 2 sur mobile** :
+  `.section-title` ET `.quick-actions` ont chacun `flex:1` (partage 50/50 voulu), mais le titre
+  ("Cours") n'a besoin que d'une fraction de sa moitié tandis que `.quick-actions` (3-4 boutons ronds
+  de 40px) a besoin de PLUS que la sienne. Mesuré en conditions réelles (375px) :
+  `.quick-actions` réduit à ~111px de large, insuffisant pour ses boutons, qui s'empilaient alors sur
+  2 lignes EN INTERNE (`.quick-actions` a son propre `flex-wrap: wrap`). Corrigé (`@media (max-width:
+  900px)`) : `.quick-actions` se dimensionne maintenant à son propre contenu (`flex: 0 0 auto`) et ne
+  wrap plus en interne (`flex-wrap: nowrap`) — s'il ne tient pas à côté du titre/pagination, tout le
+  bloc bascule ENTIER sur sa propre ligne (le parent a déjà `flex-wrap: wrap`), où il tient largement
+  sur une seule ligne. Vérifié : largeur mesurée passée de 111×88px (2 lignes) à 136×40px (1 ligne).
+- [x] **Bug réel corrigé — pastille "Révisions J" (`.day-j-badge`) toujours plus petite que le bouton
+  "agrandir" (`.day-detail-open-btn`) sur mobile, malgré un correctif antérieur déjà présent dans le
+  fichier** (commentaire "Alignée sur le même gabarit", visait 24×24px). Cause : ce correctif visait
+  la taille du bouton en mode DESKTOP (règle de base, 24×24px) — mais un `@media (max-width: 768px)`
+  séparé porte le bouton à 28×28px sur un téléphone réel, sans lien avec le hover/tactile ; les deux
+  media queries (`(hover:none),(pointer:coarse)` ET `(max-width:768px)`) s'appliquent SIMULTANÉMENT
+  sur un vrai téléphone (tactile ET étroit), et c'est la 2ᵉ qui gagne (déclarée après). La pastille
+  restait donc calée sur l'ancienne taille desktop. Ajouté un second ajustement dans le même
+  `@media (max-width: 768px)` que le bouton, portant la pastille à 28px elle aussi. Vérifié :
+  `getComputedStyle` confirme désormais `badgeHeight === btnHeight === "28px"`, capture avant/après.
+- [x] **Bug réel corrigé — bouton d'aide "?" visuellement posé sur le bouton de pagination, page
+  Entraînements, sur mobile** : `.label-short` valait "Entrainements", MOT IDENTIQUE à `.label-full`
+  — contrairement à `#page-items` où "Cours" est un vrai raccourci de "Mes cours", le titre ne
+  rétrécissait donc jamais réellement sur mobile. Combiné à `overflow: visible` sur `.section-title`
+  (nécessaire pour ne pas couper le bouton d'aide) et un `flex:1` partagé avec la pagination/les
+  actions rapides (mêmes largeurs mesurées : titre alloué à 117px pour un contenu réel de ~168px),
+  le contenu débordait de ~50px DANS la zone de la pagination juste à côté. Corrigé en donnant enfin
+  un vrai label court : "Entrain." au lieu de "Entrainements". Vérifié via `getBoundingClientRect()`
+  en conditions réelles (375px) : le bouton d'aide se termine maintenant à x=148,2px, la pagination
+  commence à x=149,75px — recouvrement éliminé (mesuré à ~44px avant correctif).
+  Les 4 correctifs ci-dessus : `node --check`-équivalent (47 blocs `<script>`, mêmes 9 faux positifs
+  connus, aucune nouvelle erreur), scan anti-glitch de caractères non-latins (0 trouvé — une faute de
+  frappe de ma part introduisant des caractères arabes dans un commentaire a été repérée et corrigée
+  avant ce scan), vérifications visuelles/numériques en navigateur réel pour chacun.
+- [x] **Déployé (GO explicite : "POUsse") : `firebase deploy --only hosting`**, confirmé par Firebase
+  ("release complete") et par `curl` direct sur `https://p1planner.web.app/tableur.html` (présence
+  vérifiée de `flash-session-edit-label">Modifier`, `label-short">Entrain.`, `#page-items
+  .quick-actions {`).
+
+## 5vicies. Bug réel P0-adjacent — modal "Enregistrer un tour" figé sur écran bas en résolution (bug rapporté par une utilisatrice)
+- [x] **Bug réel confirmé et corrigé** : `#confidence-modal .confidence-modal-content` (structure
+  flex column + `overflow:hidden`, `.confidence-modal-body` déjà en `flex:1; overflow-y:auto`)
+  n'avait **aucun `max-height`** — le conteneur grandissait donc sans limite avec son contenu. Comme
+  `.modal` (parent) centre son contenu (`align-items:center`) sans être lui-même scrollable, un modal
+  plus haut que l'écran débordait en haut ET en bas, sans qu'aucune molette ni drag ne puisse
+  l'atteindre, et le bouton d'enregistrement (`#btn-save-tour`) devenait inatteignable — exactement
+  le rapport de l'utilisatrice. Corrigé de façon strictement additive (aucune autre propriété
+  touchée) : `max-height: 92vh;` puis `max-height: 92dvh;` (repli mobile) ajoutés au conteneur —
+  le `overflow-y:auto` déjà présent sur `.confidence-modal-body` prend alors le relais normalement.
+  **Vérifié le point 4 de la demande** (aucune autre règle n'écrase ce fix avec `!important`) :
+  trouvé UNE exception réelle — `@media screen and (max-height: 450px)` ("mode paysage téléphone",
+  ligne ~5805) réinitialise `.modal-content` à `max-height:none !important; overflow:visible
+  !important` pour TOUS les modals, y compris celui-ci, dans cette plage précise (téléphone en
+  paysage, cas extrême). Volontairement PAS modifié cette session : c'est une adaptation
+  préexistante et délibérée (elle ajuste aussi la taille des boutons de confiance dans ce même bloc),
+  différente du bug rapporté (un utilisateur mentionnant "la souris" est sur ordinateur, pas un
+  téléphone en paysage) et son propre mécanisme (rendre `.modal` lui-même scrollable) n'a pas été
+  vérifié ni cassé par ce correctif — le toucher aurait dépassé la consigne explicite "strictement
+  additif, ne touche à aucune autre règle de ce modal". Signalé ici pour référence si un bug similaire
+  était un jour rapporté spécifiquement en mode paysage téléphone.
+  **Vérifié en navigateur réel, de bout en bout, avec le VRAI modal de l'app** (pas une reproduction
+  synthétique) : à 600px de hauteur de fenêtre (au-dessus du seuil de 450px ci-dessus), le bouton
+  `#btn-save-tour` est mesuré hors viewport avant correctif (y=664 pour une fenêtre de 600px) ; après
+  correctif, un scroll molette simulé dans le corps du modal (`body.scrollTop += 200`) le ramène
+  pleinement visible (y=510-550). Non-régression confirmée à 1000px de hauteur (fenêtre normale) :
+  `needsScroll: false`, bouton visible sans le moindre scroll, hauteur du modal inchangée par rapport
+  à son comportement naturel. `node --check`-équivalent : mêmes 9 faux positifs connus, 0 nouvelle
+  erreur.
+- [x] **Déployé (GO explicite : "Publie ca en production quand tu as fait le correctif") :
+  `firebase deploy --only hosting`.**
 
 ## 6. Mentions légales
 - [x] Page (`public/mentions-legales.html` — sommaire, cohérente avec l'identité P1Planner, testée)
@@ -2222,6 +2627,39 @@ risques de perte de données". Périmètre couvert : `firestore.rules`, `storage
   en traçant `debouncedSave()`/`saveUserData()` ont été vérifiés, pas une relecture ligne à ligne
   des ~60 000 lignes du fichier.
 
+## 7quater. PASSAGE EN LIVE — paiements ouverts à tous (GO explicite)
+- [x] **Isolation Stripe vérifiée** : deux comptes Stripe bien distincts sous l'organisation Jean
+  ZENNARO ("p1planner" et "Typixclin"), confirmé par capture du sélecteur de compte Stripe.
+- [x] **Bug réel trouvé et corrigé avant l'ouverture** : le relevé bancaire affichait "TYPIXCLIN EDN
+  ECOS" pour un paiement P1Planner — cause : le **nom commercial public** du compte Stripe "p1planner"
+  était resté sur celui de TypixClin (Stripe l'utilise comme repli pour le descripteur de relevé
+  bancaire quand aucun n'est explicitement défini). Corrigé par l'utilisateur directement dans les
+  paramètres du compte Stripe p1planner.
+- [x] Produit/prix Live créés (`prod_VCUPmx45W9CLYf`, `price_1UC5R11C7oV8l6CHTvgHw7ix`), webhook Live
+  créé et secret **régénéré** après une première valeur collée par erreur dans le chat (voir consigne
+  générale : un secret qui apparaît dans la conversation doit être considéré compromis et régénéré).
+  Les 3 secrets (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_MONTHLY`) posés par
+  l'utilisateur lui-même via `firebase functions:secrets:set` (jamais collés dans le chat).
+- [x] **Tests réels en Live, avec une vraie carte**, confirmés par l'utilisateur — pas de simple
+  supposition :
+  - Paiement unique : webhook reçu, `entitlements/{uid}` mis à jour, UI "Premium actif" correcte.
+  - Abonnement mensuel : idem, confirmé fonctionnel.
+  - Entre les deux tests, `entitlements/{uid}` et `billingPrivate/{uid}.stripeCustomerId` (ce dernier
+    pointait vers un client Stripe **Test**, incompatible avec la clé Live — aurait fait planter le
+    test avec "No such customer") réinitialisés manuellement via la Console Firebase.
+- [x] **Bug réel corrigé en cours de route** : `createCheckoutSession` bloquait tout achat en paiement
+  unique tant qu'aucune date de concours n'était enregistrée ("Indique d'abord ta date..."), alors que
+  ce champ est censé être facultatif — le curseur de durée côté client proposait déjà un défaut de 12
+  mois en son absence, mais le serveur, lui, refusait quand même. Aligné : le serveur applique
+  maintenant ce même défaut de 12 mois sans date (voir `functions/index.js`, commentaire à l'appel).
+  Label complété en "(optionnel)" dans `comptepremium.html`.
+- [x] **`PAYMENTS_ENABLED` passé à `true`** dans `functions/premiumPlans.js` (GO explicite reçu :
+  "abonnement mensuel a correctement fonctionné... On peut passer en live"). Déployé, 14/14 fonctions
+  mises à jour sans erreur. Les paiements sont désormais ouverts à tout utilisateur authentifié et
+  vérifié — `PAYMENTS_TESTER_UIDS` n'a plus d'effet (laissé en place, inoffensif).
+  **Reste à surveiller** : les tout premiers vrais paiements de vrais utilisateurs (pas seulement les
+  tests de l'utilisateur lui-même) — aucun test avec un compte tiers réel n'a été fait à ce stade.
+
 ## 8. Production
 - [x] **Premier déploiement réel (GO explicite reçu)** : `firestore.rules`, `storage.rules`
   et la Cloud Function `onUserCreated` sont en production sur le vrai projet `p1planner`
@@ -2247,3 +2685,369 @@ risques de perte de données". Périmètre couvert : `firestore.rules`, `storage
   jamais dans le code/repo public). Déployé et vérifié en ligne (`firebase functions:list`).
   **Reste à confirmer** : réception réelle d'un email de bout en bout (pas encore testé
   après ce déploiement — ne jamais l'annoncer réussi avant un vrai test).
+
+## 7quinquies. Portage de 3 correctifs déjà validés sur TableurEnLigne.html/TableurECOS.html (référence READ ONLY)
+Contexte : l'utilisateur a d'abord demandé d'appliquer 3 correctifs directement sur les
+fichiers TypixClin (`TableurEnLigne.html`/`TableurECOS.html`, hors du dossier P1Planner).
+Audit fait AVANT toute modification : les 3 étaient déjà présents et complets dans
+TableurEnLigne.html (dont un daté "BUGFIX 2026-09-09", soit la veille) ; le 2e (alignement
+tour/date) ne s'applique pas à TableurECOS.html qui n'a pas de fonctionnalité "tours" vivante
+(CSS mort hérité d'un template partagé, jamais branché en JS — titre réel du fichier :
+"SDD et stations"). Aucune modification faite sur ces fichiers TypixClin (rien à corriger).
+Question posée ensuite par l'utilisateur ("est-ce déjà fait sur P1Planner ?") → audit du
+même type sur `tableur.html` : les 3 étaient soit absents soit incomplets. GO explicite
+reçu ensuite pour les porter, **en s'inspirant de TypixClin en lecture seule** (jamais copié
+tel quel — adapté aux noms de variables/fonctions déjà existants dans `tableur.html`).
+- [x] **Alignement tour/date (`renderItemsTable`)** : `.tour-badge-wrapper` existait déjà
+  autour de chaque badge, mais la date restait générée séparément dans une ligne
+  `.tour-dates` indépendante (même bug structurel que celui déjà corrigé chez TypixClin,
+  jamais porté ici) — risque de décalage identique. Date déplacée DANS le wrapper de son
+  tour (3 branches : verrouillé/éditable/défaut), variable `tourDates` obsolète supprimée.
+  **Bug réel trouvé et corrigé dans la foulée** : après avoir supprimé cette variable, une
+  référence orpheline subsistait plus loin (`__tourCellInner`, mode détaillé) — aurait
+  provoqué un `ReferenceError` à l'exécution ; supprimée avant tout test.
+  **Incident d'encodage réel pendant cette édition** : un premier appel à l'outil d'édition
+  a corrompu les caractères accentués de mon propre commentaire en séquences d'échappement
+  Unicode littérales (par ex. la suite de 6 caractères ASCII "backslash-u-0-0-E-9" affichée
+  telle quelle au lieu du seul caractère accentué qu'elle est censée représenter) — détecté
+  immédiatement en relisant les
+  octets bruts du fichier (`fs.readFileSync(...,'utf8')`, jamais supposé correct sans
+  vérifier), corrigé via un script Node dédié (fichier de correctif écrit à part, contenu
+  vérifié en UTF-8 avant injection, puis splicé à l'octet près dans `tableur.html`) — reconfirmé
+  propre par un scan de tout le fichier avant de continuer. Aucune régression trouvée
+  ailleurs dans le fichier (même scan, 0 occurrence suspecte au-delà du seul incident).
+  Vérifié : logique rejouée isolément avec des données synthétiques (date bien injectée
+  dans le bon wrapper), plus aucune référence à l'ancienne variable dans toute la fonction.
+- [x] **Palette de couleurs étendue à 20 couleurs (texte + surlignage)** : les 4 éditeurs
+  réutilisant déjà `.notes-color-palette`/`.notes-color-dot` (notes de cours, flashcards,
+  cahier d'erreurs, cahier d'erreurs entraînements) avaient déjà tout le mécanisme
+  fonctionnel (dropdown, repositionnement `_notesRepositionPalette`, garde tactile anti-
+  rebond, détection de la couleur active via `notesRgbToHex`) — seule la liste de couleurs
+  était tronquée à 9 (texte) / 7 (surlignage, transparent inclus) au lieu de 20. Étendue
+  aux 20 couleurs telles que fournies, sur les 8 palettes (4 éditeurs × texte/surlignage).
+  CSS partagée mise à jour pour matcher le design demandé : grille 5 colonnes (au lieu de
+  6), pastilles carrées arrondies (`border-radius:7px` au lieu de cercles), indicateur de
+  sélection remplacé par une coche FontAwesome en overlay (`::after`, contenu `\f00c`) —
+  la détection JS de la couleur active n'a pas eu besoin de changer (déjà générique).
+  **Bug réel trouvé et corrigé en même temps** : les pastilles de l'éditeur flashcards
+  n'avaient que `onmousedown` (pas de `ontouchstart`), contrairement aux 3 autres éditeurs —
+  ajouté sur les 20+20 pastilles concernées, plus une couleur manquante (`#6b7280`) sur ce
+  même éditeur, absente des 8 initialement prévues alors que les 3 autres l'avaient.
+  Vérifié en navigateur réel : 20 pastilles en grille 5×4, coche visible sur la pastille
+  active (capture à l'appui), comptage programmatique des 8 palettes (20 pastilles chacune,
+  `onmousedown`/`ontouchstart` en pair sur chacune).
+- [x] **Positionnement du modal flashcards face au clavier virtuel (téléphone)** — le plus
+  gros des 3, absent à 100 % avant ce correctif. Porté depuis le script dédié de
+  TableurEnLigne.html (`#flashEditOverlay` a exactement les mêmes classes/ids côté
+  P1Planner, vérifié avant de porter quoi que ce soit) : détection du focus dans le modal
+  (pas un calcul de hauteur de clavier, jugé peu fiable par l'historique de bugs déjà
+  documenté côté TypixClin) → classe `body.tc-phone-flashkb` + variables CSS `--tcpf-*`
+  posées via `window.visualViewport`, header et footer masqués pendant la saisie pour
+  maximiser la place, `MutationObserver` en filet de sécurité si le modal se ferme sans
+  blur préalable. Ajout du même branchement dans `_notesRepositionPalette` (déjà partagée
+  par les 4 éditeurs) pour que la palette de couleur du modal flashcards reste positionnée
+  correctement pendant que le clavier est épinglé — reparentée dans l'overlay épinglé plutôt
+  que dans `<body>`, comme chez TypixClin.
+  **Vérifié de bout en bout en conditions quasi réelles** (viewport 375×812, `window.screen`
+  confirmé à la même taille pour que `IS_TABLET` s'évalue correctement à `false`, clic réel
+  — pas un `.focus()` programmatique, qui n'engageait pas le focus dans cet environnement de
+  test) : engagement au focus (`tc-phone-flashkb` posé, header/footer masqués, confirmé par
+  capture d'écran), dégagement au blur après le délai de 350 ms (header/footer réapparus),
+  transition recto → verso sans décrochage intermédiaire (jamais désépinglé entre les deux
+  champs), et filet `MutationObserver` : fermeture du modal sans blur préalable du champ →
+  désépinglage immédiat quand même. Les 4 mécanismes testés séparément, tous confirmés.
+  **Correction apportée à cette même note lors de la vérification anti-régression demandée
+  ensuite par l'utilisateur** : la phrase précédente affirmait à tort que la variante
+  tablette (préfixe `--tc-vv-*`, classe `tc-kb-open`) n'était pas portée côté P1Planner —
+  FAUX, elle existait déjà avant ce portage (`OVERLAY_CLASSES` contient déjà
+  `'flash-edit-overlay'`, CSS dédiée déjà présente aux lignes ~54247-54282), un mécanisme
+  pré-existant distinct de ce qui a été ajouté cette session. Seul le cas TÉLÉPHONE (dont le
+  script pré-existant dit lui-même explicitement ne gérer aucun clavier, comportement natif
+  voulu) manquait — c'est précisément ce qui a été porté. Vérifié qu'aucun conflit n'existe
+  entre les deux : le nouveau script téléphone retourne immédiatement si `IS_TABLET` est
+  vrai (laissant le mécanisme tablette pré-existant seul aux commandes), les noms de classes
+  sont distincts (`tc-phone-flashkb` vs `tc-kb-open`/`tc-phone-kb`), et le mécanisme
+  pré-existant `tc-phone-kb` (portée `.pdd-overlay`/`#trainNotesOverlay` uniquement) ne
+  cible jamais `.flash-edit-overlay`.
+- [x] Les 3 correctifs : `node --check`-équivalent (47 blocs `<script>`, 9 faux positifs
+  connus inchangés, 0 nouvelle erreur), scan dédié anti-corruption d'encodage (0 occurrence
+  suspecte après correction de l'incident signalé ci-dessus).
+- [x] **Déployé (GO explicite : "vérifie que tu n'a introduit aucun bug / POusse P1PLANNER
+  en hosting") : `firebase deploy --only hosting`**, confirmé par Firebase et par `curl` sur
+  le fichier réellement servi. Vérification anti-régression faite AVANT ce déploiement :
+  aucune autre règle CSS ne dépend de la nouvelle forme des pastilles couleur (dont le thème
+  pastel), `_tcNoAutoFocus` déjà respecté par `openFlashEdit` (pas de déclenchement prématuré
+  du nouveau mécanisme clavier), `git status` + horodatage des fichiers TypixClin confirmant
+  qu'aucun fichier hors `tableur.html` n'a été touché côté P1Planner et que les fichiers
+  TypixClin sont restés intacts.
+
+
+## 7sexies. Audit data-safety (protection multi-onglets) + correctifs flashcards (demande autonome basée sur TypixClin, adaptée à l'architecture réelle de P1Planner)
+Contexte : prompt autonome fourni par l'utilisateur, décrivant 5 correctifs déjà validés sur
+TypixClin (protection anti-course multi-onglets, restauration admin vs onglet ouvert, taille
+des sauvegardes, centrage des pastilles flashcards, bug tactile du sélecteur de couleur), avec
+la consigne explicite de m'adapter aux noms réels de P1Planner plutôt que de copier tel quel.
+**Audit fait AVANT toute modification, décisif pour la suite** : l'architecture de sauvegarde
+décrite dans la demande (un `saveUserData()` réécrivant un document JSON unique par
+utilisateur, `planningRevision/{uid}`) **n'existe plus côté P1Planner** — cette fonction est un
+no-op volontaire et déjà documenté dans le fichier lui-même (commentaire existant, pas ajouté
+cette session) : les cours vivent dans `courses/{fc}` (un document par cours), le planning dans
+`calendarDays`, les entraînements dans `trainingItems`, chacun avec son propre écrivain dédié.
+Appliquer le correctif "transaction + fusion" tel que décrit sur cette fonction n'aurait donc
+strictement rien protégé (elle n'écrit déjà plus rien sur Firestore). La vraie exposition
+réelle, bien plus étroite que chez TypixClin grâce à cette architecture par document, a été
+localisée précisément : `p1WriteTourSlot()` et `p1JCheckpointAction()`, les deux seuls
+écrivains qui recalculent un TABLEAU ENTIER (tourConfidences/jCheckpoints) à partir du cache
+LOCAL de l'onglet avant de l'écrire — un onglet qui écrit un index différent de ce même
+tableau entretemps se faisait silencieusement écraser par le second onglet à écrire.
+- [x] **`p1WriteTourSlot()` — protection anti-course multi-onglets/multi-appareils (bug réel
+  de perte de données corrigé)** : réécrite pour utiliser `runTransaction()` (nouvel import
+  Firestore, `window._fsRunTransaction`) — l'état de départ des 4 tableaux (tourConfidences/
+  Dates/Durations/Supports) est maintenant relu sur le SERVEUR, à l'intérieur de la
+  transaction, au moment exact de l'écriture, jamais depuis le cache local potentiellement
+  périmé. Pas de resynchronisation manuelle du cache local nécessaire ensuite : le listener
+  `onSnapshot` déjà branché sur `courses` s'en charge automatiquement (différence structurelle
+  favorable vs TypixClin, où ce point demandait un correctif dédié).
+  **Vérifié avec un mock réaliste** (transaction simulée avec un état serveur portant déjà un
+  tour à un index différent de celui en cours d'écriture par "cet onglet") : le tour de
+  l'"autre onglet" est bien préservé dans le document final, celui de cet onglet bien ajouté,
+  `tourCount` reflète bien les deux — la classe de bug est éliminée, pas seulement supposée
+  corrigée.
+- [x] **`p1JCheckpointAction()` — même protection, même bug** : réécrite selon le même
+  principe (relecture fraîche de `jCheckpoints` dans la transaction, `_jComputeNewCheckpoints`
+  réappliqué dessus). `precomputedJc` (calculé par l'appelant pour l'affichage optimiste
+  immédiat) n'est plus utilisé que pour l'UI, jamais pour l'écriture réelle. Signature étendue
+  d'un paramètre `days` (nécessaire pour recalculer un "postpone" correctement dans la
+  transaction — absent de la fonction avant ce correctif, silencieusement remplacé par une
+  valeur par défaut de 1 jour ; le seul appelant concerné, `_jHandleAction`, a été mis à jour
+  pour le transmettre). Vérifié avec un mock du même type : l'étape d'un "autre onglet" déjà
+  marquée "done" reste "done", l'étape reportée par cet onglet reçoit la bonne nouvelle date
+  (recalculée depuis aujourd'hui puisque l'échéance simulée était déjà dépassée — comportement
+  correct, pas un bug de test), l'étape non concernée reste intacte.
+- [x] **Restauration admin vs onglet resté ouvert — version adaptée, plus étroite que la
+  demande d'origine (compromis assumé, expliqué ci-dessous)** : `adminRestoreBackup`
+  (`functions/index.js`) tamponne désormais chaque cours restauré avec `restoredAt`
+  (`writeBatchedDocs` étend un paramètre `extraFields` pour ça). Côté client,
+  `window._p1PageLoadedAt` (horodatage de chargement de l'onglet) est comparé, DANS la
+  transaction, au `restoredAt` lu sur le cours — si la restauration est postérieure au
+  chargement de cet onglet, l'écriture est abandonnée (pas de fusion par-dessus l'état
+  restauré) au lieu de silencieusement réintroduire ce que la restauration voulait effacer.
+  **Écart assumé vs la demande d'origine** : pas de baseline précise par édition
+  (`_baseRestoredAtMs` capturé à CHAQUE clic, comme demandé) — une comparaison plus simple au
+  chargement de PAGE a été choisie à la place, pour ne pas avoir à faire transiter un nouveau
+  paramètre à travers tous les points d'appel de `p1WriteTourSlot`/`p1JCheckpointAction` sans
+  pouvoir tester l'ensemble en conditions réelles. Résiduel non couvert (fenêtre étroite,
+  assumée) : un onglet qui recharge APRÈS la restauration mais écrit avant que son propre
+  listener `onSnapshot` ait rafraîchi son cache pour CE cours précis (latence temps réel,
+  généralement sub-seconde) — dans ce cas précis seulement, la fusion normale s'appliquerait
+  encore. Le filet de sécurité déjà existant (sauvegarde automatique de l'état actuel avant
+  toute restauration, `adminRestoreBackup`) reste de toute façon la garantie ultime de
+  réversibilité, avec ou sans ce correctif. Vérifié avec un mock : écriture bien abandonnée
+  quand `restoredAt` simulé est postérieur au chargement de page, écriture normale confirmée
+  quand il est antérieur (ou absent).
+  **Nécessite un déploiement Cloud Functions (`firebase deploy --only functions`) pour
+  prendre effet côté serveur — PAS déployé, en attente du GO explicite** (distinct du GO
+  Hosting déjà donné pour le reste de cette session). Vérifié uniquement par `node --check`
+  (syntaxe) sur `functions/index.js` — jamais par un vrai appel Cloud Function, faute
+  d'émulateur Functions disponible dans cet environnement.
+- [x] **Protection taille des sauvegardes admin (`functions/index.js`)** : `adminCreateBackup`
+  et la sauvegarde automatique pré-restauration de `adminRestoreBackup` utilisent désormais
+  `_buildSafeBackupSnapshot()` — mesure la taille réelle en octets UTF-8
+  (`Buffer.byteLength(JSON.stringify(...), 'utf8')`, pas `.length` qui compte des unités UTF-16
+  et ne reflète pas la taille réelle en octets pour du texte accentué). Au-delà de 750 Ko
+  (marge sous la limite Firestore de 1 Mo), retire d'abord `notes` (seule sous-collection au
+  contenu HTML enrichi potentiellement volumineux parmi les 9 sauvegardées, `ADMIN_BACKUP_
+  SUBCOLLECTIONS` en contient déjà d'autres mais toutes structurellement petites) et marque la
+  sauvegarde `partial: true`. Si encore trop gros sans les notes (cas extrême), abandonne
+  proprement (`HttpsError`) plutôt qu'une écriture vouée à l'échec — pour la sauvegarde de
+  sécurité pré-restauration spécifiquement, l'abandon annule aussi la restauration elle-même
+  (pas de restauration rendue irréversible sans le dire). Le vrai planning de l'utilisateur
+  (subjects/courses/tasks/calendarDays/etc., chacun son propre document) n'est jamais affecté
+  par cet abandon — seule la sauvegarde ADMIN (filet de sécurité optionnel) l'est.
+  **Même remarque de déploiement que ci-dessus** : nécessite `firebase deploy --only
+  functions`, pas déployé, vérifié seulement par `node --check`.
+- [x] **Centrage du texte dans les pastilles flashcards (téléphone) — bug réel confirmé et
+  corrigé** : `.flash-spe-chip-short` (abréviation 3 lettres de la matière, mobile) avait
+  `letter-spacing: 0.03em` combiné à `display: inline` — l'espace ajouté par letter-spacing
+  APRÈS le dernier caractère décalait visuellement le texte vers la gauche du centre
+  géométrique de la pastille. Corrigé : `display: inline-block` (nécessaire pour qu'un
+  padding s'applique réellement) + `padding-right: 0.03em` compensant exactement l'espace en
+  trop. `line-height: 1` et `justify-content: center` ajoutés à `.flash-spe-chip` (manquants).
+  Vérifié en navigateur réel : `padding-right` calculé confirmé à 0,3456px (= 0,03em de la
+  taille de police réelle), forme carrée-arrondie confirmée par capture d'écran.
+- [x] **"Carte X / Y" → "X / Y" sur mobile (gain de place)** : le préfixe "Carte " passe
+  désormais dans un `<span class="flash-session-counter-label">` dédié (nécessitait de
+  remplacer `.textContent =` par `.innerHTML =` à l'endroit où ce compteur est mis à jour,
+  fonction partagée par les 2 variantes de session flash — normale et cahier d'erreurs),
+  masqué en dessous de 768px. Les 2 valeurs HTML statiques initiales mises à jour en
+  conséquence.
+- [x] **Bug tactile du sélecteur de couleur (fermeture accidentelle du modal de création)** :
+  déjà résolu par un correctif précédent de cette même session (`ontouchstart` déjà ajouté sur
+  les 20 pastilles de `_flashSetColor`/`_flashSetHighlight`, `event.preventDefault()` déjà en
+  première ligne des deux fonctions) — le formulaire de création ET d'édition de flashcard
+  partagent le même modal (`#flashEditOverlay`/`openFlashEdit()`), donc le même correctif.
+  Rien à faire de plus ici, vérifié par relecture du code déjà en place.
+- [x] **Bug réel confirmé et corrigé — mauvaises couleurs des boutons de confiance flashcards
+  (capture à l'appui)** : `.flash-eval-btn.fail/.hesitant/.know` ("Raté"/"Hésitant"/"Su") et
+  `.flash-end-stat.fail/.hesitant/.know` (statistiques de fin de session) réutilisaient
+  `var(--confidence-1/3/5)` — une échelle MUTABLE selon le réglage "barème de confiance" (5 ou
+  10 points, réglage Paramètres, `html[data-conf-scale="10"]`), sans aucun rapport avec ce
+  concept fail/hesitant/know à 3 états FIXES. En barème 10, `--confidence-3` devient rouge
+  (`#dc2626`) et `--confidence-5` devient orange (`#f59e0b`, milieu d'une échelle à 10 points,
+  pas "réussi") — les boutons flashcards changeaient alors de couleur pour une raison qui n'a
+  rien à voir avec eux, dès que l'utilisateur choisit le barème 10 pour le suivi de ses tours.
+  Confirmé en comparant à TableurEnLigne.html : mêmes valeurs hex exactes, mais portées sous
+  des variables DÉDIÉES et jamais redéfinies (`--tpx-status-bad/mid/good`) — ajoutées au
+  `:root`, les 2 groupes de règles repointés dessus. Vérifié en navigateur réel avec
+  `data-conf-scale="10"` forcé : couleurs correctement stables (rouge/orange/vert) alors que
+  `--confidence-3`/`--confidence-5` bruts confirmaient bien la valeur fautive sous ce même
+  attribut, preuve directe que le bug était réel et que le correctif le résout.
+  **Motif plus large trouvé, PAS corrigé (hors périmètre de ce qui était rapporté)** : le même
+  abus de `--confidence-1/3/5` pour un concept "due/à revoir bientôt/su" à 3 états fixes existe
+  dans une quinzaine d'autres règles flashcards (liste de cartes `.flash-list-row.due/soon/
+  known` et `.flash-list-status.*`, bouton `.flash-redo-btn`, `.flash-form-save`,
+  `.flash-end-icon`, tiroir de révision `.flash-review-drop-item.due`, et leurs variantes dans
+  `#spe-flash-info-panel`) — même bug latent, mêmes deux lignes à changer à chaque fois, non
+  traité cette session par discipline de périmètre (la demande portait sur "les couleurs de
+  confiance flashcards", correspondant précisément aux boutons d'évaluation + stats de fin,
+  pas sur l'ensemble de la fonctionnalité flashcards). À signaler si l'utilisateur constate le
+  même symptôme ailleurs dans les flashcards en barème 10.
+- [x] Tous les correctifs ci-dessus (sauf Cloud Functions, voir plus haut) : `node --check`-
+  équivalent sur `tableur.html` (47 blocs `<script>`, mêmes 9 faux positifs connus, 0 nouvelle
+  erreur) + scan anti-corruption d'encodage (0 occurrence suspecte). `node --check` réel
+  (syntaxe Node, pas une heuristique) sur `functions/index.js` : OK.
+  **Pas encore déployé** — Hosting (`tableur.html`) et Functions (`functions/index.js`)
+  nécessitent chacun leur propre GO explicite et n'ont pas encore été demandés pour ce lot.
+
+
+## 7septies. Bug réel trouvé sur vrai téléphone (capture à l'appui) — modal flashcards, clavier ouvert
+- [x] **Bug réel corrigé — "Classement" (Non classé) tronqué et inatteignable pendant la
+  saisie recto/verso, clavier ouvert (capture d'un vrai iPhone)** : `.flash-edit-body` passé
+  en `display: block !important` par le correctif clavier virtuel de la session précédente
+  (nécessaire pour empêcher un chevauchement recto/verso sur WebKit) perdait par la même
+  occasion son `overflow-y` implicite de conteneur flex — sans `overflow-y` explicite ici, le
+  contenu total (`.flash-item-field` "Classement" + recto 90px fixes + verso 90px fixes +
+  marges), dès qu'il dépassait la hauteur figée du modal (`--tcpf-rest-h`), se faisait couper
+  net par l'`overflow:hidden` du modal, sans qu'aucun scroll ne permette de l'atteindre — la
+  ligne "Classement" apparaissait tronquée en haut, orpheline. Corrigé en ajoutant
+  `overflow-y: auto` à ce même bloc : le corps entier défile désormais comme un seul bloc
+  quand nécessaire.
+  Vérifié en conditions quasi réelles (viewport 375×812, hauteur de zone visible réduite à
+  300px pour simuler un vrai clavier iOS, comme sur la capture) : `needsScroll: true` confirmé
+  (317px de contenu pour 203px disponibles), "Classement" intégralement visible (capture
+  d'écran), verso confirmé atteignable après scroll (`reachableAfterScroll: true`). Non-
+  régression vérifiée hors clavier ouvert : `display:flex` normal inchangé.
+- [x] `node --check`-équivalent (47 blocs, mêmes 9 faux positifs, 0 nouvelle erreur) + scan
+  anti-corruption d'encodage (0 occurrence suspecte).
+- [x] **Déployé (GO explicite : "déploie tout ça merci"), Hosting ET Functions** :
+  `firebase deploy --only hosting` puis `firebase deploy --only functions` (14/14 fonctions
+  mises à jour sans erreur — un premier essai a échoué sur le timeout transitoire habituel de
+  Firebase, résolu en relançant la même commande, comme à chaque fois cette session). Les deux
+  déploiements confirmés par `curl`/`firebase functions:list` sur l'état réellement en ligne
+  avant de les lancer.
+
+
+## 7octies. SEO index.html (demande explicite, session autonome) — "sans changer le texte présent, sans toucher aux fonctionnalités"
+Contexte : demande de pousser le référencement au maximum pour les recherches liées à
+"première année de médecine", "méthode des J" et "méthode des tours", en préservant
+strictement le texte visible et les fonctionnalités de la page. Audit fait avant toute
+modification : `robots.txt`, `llms.txt` et `sitemap.xml` existaient déjà (session
+précédente), déjà de bonne qualité — `robots.txt` autorise explicitement les crawlers IA
+(GPTBot, ClaudeBot, PerplexityBot...) avec un commentaire visant déjà "méthode des J"/
+"méthode des tours" ; `llms.txt` explique déjà clairement les deux méthodes et le contexte
+P1/PASS/LAS. La structure de titres (`<h1>` unique, `<h2>`/`<h3>` bien imbriqués, aucun
+niveau sauté) était déjà propre — rien à corriger là. Aucune balise `<img>` sur la page
+(uniquement des SVG inline) — pas de texte alternatif à ajouter. Liens externes déjà
+`rel="noopener"`. Le travail restant, décrit ci-dessous, porte donc uniquement sur des
+éléments jamais affichés dans le corps de la page (`<title>`, meta description, Open Graph,
+Twitter Card, JSON-LD, sitemap) — strictement conforme à la consigne.
+- [x] **`<title>` et `<meta name="description">` réécrits** pour couvrir plus largement les
+  formulations réellement recherchées : le titre nomme désormais explicitement "Méthode des
+  tours" et "Méthode des J" (avant : "Suivi et organisation des révisions", plus vague) ; la
+  description ajoute "première année de médecine" (formulation courante chez les utilisateurs)
+  en complément de "PASS, LAS" (noms officiels), pour couvrir les deux façons de chercher.
+  Aucun des deux n'est du texte affiché dans le corps de la page (title = onglet navigateur +
+  résultat de recherche ; description = extrait de résultat de recherche uniquement).
+  Répercuté sur `og:title`/`og:description`/`twitter:title`/`twitter:description` pour rester
+  cohérent partout où le lien peut être partagé.
+- [x] **Open Graph / Twitter Card complétés** (balises absentes avant, aucune valeur
+  existante modifiée) : `og:url`, `og:site_name`, `og:image` (+ width/height/alt, vers
+  `icon-512.png` déjà existant — vérifié réellement accessible en production, 200 OK) et
+  `twitter:image`. Un aperçu de lien partagé (Slack, WhatsApp, réseaux sociaux) affichera
+  désormais une image au lieu de rien.
+- [x] **`SoftwareApplication` (JSON-LD) enrichi** : `featureList` (les 8 fonctionnalités
+  réelles du produit — Méthode des tours, Méthode des J, planning, Programme de la journée,
+  flashcards, cahier d'erreurs, suivi des entraînements, statistiques), `audience`
+  (EducationalAudience/student) et `dateModified`. Toutes ces valeurs correspondent à des
+  fonctionnalités réellement existantes du produit — pas d'invention. `Organization.sameAs`
+  laissé volontairement VIDE (déjà le cas avant) : aucun profil social vérifié à y mettre, et
+  ajouter les liens TypixClin aurait été une violation directe de l'isolation P0
+  TypixClin/P1Planner (CLAUDE.md) — pas de "review"/"aggregateRating" ajouté non plus (aucun
+  avis réel collecté à ce jour, en inventer serait une donnée structurée mensongère
+  sanctionnable par Google).
+- [x] **`<meta name="author" content="Jean Zennaro">` ajouté** (information déjà publique,
+  visible sur la page elle-même dans la section "Pourquoi j'ai créé ce tableur" et dans les
+  mentions légales — pas une donnée nouvelle, juste rendue lisible par les moteurs).
+- [x] **`sitemap.xml` : `<lastmod>` ajouté** sur les 3 URLs (absent avant) — signal de
+  fraîcheur pour les moteurs de recherche.
+- [x] **Vérifié qu'aucun texte visible n'a changé** : `get_page_text` sur la page chargée en
+  local comparé au contenu connu de la réécriture éditoriale précédente — identique au
+  caractère près. Aucune classe/attribut du `<body>` touché, uniquement des balises du
+  `<head>` et les 4 blocs JSON-LD. `node --check`-équivalent sur les vrais blocs `<script>`
+  (JSON-LD exclus, validés séparément par `JSON.parse` — 4/4 valides) : 0 erreur. Scan
+  anti-corruption d'encodage : 0 occurrence suspecte. `og:image` vérifié réellement accessible
+  en production via `curl` (200, image/png, 23016 octets) avant de le référencer.
+- [x] Session marquée "autonome" par l'utilisateur ("je te laisse en autonomie") — travail
+  fait sans interruption comme demandé, mais **déploiement volontairement PAS déclenché sans
+  nouveau GO explicite**, conformément à la règle permanente de CLAUDE.md ("Claude NE DOIT PAS
+  exécuter de déploiement Firebase sans mon GO explicite", listée sans exception pour les
+  sessions autonomes) — l'autonomie accordée porte sur le travail, pas sur le franchissement
+  de cette règle spécifique, posée par l'utilisateur lui-même comme garde-fou P0
+  ("déploiement production non demandé" listé explicitement comme risque P0).
+  **Déployé (GO explicite : "déploie tout ça merci") : `firebase deploy --only hosting`**, confirmé par `curl` sur p1planner.fr (title, description, og:image, sitemap avec lastmod tous vérifiés en ligne).
+
+## Audit paiements/abonnements (2026-09-20) — **déployé le 2026-10-03** (GO explicite : "Déploie tout en ligne quand tu peux")
+- [x] Bug prod : `sweepExpiredTrials` échouait chaque jour (index `entitlements(status, trialEndsAt)` absent) → index ajoutés dans `firestore.indexes.json` (+ `status, premiumUntil`). **Déployé** (`firebase deploy --only firestore`, confirmé via `firebase firestore:indexes`).
+- [x] `computeSubscriptionAccess` (premiumPlans.js, testée) : plus de mois offert sur renouvellement impayé (grâce 3 j), accès borné à `ended_at` sur résiliation immédiate.
+- [x] `syncSubscription` relit toujours l'abonnement chez Stripe (événements désordonnés).
+- [x] Paiement unique refusé côté serveur si un accès unique est encore valide (client payait sans bénéfice).
+- [x] `trial_end` envoyé à Stripe seulement si > 48 h (sinon Checkout échouait).
+- [x] Webhook : `charge.refunded` / `charge.dispute.created` retirent l'accès d'un paiement unique. Code déployé ; événements déjà activés sur l'endpoint webhook dans le Dashboard Stripe (confirmé par Jean le 2026-10-03) — pleinement opérationnel.
+- [x] Webhook : référence d'abonnement des factures lue aussi via `invoice.parent` (API Stripe récente).
+- [x] `sweepExpiredTrials` passe aussi en `expired` les paiements uniques échus (affichage).
+- [x] Tests : `test/premium-plans.test.mjs` (19 tests purs, verts), rejoués avant ce déploiement.
+- [x] **Fonctions déployées** (`firebase deploy --only functions`, projet p1planner) : `createCheckoutSession`,
+  `stripeWebhook`, `sweepExpiredTrials` mis à jour ; `adminRestoreBackup` déjà à jour (code identique déployé lors
+  d'une session antérieure, confirmé par `firebase functions:list` + lecture du code live). `firebase functions:log`
+  post-déploiement : tous les conteneurs démarrés sainement, aucune erreur.
+
+## Chantiers TypixClin → P1Planner (2026-09-20) — **déployé le 2026-10-03** (même GO)
+- [x] Lightbox d'image (3 types de notes) : testé (zoom 50-400 %, molette, pincement, glisser, fermetures, accès aux 4 coins). Bug trouvé/corrigé : clic sur le fond sans effet après un glisser.
+- [x] Réessai automatique : cycle 5×4 s puis reprise toutes les 30 s sans limite (testé, délais ÷10). Ping passé en `getDocFromServer` (le cache masquait la panne). Bandeau orange « Connexion instable » ; le rouge le masque toujours.
+- [x] Toasts : décalage dynamique (`--connwarn-offset`), mesuré desktop + mobile, 0 chevauchement.
+- [x] `onSnapshot` subjects/courses : relecture serveur + compteur de génération (testé : récupération OK, réponse obsolète ignorée).
+- [x] Notes trop volumineuses : code réel `invalid-argument` + « longer than » (test émulateur), message distinct pour les 3 types de notes.
+- [x] Fait partie de `public/tableur.html`, déjà confirmé identique au site en ligne (SHA-256) au moment de ce
+  déploiement (déployé lors d'une session antérieure, jamais committé sur git jusqu'ici).
+
+## Parrainage — points ouverts (2026-09-26)
+- [ ] Faire valider par Jean la rédaction finale des textes « Programme de parrainage » (CGU `auth.html`, CGV `comptepremium.html`, `mentions-legales.html`) et la phrase de la modale des filleuls.
+- [ ] Rattrapage MANUEL des bonus consignés dans `billingConflicts` (`referral_*`) : `subscription_cancelling`, `payment_issue`, `referral_stripe_sync_failed`.
+- [ ] Envisager App Check ou une limitation de débit sur `referralCheckCode` (appelable sans connexion, énumération des codes).
+- [ ] Les pages contiennent déjà l'adresse d'un autre produit dans les CGU/CGV/mentions (hors parrainage) : à remplacer par une adresse P1Planner (isolation P0) — non touché ici.
+- [ ] Rejouer `test/e2e/referral-ui.mjs` contre les vraies fonctions déployées (staging) avant/après déploiement.
+
+## Listes personnalisables / tours / iPad / banque de matières (2026-10-02) — déployé (voir docs/DECISIONS.md)
+- [x] Fusion des catalogues personnalisables (jamais un écrasement), écoute temps réel, gardes de chargement/
+  hors-ligne, échecs visibles, restauration admin fusionnée. Voir `docs/DECISIONS.md`.
+- [x] Clavier tactile (Entrée ajoute, clavier Android, doublons/noms vides refusés) + carte Paramètres.
+- [x] Verrou de sécurité 8/14 tours (plus de tours masqués en mode compact).
+- [x] Barre d'image des notes : cibles tactiles correctes sur iPad.
+- [x] Banque de 13 matières P1 (page de présentation + bouton Paramètres pour les comptes connectés).
+- [x] X1 : `specialtyOrder`/thème/pagination/badges persistent réellement (écrivaient dans `users/{uid}`,
+  backend-only, échec systématique et silencieux avant ce correctif).
+- [ ] L7 (changement de compte dans le même onglet) : corrigé par construction, sans scénario de test dédié.
+- [ ] B5 (descente douce avant apparition d'une nouvelle entrée de catalogue) : amélioration non faite, pas
+  demandée explicitement.
+- [x] Déploiement : fait depuis (voir `docs/DECISIONS.md`, sections datées 2026-10-02/03), reconfirmé identique
+  au site en ligne par SHA-256 le 2026-10-03.

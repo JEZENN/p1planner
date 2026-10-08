@@ -64,7 +64,7 @@ Première mission uniquement :
 9. Spécifie le Programme de la journée.
 10. Spécifie le planning en séparant type de journée et état.
 11. Analyse Premium :
-    - 30 jours gratuits ;
+    - 15 jours gratuits ;
     - date concours/examens S2 ;
     - durée choisie ;
     - 2,50 / 2,25 / 2,00 ;
