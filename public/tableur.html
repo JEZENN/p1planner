@@ -55929,6 +55929,18 @@ window.openPlanningDayDetailModal = openModal;
         document.addEventListener('click', function (e) { if (sMenu.classList.contains('open') && !e.target.closest('.pdd-status-wrap')) closeStatusMenu(); });
         document.getElementById('pdd-spec-btn').addEventListener('click', openSpecPop);
         document.getElementById('pdd-spec-backdrop').addEventListener('mousedown', closeSpecPop);
+        // Retour de Jean (08/10, constaté sur TypixClin) : le backdrop transparent plein écran
+        // recouvre AUSSI le bouton Matières activé -- le clic le referme bien (mousedown ci-dessus,
+        // inchangé) mais la souris restait une flèche, rien n'indiquait qu'on pouvait cliquer.
+        // Main uniquement quand la souris est dans le rectangle du bouton, normale ailleurs. Le
+        // bouton Statut n'a pas de backdrop (menu ancré) : déjà au-dessus, déjà une main.
+        document.getElementById('pdd-spec-backdrop').addEventListener('mousemove', function (e) {
+            var b = document.getElementById('pdd-spec-btn');
+            if (!b) return;
+            var r = b.getBoundingClientRect();
+            var over = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+            this.style.cursor = over ? 'pointer' : '';
+        });
         document.getElementById('pdd-spec-clear').addEventListener('click', function () { tempSel = []; renderSpecChips(); });
         document.getElementById('pdd-spec-ok').addEventListener('click', validateSpec);
         window.addEventListener('resize', function () { var pp = document.getElementById('pdd-spec-pop'); if (pp && pp.classList.contains('active')) openSpecPop(); });

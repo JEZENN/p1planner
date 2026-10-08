@@ -131,7 +131,13 @@ const MUTANTS = [
     to: ".pdd-status-btn.is-open .pdd-caret { opacity: 1; }" },
   { id: "PDD3 bouton Matières plus marqué « ouvert »", file: "tableur.html", script: "pdd-popovers.mjs", scen: ["P1"],
     from: "pop.classList.add('active'); setPopBtnOpen('pdd-spec-btn', true);",
-    to: "pop.classList.add('active');" }
+    to: "pop.classList.add('active');" },
+  { id: "PDD4 main au survol du bouton Matières ouvert supprimée (backdrop qui recouvre le bouton)", file: "tableur.html", script: "pdd-popovers.mjs", scen: ["P4"],
+    from: "this.style.cursor = over ? 'pointer' : '';",
+    to: "this.style.cursor = '';" },
+  { id: "PDD5 main sur TOUT le backdrop (pas seulement sur le bouton)", file: "tableur.html", script: "pdd-popovers.mjs", scen: ["P4"],
+    from: "this.style.cursor = over ? 'pointer' : '';",
+    to: "this.style.cursor = 'pointer';" }
 ];
 let bad = 0;
 for (const m of MUTANTS.filter((x) => !ONLY || x.id.startsWith(ONLY))) {

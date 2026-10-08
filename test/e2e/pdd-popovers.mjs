@@ -88,6 +88,40 @@ try {
     const r = await page.evaluate(() => { const c = document.querySelector("#pdd-status-grid .pdd-status-card"); const b = c.getBoundingClientRect(); const at = document.elementFromPoint(b.x + b.width / 2, b.y + b.height / 2); return !!(at && at.closest("#pdd-status-menu")); });
     assert(!r, "le menu Statut fermé reçoit encore des évènements souris");
   });
+
+  // Retour de Jean (08/10, constaté sur TypixClin) : popover « Matières » ouvert, le backdrop
+  // transparent plein écran (clic dehors = fermeture) recouvre AUSSI le bouton activé : la souris
+  // y reste une flèche alors qu'un clic le referme. Statut n'a pas de backdrop (menu ancré +
+  // écouteur document) : son bouton reste au-dessus, déjà une main.
+  await S("P4", "popover « Matières » ouvert : main au survol de son bouton (pas ailleurs sur le fond) ; un clic dessus referme sans rouvrir, la journée reste ouverte", async () => {
+    const cursorAt = async (x, y) => { await page.mouse.move(x, y); await sleep(30); return page.evaluate((px, py) => { const el = document.elementFromPoint(px, py); return { cursor: getComputedStyle(el).cursor, id: el.id || el.className }; }, x, y); };
+    await page.evaluate(() => document.getElementById("pdd-spec-btn").click());
+    await sleep(300);
+    const rect = await page.evaluate(() => { const r = document.getElementById("pdd-spec-btn").getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; });
+    const inBtn = await cursorAt(rect.x + rect.w / 2, rect.y + rect.h / 2);
+    assert(inBtn.cursor === "pointer", "souris sur le bouton Matières activé : curseur « " + inBtn.cursor + " » au lieu de la main (backdrop qui recouvre le bouton : " + inBtn.id + ")");
+    const outside = await cursorAt(rect.x + rect.w / 2, rect.y + rect.h + 400);
+    assert(outside.cursor !== "pointer", "souris ailleurs sur le fond : la main ne doit pas apparaître (« " + outside.cursor + " »)");
+    const nearBtn = await cursorAt(rect.x - 30, rect.y + rect.h / 2);
+    assert(nearBtn.cursor !== "pointer", "souris juste à côté du bouton : la main ne doit pas apparaître (« " + nearBtn.cursor + " »)");
+    // Revenir sur le bouton après être sorti : la main doit réapparaître.
+    const back = await cursorAt(rect.x + rect.w / 2, rect.y + rect.h / 2);
+    assert(back.cursor === "pointer", "main absente en revenant sur le bouton");
+
+    await page.mouse.click(rect.x + rect.w / 2, rect.y + rect.h / 2);
+    await sleep(300);
+    const st = await page.evaluate(() => ({ pop: document.getElementById("pdd-spec-pop").classList.contains("active"), bd: document.getElementById("pdd-spec-backdrop").classList.contains("active"), modal: document.getElementById("pdd-overlay").classList.contains("active") }));
+    assert(!st.pop && !st.bd, "le clic sur le bouton activé n'a pas refermé la fenêtre (ou l'a rouverte) : " + JSON.stringify(st));
+    assert(st.modal, "la fenêtre de la journée s'est refermée : " + JSON.stringify(st));
+    // Backdrop inactif : le curseur résiduel ne doit pas survivre à la réouverture suivante.
+    await page.evaluate(() => document.getElementById("pdd-spec-btn").click());
+    await sleep(300);
+    const away = await cursorAt(rect.x + rect.w / 2, rect.y + rect.h + 400);
+    assert(away.cursor !== "pointer", "curseur main résiduel après réouverture, souris hors du bouton");
+    await page.evaluate(() => document.getElementById("pdd-spec-ok").click());
+    await sleep(300);
+    assert(page.__errors.length === 0, "erreurs JS : " + JSON.stringify(page.__errors));
+  });
 } finally {
   await browser.close(); proxy.close(); server.close();
 }

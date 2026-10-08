@@ -711,3 +711,9 @@ contre l'émulateur réel juste avant la rédaction du rapport final.
 - [x] 56 blocs `<script>` OK, CRLF préservé (66 924 / 0 bare LF), `battery.mjs` **19/19**,
   `j-day-groups.mjs` **4/4**, `pop-legend-keyboard.mjs` **12/12**, `delete-animation.mjs` **4/4** ;
   déployé et vérifié (SHA-256 local = live, `89ed24bb…`).
+
+## Curseur main sur le bouton Matières ouvert (2026-10-08)
+
+- [x] Main au survol du bouton « Matières » activé (backdrop qui le recouvrait), normale ailleurs ; un
+  clic referme sans rouvrir, la journée reste ouverte. `pdd-popovers.mjs` **4/4**, contre-épreuve
+  (échec avant correctif) + mutants PDD4/PDD5 ; déployé et vérifié (SHA-256 local = live, `570a2443…`).

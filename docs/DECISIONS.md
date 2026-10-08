@@ -1227,3 +1227,21 @@ mutants **PDD1/PDD2/PDD3** détectés. Non-régression : `battery.mjs` 19/19, `j
 démarre plus en headless sur cette machine -- tests lancés avec `BROWSER_PATH` pointant sur Chrome.
 Rollback : `rollback/tableur.html.avant-pdd-popovers-2026-10-07`. Déployé et vérifié (SHA-256
 local = live, `89ed24bb…`).
+
+## Curseur « main » sur le bouton Matières ouvert (2026-10-08, défaut constaté sur TypixClin, repris sur P1)
+
+- **Défaut reproduit sur P1 avant tout changement** : fenêtre « Matières » ouverte, `#pdd-spec-backdrop`
+  (fond transparent plein écran, `position:fixed; inset:0`, sert au clic-dehors) recouvre aussi le
+  bouton `#pdd-spec-btn` ; `elementFromPoint` y renvoie le backdrop, curseur calculé `auto`. Le clic
+  referme déjà correctement (mousedown du backdrop), mais rien n'indiquait qu'on pouvait cliquer.
+- **Statut non concerné** : son menu n'a pas de backdrop (fermeture par écouteur `document`), le bouton
+  reste au-dessus et garde sa main.
+- **Correctif (ajout seul)** : écouteur `mousemove` sur le backdrop -> `cursor:pointer` quand la souris
+  est dans `getBoundingClientRect()` du bouton, `''` sinon. Fermeture d'origine (mousedown) intacte :
+  un clic sur le bouton referme sans rouvrir (mousedown sur le backdrop, mouseup sur le bouton, aucun
+  `click` n'est donc émis sur le bouton) et la fenêtre de la journée reste ouverte.
+- Tests : `pdd-popovers.mjs` **P4** (4/4 au total) ; échouait avant le correctif (curseur `auto`) ;
+  mutants **PDD4** (main supprimée) et **PDD5** (main sur tout le fond) détectés. Non-régression :
+  `battery.mjs` 19/19, `j-day-groups.mjs` 4/4, `pop-legend-keyboard.mjs` 12/12, `delete-animation.mjs`
+  4/4. CRLF préservé (66 936 / 0 bare LF). Rollback : `rollback/tableur.html.avant-pdd-cursor-2026-10-08`.
+  Déployé et vérifié (SHA-256 local = live, `570a2443…`).
