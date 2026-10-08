@@ -1,10 +1,22 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   P1-BILLING — source unique du barème Premium côté frontend
+   P1-PRICING-RULES — source unique du barème Premium côté frontend
    ───────────────────────────────────────────────────────────────────────
+   Renommé depuis p1-billing.js (bug réel trouvé en vérifiant la prod avant
+   publicité) : "billing" est un mot très couramment bloqué par les
+   bloqueurs de publicité/traceurs — confirmé sur tpx-billing.js (voir
+   p1-premium-status.js) via un vrai chargement de p1planner.fr, ressorti
+   en `net::ERR_BLOCKED_BY_CLIENT`. Ce fichier porte le même mot dans son
+   nom et présentait donc le même risque sur index.html/comptepremium.html
+   (prix Premium jamais affiché pour ces visiteurs) — renommé par
+   précaution, avant qu'un vrai cas ne soit constaté celui-ci précisément.
+   Le nom de la variable globale (window.P1_BILLING) reste inchangé : seul
+   le blocage réseau se fait sur le NOM DE FICHIER, jamais sur un nom de
+   variable JS.
+
    À charger dans le <head> (ou avant le script principal) de toute page
    qui affiche un prix ou une durée Premium : index.html, comptepremium.html.
 
-       <script src="p1-billing.js"></script>
+       <script src="p1-pricing-rules.js"></script>
 
    Équivalent P1Planner du tpx-billing.js de TypixClin (fourni par
    l'utilisateur comme référence), avec une différence structurelle

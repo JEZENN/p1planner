@@ -6,7 +6,12 @@
 <title>Administration — P1Planner</title>
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#0a0e1a">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%236d5bf0'/%3E%3Cstop offset='1' stop-color='%234f9dfb'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='url(%23g)'/%3E%3Ctext x='32' y='42' font-family='Arial,sans-serif' font-weight='700' font-size='26' fill='white' text-anchor='middle'%3EP1%3C/text%3E%3C/svg%3E">
+<link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="shortcut icon" href="/favicon.ico" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-title" content="P1Planner" />
+<link rel="manifest" href="/site.webmanifest" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -138,6 +143,10 @@ a{color:inherit;text-decoration:none}
 .table-container{overflow-x:auto}
 table.data-table{width:100%;border-collapse:collapse;font-size:.82rem}
 table.data-table th{text-align:left;padding:.65rem 1.1rem;color:var(--text-dim);font-weight:700;font-size:.7rem;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border);white-space:nowrap}
+table.data-table th.sortable{cursor:pointer;user-select:none}
+table.data-table th.sortable:hover{color:var(--text)}
+table.data-table th.sortable.sort-asc::after{content:" ▲";font-size:.65em}
+table.data-table th.sortable.sort-desc::after{content:" ▼";font-size:.65em}
 table.data-table td{padding:.7rem 1.1rem;border-bottom:1px solid var(--border);vertical-align:middle}
 table.data-table tr:last-child td{border-bottom:none}
 table.data-table tr:hover td{background:var(--surface-2)}
@@ -175,10 +184,27 @@ table.data-table tr:hover td{background:var(--surface-2)}
 .fb-reply-form textarea{flex:1;background:var(--surface-2);border:1px solid var(--border-strong);border-radius:var(--radius-sm);padding:.55rem .75rem;font-size:.82rem;color:var(--text);resize:vertical;min-height:44px}
 .fb-reply-form textarea:focus{outline:none;border-color:var(--primary)}
 
+/* Menu mobile (2026-09-27) : la sidebar devient un tiroir qui glisse par-dessus le
+   contenu, ouvert/fermé par un bouton hamburger — sans lui, la sidebar restait
+   entièrement hors écran et le menu était inaccessible sur téléphone. */
+#mobile-menu-btn{display:none}
+#sidebar-backdrop{display:none}
 @media(max-width:900px){
-  #sidebar{transform:translateX(-100%)}
-  #main-content{margin-left:0;max-width:100vw;padding:1.25rem}
+  #mobile-menu-btn{
+    display:flex;align-items:center;justify-content:center;position:fixed;top:.85rem;left:.85rem;z-index:120;
+    width:42px;height:42px;border-radius:var(--radius-sm);background:var(--bg-soft);border:1px solid var(--border);
+    color:var(--text);font-size:1.1rem;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.28);
+  }
+  #sidebar{transform:translateX(-100%);transition:transform .22s ease}
+  #admin-panel.mobile-nav-open #sidebar{transform:translateX(0)}
+  #sidebar-backdrop{
+    display:block;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99;
+    opacity:0;pointer-events:none;transition:opacity .22s ease;
+  }
+  #admin-panel.mobile-nav-open #sidebar-backdrop{opacity:1;pointer-events:auto}
+  #main-content{margin-left:0;max-width:100vw;padding:1.25rem;padding-top:4.2rem}
 }
+@media (prefers-reduced-motion: reduce){#sidebar,#sidebar-backdrop{transition:none}}
 </style>
 </head>
 <body>
@@ -195,6 +221,8 @@ table.data-table tr:hover td{background:var(--surface-2)}
 
 <!-- ═══ ADMIN PANEL ═══ -->
 <div id="admin-panel">
+  <button type="button" id="mobile-menu-btn" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="sidebar" onclick="window.__toggleMobileNav && window.__toggleMobileNav()"><i class="fas fa-bars"></i></button>
+  <div id="sidebar-backdrop" onclick="window.__toggleMobileNav && window.__toggleMobileNav(false)"></div>
   <aside id="sidebar">
     <div class="sidebar-header">
       <div class="sidebar-logo">P1Planner<span class="sidebar-badge">ADMIN</span></div>
@@ -211,6 +239,12 @@ table.data-table tr:hover td{background:var(--surface-2)}
       </div>
       <div class="nav-item" data-section="subscriptions" onclick="showSection('subscriptions', this)">
         <i class="fas fa-crown"></i> Abonnements
+      </div>
+      <div class="nav-item" data-section="referrals" onclick="showSection('referrals', this)">
+        <i class="fas fa-user-friends"></i> Parrainage
+      </div>
+      <div class="nav-item" data-section="backups" onclick="showSection('backups', this)">
+        <i class="fas fa-box-archive"></i> Sauvegardes
       </div>
       <div class="nav-section-label">Communication</div>
       <div class="nav-item" data-section="feedbacks" onclick="showSection('feedbacks', this)">
@@ -300,9 +334,9 @@ table.data-table tr:hover td{background:var(--surface-2)}
         <div class="table-container">
           <table class="data-table">
             <thead><tr>
-              <th>Utilisateur</th><th>UID</th><th>Inscription</th><th>Plan</th><th>Statut</th>
+              <th>Utilisateur</th><th>UID</th><th>Inscription</th><th>Plan</th><th>Statut</th><th>Parrainé par</th>
             </tr></thead>
-            <tbody id="users-tbody"><tr><td colspan="5"><div class="empty-state"><div class="spinner"></div></div></td></tr></tbody>
+            <tbody id="users-tbody"><tr><td colspan="6"><div class="empty-state"><div class="spinner"></div></div></td></tr></tbody>
           </table>
         </div>
       </div>
@@ -336,7 +370,103 @@ table.data-table tr:hover td{background:var(--surface-2)}
       </div>
     </section>
 
+    <!-- ═══ PARRAINAGE (2026-09-25) ═══ -->
+    <section id="section-referrals" class="section">
+      <div class="page-header">
+        <h1 class="page-title">Parrainage</h1>
+        <p class="page-subtitle">Construit à partir des données déjà chargées par l'onglet Utilisateurs — aucune lecture Firestore supplémentaire.</p>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Parrains actifs</div>
+          <div class="stat-value" id="stat-referrers-count">…</div>
+          <div class="stat-sub">au moins un filleul actif</div>
+          <i class="fas fa-user-friends stat-icon"></i>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Filleuls actifs (total)</div>
+          <div class="stat-value" id="stat-referrals-total">…</div>
+          <div class="stat-sub">tous parrains confondus</div>
+          <i class="fas fa-user-check stat-icon"></i>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Mois offerts (total)</div>
+          <div class="stat-value" id="stat-referral-months-total">…</div>
+          <div class="stat-sub">cumulés, plafonnés à 3 par parrain</div>
+          <i class="fas fa-gift stat-icon"></i>
+        </div>
+      </div>
+      <div class="card">
+        <div class="table-toolbar">
+          <input type="text" class="search-input" id="referrals-search" placeholder="Rechercher par nom, email, code…" oninput="window.__filterReferrals && window.__filterReferrals()">
+        </div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead><tr>
+              <th class="sortable" data-sort="name" onclick="window.__sortReferrals && window.__sortReferrals('name')">Parrain</th>
+              <th class="sortable" data-sort="code" onclick="window.__sortReferrals && window.__sortReferrals('code')">Code</th>
+              <th class="sortable" data-sort="count" onclick="window.__sortReferrals && window.__sortReferrals('count')">Filleuls actifs</th>
+              <th class="sortable" data-sort="months" onclick="window.__sortReferrals && window.__sortReferrals('months')">Mois offerts</th>
+            </tr></thead>
+            <tbody id="referrals-tbody"><tr><td colspan="4"><div class="empty-state"><div class="spinner"></div></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
     <!-- ═══ BACKUPS ═══ -->
+    <section id="section-backups" class="section">
+      <div class="page-header">
+        <h1 class="page-title">Sauvegardes</h1>
+        <p class="page-subtitle">Sauvegardes automatiques (nocturnes, comptes actifs) et manuelles, par utilisateur. Restauration en mode « compléter » (par défaut, ne remet que ce qui manque) ou « revenir à l'état de la sauvegarde ».</p>
+      </div>
+      <div class="card">
+        <div class="table-toolbar">
+          <input type="text" class="search-input" id="backups-user-search" placeholder="Rechercher un utilisateur par nom, email, UID…" oninput="window.__backupsFilterUsers && window.__backupsFilterUsers()">
+        </div>
+        <div id="backups-user-results" class="table-container" style="max-height:260px;overflow-y:auto;"></div>
+      </div>
+
+      <div class="card" id="backups-user-panel" style="display:none;">
+        <div class="table-toolbar" style="justify-content:space-between;">
+          <div>
+            <strong id="backups-user-name">—</strong>
+            <span id="backups-user-email" style="margin-left:.5rem;color:var(--text-muted);font-size:.85rem;"></span>
+          </div>
+          <button class="btn btn-primary" id="backups-create-btn" type="button" onclick="window.__backupsCreateNow && window.__backupsCreateNow()">
+            <i class="fas fa-plus"></i> Créer une sauvegarde maintenant
+          </button>
+        </div>
+        <div id="backups-create-msg" style="display:none;padding:.6rem .9rem;border-radius:var(--radius-sm);font-size:.85rem;margin-bottom:.75rem;"></div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead><tr>
+              <th>Date</th><th>Type</th><th>Documents</th><th>Format</th><th></th>
+            </tr></thead>
+            <tbody id="backups-list-tbody"><tr><td colspan="5"><div class="empty-state">Sélectionnez un utilisateur ci-dessus.</div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card" id="backups-restore-panel" style="display:none;">
+        <h3 style="margin-top:0;">Restaurer la sauvegarde du <span id="backups-restore-date"></span></h3>
+        <p id="backups-restore-explain" style="color:var(--text-muted);font-size:.85rem;"></p>
+        <div style="display:flex;flex-direction:column;gap:.5rem;margin:1rem 0;">
+          <label style="display:flex;align-items:center;gap:.5rem;">
+            <input type="radio" name="backups-restore-mode" value="merge" checked> <strong>Compléter</strong> — ne remet que ce qui manque (documents absents, éléments archivés depuis, notes vidées). Ne touche jamais un document déjà présent, actif et non vide.
+          </label>
+          <label style="display:flex;align-items:center;gap:.5rem;">
+            <input type="radio" name="backups-restore-mode" value="replace"> <strong>Revenir à l'état de la sauvegarde</strong> — réécrit tout ce que contient la sauvegarde, même par-dessus des données plus récentes.
+          </label>
+        </div>
+        <div style="font-size:.8rem;color:var(--text-muted);display:flex;align-items:center;gap:.4rem;"><i class="fas fa-shield-halved"></i> Quoi qu'il arrive, l'état actuel est automatiquement sauvegardé juste avant — cette restauration reste elle-même réversible.</div>
+        <div style="display:flex;gap:.5rem;margin-top:1rem;">
+          <button class="btn btn-primary" id="backups-restore-confirm-btn" type="button" onclick="window.__backupsConfirmRestore && window.__backupsConfirmRestore()">Confirmer la restauration</button>
+          <button class="btn btn-ghost" type="button" onclick="window.__backupsCancelRestore && window.__backupsCancelRestore()">Annuler</button>
+        </div>
+        <div id="backups-restore-result" style="display:none;margin-top:1rem;"></div>
+      </div>
+    </section>
     <!-- ═══ FEEDBACKS ═══ -->
     <section id="section-feedbacks" class="section">
       <div class="page-header">
@@ -367,6 +497,9 @@ import {
   getFirestore, doc, getDoc, getDocs, collection, query, orderBy, where,
   updateDoc, onSnapshot, arrayUnion, connectFirestoreEmulator
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+  getFunctions, httpsCallable, connectFunctionsEmulator
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
 
 /* ============================================================
    CONFIGURATION FIREBASE — Projet P1Planner (voir CLAUDE.md)
@@ -381,16 +514,22 @@ const firebaseConfig = {
   appId: "1:731451401197:web:c42a76f270e78abe923de4"
 };
 
-let auth = null, db = null;
+let auth = null, db = null, functionsInstance = null;
+let callAdminCreateBackup = null, callAdminRestoreBackup = null;
 if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig.projectId + firebaseConfig.authDomain)) {
   document.getElementById("gate-message").innerHTML = '<span class="gate-error">Isolation P0 : projectId Firebase suspect — chargement interrompu.</span>';
 } else {
   const app = initializeApp(firebaseConfig);
   auth = getAuth(app);
   db = getFirestore(app);
+  // europe-west1 : même région que le reste des Cloud Functions P1Planner (voir functions/index.js, REGION).
+  functionsInstance = getFunctions(app, "europe-west1");
+  callAdminCreateBackup = httpsCallable(functionsInstance, "adminCreateBackup");
+  callAdminRestoreBackup = httpsCallable(functionsInstance, "adminRestoreBackup");
   if (window.localStorage.getItem("p1planner:useEmulator") === "1") {
     connectAuthEmulator(auth, "http://127.0.0.1:9099", { disableWarnings: true });
     connectFirestoreEmulator(db, "127.0.0.1", 8080);
+    connectFunctionsEmulator(functionsInstance, "127.0.0.1", 5001); // même pont fn-bridge.mjs que tableur.html en tests
     console.warn("P1Planner admin: connecté aux émulateurs locaux.");
   }
 }
@@ -491,7 +630,19 @@ window.showSection = function (id, el) {
   document.querySelectorAll(".nav-item").forEach((n) => n.classList.remove("active"));
   $("section-" + id).classList.add("active");
   if (el) el.classList.add("active");
+  window.__toggleMobileNav(false); // referme le tiroir mobile après un choix (sans effet si déjà fermé/bureau)
 };
+
+/* Menu mobile (2026-09-27) : la sidebar est cachée hors écran ≤900px sans bouton pour
+   la rouvrir — inaccessible sur téléphone. Un tiroir + bouton hamburger la remplacent. */
+window.__toggleMobileNav = function (force) {
+  const panel = $("admin-panel");
+  const open = typeof force === "boolean" ? force : !panel.classList.contains("mobile-nav-open");
+  panel.classList.toggle("mobile-nav-open", open);
+  $("mobile-menu-btn").setAttribute("aria-expanded", open ? "true" : "false");
+};
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") window.__toggleMobileNav(false); });
+window.addEventListener("resize", () => { if (window.innerWidth > 900) window.__toggleMobileNav(false); });
 
 /* ═══════════════════════════════════════════════════════════════════
    USERS + SUBSCRIPTIONS (une seule lecture jointe : users + entitlements
@@ -499,18 +650,24 @@ window.showSection = function (id, el) {
    voir firestore.rules)
    ═══════════════════════════════════════════════════════════════════ */
 async function loadUsers() {
-  $("users-tbody").innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="spinner"></div></div></td></tr>';
+  $("users-tbody").innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="spinner"></div></div></td></tr>';
   $("subs-tbody").innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="spinner"></div></div></td></tr>';
   try {
-    const [usersSnap, entSnap, billSnap] = await Promise.all([
+    const [usersSnap, entSnap, billSnap, refSnap] = await Promise.all([
       getDocs(query(collection(db, "users"), orderBy("createdAt", "desc"))),
       getDocs(collection(db, "entitlements")),
-      getDocs(collection(db, "billingPrivate"))
+      getDocs(collection(db, "billingPrivate")),
+      // Parrainage (B7) : un seul document par filleul (lecture autorisée à l'admin par les Rules) — sert à la colonne
+      // « Parrainé par » (diagnostic : « pourquoi ce compte n'a plus le champ rétroactif ? »). Échec toléré.
+      getDocs(collection(db, "referrals")).catch(() => null)
     ]);
     const entByUid = {}; entSnap.forEach((d) => { entByUid[d.id] = d.data(); });
     const billByUid = {}; billSnap.forEach((d) => { billByUid[d.id] = d.data(); });
 
-    allUsers = usersSnap.docs.map((d) => ({ uid: d.id, ...d.data(), entitlement: entByUid[d.id] || null, billing: billByUid[d.id] || null }));
+    const referrerOf = {}; if (refSnap) refSnap.forEach((d) => { referrerOf[d.id] = d.data(); });
+    allUsers = usersSnap.docs.map((d) => ({ uid: d.id, ...d.data(), entitlement: entByUid[d.id] || null, billing: billByUid[d.id] || null, referral: referrerOf[d.id] || null }));
+    // Nom du parrain = profil déjà chargé (aucune lecture de plus).
+    allUsers.forEach((u) => { if (u.referral) { const par = allUsers.find((x) => x.uid === u.referral.referrerUid); u.referral.referrerLabel = par ? (par.displayName || par.email || par.uid) : u.referral.referrerUid; } });
     usersView = allUsers.slice();
 
     const premiumCount = allUsers.filter((u) => u.entitlement && u.entitlement.status === "active").length;
@@ -523,9 +680,10 @@ async function loadUsers() {
     renderRecentUsers();
     renderUsers();
     renderSubs();
+    renderReferrals();
   } catch (e) {
     console.error("loadUsers:", e);
-    $("users-tbody").innerHTML = `<tr><td colspan="5"><div class="empty-state"><i class="fas fa-triangle-exclamation"></i><p>${escapeHtml(e.message || String(e))}</p></div></td></tr>`;
+    $("users-tbody").innerHTML = `<tr><td colspan="6"><div class="empty-state"><i class="fas fa-triangle-exclamation"></i><p>${escapeHtml(e.message || String(e))}</p></div></td></tr>`;
   }
 }
 window.__loadUsers = loadUsers;
@@ -549,7 +707,7 @@ function renderRecentUsers() {
 function renderUsers() {
   const tbody = $("users-tbody");
   $("users-subtitle").textContent = `${usersView.length} utilisateur(s) affiché(s) sur ${allUsers.length}`;
-  if (!usersView.length) { tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><i class="fas fa-user-slash"></i><p>Aucun résultat</p></div></td></tr>'; return; }
+  if (!usersView.length) { tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><i class="fas fa-user-slash"></i><p>Aucun résultat</p></div></td></tr>'; return; }
   tbody.innerHTML = usersView.map((u) => {
     const plan = planInfo(u.entitlement);
     const statusLabel = u.entitlement ? (u.entitlement.status || "—") : "—";
@@ -562,6 +720,7 @@ function renderUsers() {
       <td>${fmtDate(u.createdAt)}</td>
       <td><span class="badge ${plan.cls}">${plan.label}</span></td>
       <td>${escapeHtml(statusLabel)}</td>
+      <td class="cell-sub">${u.referral ? escapeHtml(u.referral.referrerLabel) + (u.referral.active ? "" : " (inactif)") : "—"}</td>
     </tr>`;
   }).join("");
 }
@@ -620,6 +779,82 @@ window.__filterSubs = function () {
     return true;
   });
   renderSubsFiltered(list);
+};
+
+/* ═══════════════════════════════════════════════════════════════════
+   PARRAINAGE (2026-09-25) — construit à partir de `allUsers` (déjà
+   chargé par loadUsers() ci-dessus, entitlements compris) : aucune
+   lecture Firestore dédiée. Un parrain = un utilisateur dont
+   l'entitlement porte referralActiveCount > 0.
+   ═══════════════════════════════════════════════════════════════════ */
+let referralsView = [];
+let referralsSort = { key: "months", dir: "desc" };
+
+function referralsRows() {
+  return allUsers
+    .filter((u) => u.entitlement && (u.entitlement.referralActiveCount || 0) > 0)
+    .map((u) => ({
+      uid: u.uid,
+      name: u.displayName || u.email || "—",
+      email: u.email || "",
+      code: u.referralCode || "—",
+      count: u.entitlement.referralActiveCount || 0,
+      months: u.entitlement.referralMonthsGranted || 0
+    }));
+}
+
+function renderReferrals() {
+  const rows = referralsRows();
+  $("stat-referrers-count").textContent = rows.length;
+  $("stat-referrals-total").textContent = rows.reduce((sum, r) => sum + r.count, 0);
+  $("stat-referral-months-total").textContent = rows.reduce((sum, r) => sum + r.months, 0);
+  referralsView = rows;
+  window.__filterReferrals();
+}
+
+function sortReferrals(list) {
+  const { key, dir } = referralsSort;
+  const sorted = list.slice().sort((a, b) => {
+    let av = a[key], bv = b[key];
+    if (typeof av === "string") { av = av.toLowerCase(); bv = bv.toLowerCase(); }
+    if (av < bv) return dir === "asc" ? -1 : 1;
+    if (av > bv) return dir === "asc" ? 1 : -1;
+    return 0;
+  });
+  document.querySelectorAll('#section-referrals th.sortable').forEach((th) => {
+    th.classList.remove("sort-asc", "sort-desc");
+    if (th.dataset.sort === key) th.classList.add(dir === "asc" ? "sort-asc" : "sort-desc");
+  });
+  return sorted;
+}
+
+function renderReferralsFiltered(list) {
+  const tbody = $("referrals-tbody");
+  const sorted = sortReferrals(list);
+  if (!sorted.length) { tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state"><i class="fas fa-user-friends"></i><p>Aucun parrain actif pour l\'instant</p></div></td></tr>'; return; }
+  tbody.innerHTML = sorted.map((r) => `<tr>
+    <td>
+      <div class="cell-name">${escapeHtml(r.name)}</div>
+      <div class="cell-sub">${escapeHtml(r.email)}</div>
+    </td>
+    <td class="cell-sub" style="font-family:var(--font-mono, monospace)">${escapeHtml(r.code)}</td>
+    <td>${r.count}</td>
+    <td>${r.months}</td>
+  </tr>`).join("");
+}
+
+window.__filterReferrals = function () {
+  const q = (($("referrals-search") && $("referrals-search").value) || "").toLowerCase().trim();
+  const list = referralsView.filter((r) => {
+    if (!q) return true;
+    return `${r.name} ${r.email} ${r.code}`.toLowerCase().includes(q);
+  });
+  renderReferralsFiltered(list);
+};
+
+window.__sortReferrals = function (key) {
+  referralsSort = { key, dir: (referralsSort.key === key && referralsSort.dir === "desc") ? "asc" : "desc" };
+  window.__filterReferrals();
 };
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -705,6 +940,148 @@ window.__replyFeedback = async function (feedbackId) {
   } catch (e) {
     console.error("replyFeedback:", e);
     alert("Échec de l'envoi : " + (e.message || e));
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════════════
+   SAUVEGARDES (audit sauvegardes/pertes, 2026-09-30, demande explicite de Jean —
+   onglet retiré le 27/09, remis ici pour que adminCreateBackup/adminRestoreBackup
+   (functions/index.js) soient réellement utilisables de bout en bout). Réutilise
+   `allUsers` déjà chargé par loadUsers() ci-dessus — aucune lecture supplémentaire
+   pour la recherche d'utilisateur.
+   ═══════════════════════════════════════════════════════════════════ */
+let _backupsSelectedUid = null;
+let _backupsRestoreTarget = null; // { backupId, createdAtLabel }
+
+function _backupsEsc(s) {
+  // XSS (voir CLAUDE.md/note admin.html) : cette page affiche des données d'AUTRES
+  // utilisateurs (nom, email...) — jamais d'innerHTML sur du texte non échappé.
+  return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+window.__backupsFilterUsers = function () {
+  const q = ($("backups-user-search").value || "").toLowerCase().trim();
+  const box = $("backups-user-results");
+  if (!q) { box.innerHTML = ""; return; }
+  const matches = (allUsers || []).filter((u) =>
+    (u.displayName || "").toLowerCase().includes(q) ||
+    (u.email || "").toLowerCase().includes(q) ||
+    u.uid.toLowerCase().includes(q)
+  ).slice(0, 20);
+  if (!matches.length) { box.innerHTML = '<div class="empty-state">Aucun utilisateur trouvé.</div>'; return; }
+  box.innerHTML = matches.map((u) => `
+    <div class="table-row-clickable" style="padding:.6rem .9rem;border-bottom:1px solid var(--border);cursor:pointer;display:flex;justify-content:space-between;" onclick="window.__backupsSelectUser('${_backupsEsc(u.uid)}')">
+      <span>${_backupsEsc(u.displayName || "(sans nom)")} — ${_backupsEsc(u.email || "")}</span>
+      <span style="color:var(--text-muted);font-size:.78rem;">${_backupsEsc(u.uid)}</span>
+    </div>`).join("");
+};
+
+window.__backupsSelectUser = function (uid) {
+  const u = (allUsers || []).find((x) => x.uid === uid);
+  if (!u) return;
+  _backupsSelectedUid = uid;
+  $("backups-user-results").innerHTML = "";
+  $("backups-user-search").value = "";
+  $("backups-user-panel").style.display = "";
+  $("backups-restore-panel").style.display = "none";
+  $("backups-create-msg").style.display = "none";
+  $("backups-user-name").textContent = u.displayName || "(sans nom)";
+  $("backups-user-email").textContent = `${u.email || ""} — ${u.uid}`;
+  window.__backupsLoadList();
+};
+
+function _backupsFmtDate(ts) {
+  try {
+    const d = ts && typeof ts.toDate === "function" ? ts.toDate() : new Date(ts);
+    return isNaN(d.getTime()) ? "—" : d.toLocaleString("fr-FR");
+  } catch (e) { return "—"; }
+}
+const _backupsTypeLabel = { admin: "Manuelle", auto: "Automatique", admin_auto_pre_restore: "Avant restauration" };
+
+window.__backupsLoadList = async function () {
+  if (!_backupsSelectedUid) return;
+  const tbody = $("backups-list-tbody");
+  tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="spinner"></div></div></td></tr>';
+  try {
+    const snap = await getDocs(query(collection(db, "users", _backupsSelectedUid, "backups"), orderBy("createdAt", "desc")));
+    if (snap.empty) { tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state">Aucune sauvegarde pour cet utilisateur.</div></td></tr>'; return; }
+    tbody.innerHTML = snap.docs.map((d) => {
+      const b = d.data();
+      const dateLabel = _backupsFmtDate(b.createdAt);
+      return `<tr>
+        <td>${_backupsEsc(dateLabel)}</td>
+        <td>${_backupsEsc(_backupsTypeLabel[b.createdBy] || b.createdBy || "—")}${b.label ? ' <span style="color:var(--text-muted);font-size:.78rem;">(' + _backupsEsc(b.label) + ")</span>" : ""}</td>
+        <td>${_backupsEsc(b.docCount != null ? b.docCount : "—")}</td>
+        <td>${_backupsEsc(b.format || "v1")}${b.partCount ? " · " + _backupsEsc(b.partCount) + " partie(s)" : ""}</td>
+        <td><button class="btn btn-ghost btn-sm" type="button" onclick="window.__backupsOpenRestore('${_backupsEsc(d.id)}', '${_backupsEsc(dateLabel)}')"><i class="fas fa-clock-rotate-left"></i> Restaurer</button></td>
+      </tr>`;
+    }).join("");
+  } catch (e) {
+    console.error("backupsLoadList:", e);
+    tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state">Erreur de chargement : ' + _backupsEsc(e.message || e) + "</div></td></tr>";
+  }
+};
+
+window.__backupsCreateNow = async function () {
+  if (!_backupsSelectedUid || !callAdminCreateBackup) return;
+  const btn = $("backups-create-btn"), msg = $("backups-create-msg");
+  btn.disabled = true;
+  msg.style.display = "";
+  msg.style.background = "var(--surface-2)"; msg.style.color = "var(--text-muted)";
+  msg.textContent = "Création de la sauvegarde en cours…";
+  try {
+    const res = await callAdminCreateBackup({ targetUid: _backupsSelectedUid });
+    msg.style.background = "rgba(34,197,94,.12)"; msg.style.color = "#16a34a";
+    msg.textContent = `Sauvegarde créée (${res.data.docCount} document(s)).`;
+    window.__backupsLoadList();
+  } catch (e) {
+    console.error("backupsCreateNow:", e);
+    msg.style.background = "rgba(239,68,68,.12)"; msg.style.color = "#dc2626";
+    msg.textContent = "Échec : " + (e.message || e);
+  } finally {
+    btn.disabled = false;
+  }
+};
+
+window.__backupsOpenRestore = function (backupId, createdAtLabel) {
+  _backupsRestoreTarget = { backupId, createdAtLabel };
+  $("backups-restore-date").textContent = createdAtLabel;
+  $("backups-restore-explain").textContent = "L'utilisateur ne verra aucun bouton de restauration — cette action n'est possible que depuis cet écran, réservé aux administrateurs.";
+  $("backups-restore-result").style.display = "none";
+  $("backups-restore-result").innerHTML = "";
+  document.querySelector('input[name="backups-restore-mode"][value="merge"]').checked = true;
+  $("backups-restore-panel").style.display = "";
+  $("backups-restore-panel").scrollIntoView({ behavior: "smooth", block: "start" });
+};
+
+window.__backupsCancelRestore = function () {
+  _backupsRestoreTarget = null;
+  $("backups-restore-panel").style.display = "none";
+};
+
+window.__backupsConfirmRestore = async function () {
+  if (!_backupsSelectedUid || !_backupsRestoreTarget || !callAdminRestoreBackup) return;
+  const mode = document.querySelector('input[name="backups-restore-mode"]:checked').value;
+  const btn = $("backups-restore-confirm-btn");
+  const resultBox = $("backups-restore-result");
+  btn.disabled = true;
+  resultBox.style.display = "";
+  resultBox.style.padding = ".75rem 1rem"; resultBox.style.borderRadius = "var(--radius-sm)";
+  resultBox.style.background = "var(--surface-2)"; resultBox.style.color = "var(--text-muted)";
+  resultBox.textContent = "Restauration en cours…";
+  try {
+    const res = await callAdminRestoreBackup({ targetUid: _backupsSelectedUid, backupId: _backupsRestoreTarget.backupId, mode });
+    const counts = res.data.perCollectionCounts || {};
+    const detail = Object.keys(counts).filter((k) => counts[k] > 0).map((k) => `${_backupsEsc(k)} : ${counts[k]}`).join(" · ") || "aucun document à restaurer (tout était déjà à jour)";
+    resultBox.style.background = "rgba(34,197,94,.12)"; resultBox.style.color = "#16a34a";
+    resultBox.innerHTML = `<strong>Restauration terminée</strong> (mode ${mode === "replace" ? "« revenir à l'état de la sauvegarde »" : "« compléter »"}, ${res.data.restoredDocs} document(s) au total).<br>${detail}`;
+    window.__backupsLoadList();
+  } catch (e) {
+    console.error("backupsConfirmRestore:", e);
+    resultBox.style.background = "rgba(239,68,68,.12)"; resultBox.style.color = "#dc2626";
+    resultBox.textContent = "Échec : " + (e.message || e);
+  } finally {
+    btn.disabled = false;
   }
 };
 </script>

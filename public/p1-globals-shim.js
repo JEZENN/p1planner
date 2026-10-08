@@ -4,7 +4,17 @@
    EDN et le module de contenu sur-mesure (tpx-perso-script, forcé en mode
    "custom" pour P1) trouvent ces globales déjà définies au chargement.
    Le vrai contenu (Matières/Cours) vient exclusivement de Firestore, par
-   utilisateur — jamais d'un catalogue partagé figé dans un fichier. */
+   utilisateur — jamais d'un catalogue partagé figé dans un fichier.
+
+   Renommé depuis data.js (bug réel trouvé en vérifiant la prod avant
+   publicité, jamais remarqué avant) : ce nom générique est bloqué par de
+   nombreux bloqueurs de publicité/traceurs (règles de filtrage visant tout
+   script nommé "data.js", très répandu chez les scripts de tracking) —
+   confirmé via un vrai chargement de p1planner.fr : la requête ressortait
+   en `net::ERR_BLOCKED_BY_CLIENT`, empêchant SPECIALTIES_DATA/SPECIALTY_SHORT
+   d'exister et cassant silencieusement une bonne partie du tableur (erreurs
+   "is not defined" en cascade) pour quiconque utilise un bloqueur — une
+   part significative des visiteurs réels. */
 window.SPECIALTIES_DATA = [];
 window.ITEM_REFERENCE = {};
 window.SPECIALTY_CONFIG = {};

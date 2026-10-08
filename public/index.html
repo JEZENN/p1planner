@@ -3,20 +3,36 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>P1Planner — Tableur P1 : Méthode des tours &amp; Méthode des J</title>
-<meta name="description" content="P1Planner, le tableur P1 en ligne pour organiser sa P1/PASS/LAS : Méthode des tours, Méthode des J, planning, Programme de la journée, flashcards et statistiques. 15 jours gratuits, sans carte bancaire.">
+<title>P1Planner — Méthode des tours, Méthode des J, PASS/LAS</title>
+<meta name="description" content="Organise ta première année de médecine (PASS, LAS) : Méthode des tours, Méthode des J, planning et flashcards. Essai de 15 jours sans carte bancaire.">
 <meta name="theme-color" content="#0a0e1a">
+<meta name="author" content="Jean Zennaro">
 <link rel="canonical" href="https://p1planner.fr/">
+<meta name="google-site-verification" content="GulkJbD2H8py_dfobzwG9oqVkpH7qz00MYRW4r4Kb44" />
 <meta property="og:type" content="website">
-<meta property="og:title" content="P1Planner — Tableur P1 : Méthode des tours &amp; Méthode des J">
-<meta property="og:description" content="Le tableur P1 qui organise ta P1/PASS/LAS : Méthode des tours, Méthode des J, planning et Programme de la journée, réunis au même endroit.">
+<meta property="og:url" content="https://p1planner.fr/">
+<meta property="og:site_name" content="P1Planner">
+<meta property="og:title" content="P1Planner — Méthode des tours, Méthode des J, PASS/LAS">
+<meta property="og:description" content="Organise ta première année de médecine (PASS, LAS) : Méthode des tours, Méthode des J, planning et flashcards. Essai de 15 jours sans carte bancaire.">
 <meta property="og:locale" content="fr_FR">
+<meta property="og:image" content="https://p1planner.fr/icon-512.png">
+<meta property="og:image:width" content="512">
+<meta property="og:image:height" content="512">
+<meta property="og:image:alt" content="Logo P1Planner">
 <meta name="twitter:card" content="summary">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%236d5bf0'/%3E%3Cstop offset='1' stop-color='%234f9dfb'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='url(%23g)'/%3E%3Ctext x='32' y='42' font-family='Arial,sans-serif' font-weight='700' font-size='26' fill='white' text-anchor='middle'%3EP1%3C/text%3E%3C/svg%3E">
+<meta name="twitter:title" content="P1Planner — Méthode des tours, Méthode des J, PASS/LAS">
+<meta name="twitter:description" content="Organise ta première année de médecine (PASS, LAS) : Méthode des tours, Méthode des J, planning et flashcards. Essai de 15 jours sans carte bancaire.">
+<meta name="twitter:image" content="https://p1planner.fr/icon-512.png">
+<link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="shortcut icon" href="/favicon.ico" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-title" content="P1Planner" />
+<link rel="manifest" href="/site.webmanifest" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=Fraunces:ital,opsz,wght@0,9..144,500;1,9..144,500&display=swap" rel="stylesheet">
-<script src="p1-billing.js"></script>
+<script src="p1-pricing-rules.js"></script>
 <style>
 /* ============================================================
    P1PLANNER — DESIGN TOKENS
@@ -676,8 +692,23 @@ html{scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:var(--primary)
   "url": "https://p1planner.fr/",
   "applicationCategory": "EducationalApplication",
   "operatingSystem": "Web",
-  "description": "Tableur P1 en ligne pour organiser sa P1/PASS/LAS : Méthode des tours (historique de révision par cours), Méthode des J (rappels espacés optionnels), planning, Programme de la journée, flashcards et statistiques.",
+  "description": "Tableur en ligne pour organiser sa première année de médecine (P1, PASS, LAS) : Méthode des tours (historique de révision par cours), Méthode des J (rappels espacés optionnels), planning, Programme de la journée, flashcards et statistiques.",
   "inLanguage": "fr-FR",
+  "dateModified": "2026-09-13",
+  "audience": {
+    "@type": "EducationalAudience",
+    "educationalRole": "student"
+  },
+  "featureList": [
+    "Méthode des tours (historique de révision par cours)",
+    "Méthode des J (rappels espacés optionnels)",
+    "Planning hebdomadaire",
+    "Programme de la journée",
+    "Flashcards",
+    "Cahier d'erreurs",
+    "Suivi des entraînements",
+    "Statistiques de progression"
+  ],
   "offers": {
     "@type": "Offer",
     "price": "0",
@@ -694,66 +725,66 @@ html{scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:var(--primary)
   "mainEntity": [
     {
       "@type": "Question",
-      "name": "L'essai de 15 jours nécessite-t-il une carte bancaire ?",
+      "name": "Est-ce que les cours sont déjà dans le tableur ?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Non. L'essai gratuit de 15 jours démarre dès l'inscription, sans aucune information de paiement."
+        "text": "Non. Tu ajoutes tes propres matières et intitulés de cours à partir du programme de ta fac. P1Planner sert à organiser et suivre tes révisions ; il ne fournit pas les supports de cours."
       }
     },
     {
       "@type": "Question",
-      "name": "Que se passe-t-il si je ne renouvelle pas mon accès Premium ?",
+      "name": "Qu'est-ce qu'un tour de révision ?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Ton compte repasse en lecture seule : tu peux toujours consulter tes cours, notes et statistiques, mais plus les modifier. Aucune donnée n'est jamais supprimée."
+        "text": "C'est un passage de travail sur un cours. Tu l'enregistres pour garder une trace de la date, de ton niveau de confiance, du temps passé et du support utilisé. Tu retrouves ensuite l'historique de tes passages sur ce cours."
       }
     },
     {
       "@type": "Question",
-      "name": "Qu'est-ce que la méthode des tours ?",
+      "name": "Est-ce que je dois utiliser la méthode des J ?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "C'est le cœur du tableur P1 : à chaque fois que tu travailles un cours, tu enregistres un \"tour\" avec ton niveau de confiance, la date, le temps passé et le support utilisé. P1Planner s'appuie sur cet historique pour faire remonter en priorité les cours dont le dernier tour est le plus ancien ou la confiance la plus basse."
+        "text": "Non. Tu peux utiliser le tableur pour suivre tes cours et organiser ton travail sans activer les rappels. Si tu les actives, ils complètent le suivi des tours : valider un rappel ne compte pas comme un nouveau tour."
       }
     },
     {
       "@type": "Question",
-      "name": "Dois-je utiliser la méthode des J ?",
+      "name": "Est-ce que P1Planner contient des QCM ?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Non, elle est entièrement facultative. Tu peux réviser au feeling ou planifier toi-même chaque cours — les tours restent comptés dans tous les cas."
+        "text": "Le suivi des entraînements te permet de noter le travail réalisé avec tes propres supports ou plateformes. Il ne constitue pas une banque de QCM intégrée. Tu peux aussi garder tes erreurs dans tes notes et créer tes flashcards."
       }
     },
     {
       "@type": "Question",
-      "name": "Comment organiser son année de P1 avec P1Planner ?",
+      "name": "Faut-il une carte bancaire pour essayer ?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "L'organisation P1 tient en trois briques : le tableur liste tes cours et tes tours de révision, le planning répartit tes semaines matière par matière, et le Programme de la journée réunit chaque matin ce qu'il reste à faire — tours en retard, rappels J du jour, tâches et entraînements. Tout reste modifiable à tout moment, sans structure imposée."
+        "text": "Non. Les 15 jours d'essai commencent dès l'inscription, sans information de paiement."
       }
     },
     {
       "@type": "Question",
-      "name": "Quel est le lien avec TypixClin ?",
+      "name": "Que se passe-t-il à la fin de mon accès ?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "TypixClin est un autre produit, destiné aux étudiants de P2 à D4. P1Planner en reprend l'expérience technique mais fonctionne de façon totalement indépendante : comptes, données et paiements séparés."
+        "text": "Sans accès actif, ton compte passe en lecture seule. Tu peux consulter tes données, mais tu ne peux plus les modifier. Les formules disponibles sont présentées dans la section tarifs."
       }
     },
     {
       "@type": "Question",
-      "name": "Puis-je changer de formule Premium en cours de route ?",
+      "name": "Mon compte TypixClin fonctionne-t-il sur P1Planner ?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Oui, tu peux changer de formule à tout moment depuis ton espace compte. Les deux formules ne sont pas cumulables : tu as soit un paiement unique en cours, soit un abonnement mensuel actif, jamais les deux à la fois."
+        "text": "Non. P1Planner et TypixClin sont deux outils indépendants, avec des comptes, des données et des paiements séparés."
       }
     },
     {
       "@type": "Question",
-      "name": "P1Planner est-il réservé aux études de médecine ?",
+      "name": "Puis-je l'utiliser pour une autre formation ?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Non. Il est pensé d'abord pour la P1/PASS/LAS, mais comme le programme est entièrement défini par l'utilisateur, il fonctionne pour toute filière basée sur des révisions structurées : droit, pharmacie, prépa, autres concours."
+        "text": "Oui. P1Planner est pensé pour la PASS et la LAS, mais tu définis toi-même tes matières et tes cours. Tu peux donc l'utiliser pour un autre programme de révision."
       }
     }
   ]
@@ -782,17 +813,17 @@ html{scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:var(--primary)
     </a>
 
     <nav class="nav-desktop" aria-label="Navigation principale">
-      <a href="#methode">Méthode</a>
+      <a href="#methode">Fonctionnement</a>
       <a href="#tableur">Tableur</a>
       <a href="#outils">Outils</a>
-      <a href="#premium">Premium</a>
-      <a href="#createur">Origines</a>
+      <a href="#premium">Tarifs</a>
+      <a href="#createur">Le créateur</a>
       <a href="#faq">FAQ</a>
     </nav>
 
     <div class="header-cta">
       <a href="auth.html" class="btn btn-ghost btn-sm">Connexion / Accès au tableur</a>
-      <a href="auth.html#inscription" class="btn btn-primary btn-sm">Essai gratuit</a>
+      <a href="auth.html#inscription" class="btn btn-primary btn-sm">Essayer gratuitement</a>
     </div>
 
     <button class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="mobileNav" aria-label="Ouvrir le menu">
@@ -803,15 +834,15 @@ html{scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:var(--primary)
 </header>
 
 <nav class="mobile-nav" id="mobileNav" aria-label="Navigation mobile">
-  <a href="#methode">Méthode</a>
+  <a href="#methode">Fonctionnement</a>
   <a href="#tableur">Tableur</a>
   <a href="#outils">Outils</a>
-  <a href="#premium">Premium</a>
-  <a href="#createur">Origines</a>
+  <a href="#premium">Tarifs</a>
+  <a href="#createur">Le créateur</a>
   <a href="#faq">FAQ</a>
   <div class="header-cta">
     <a href="auth.html" class="btn btn-ghost">Connexion / Accès au tableur</a>
-    <a href="auth.html#inscription" class="btn btn-primary">Essai gratuit — 15 jours</a>
+    <a href="auth.html#inscription" class="btn btn-primary">Essayer gratuitement</a>
   </div>
 </nav>
 
@@ -821,19 +852,19 @@ html{scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:var(--primary)
 <section class="hero">
   <div class="wrap hero-grid">
     <div class="hero-copy">
-      <span class="eyebrow">Cours · Tours · Méthode des J · Programme du jour</span>
-      <h1>Organise tes révisions,<br><span class="text-grad">tour après tour</span>.</h1>
-      <p class="lead">P1Planner, le tableur P1 en ligne, garde en tête chaque cours de <em class="serif-accent">ton</em> programme : combien de tours tu as déjà faits, quand les reprendre, et ce qu'il reste à faire aujourd'hui. Pensé pour la P1/PASS/LAS, ça marche pour n'importe quel concours qui demande de tenir la distance.</p>
+      <span class="eyebrow">Organisation des révisions · PASS / LAS</span>
+      <h1>Tes cours, tes révisions,<br><span class="text-grad">une vue claire de ton avancée</span>.</h1>
+      <p class="lead">P1Planner est un tableur en ligne pour suivre et organiser tes révisions. Ajoute tes matières et tes cours, note ce que tu as travaillé et retrouve ceux à reprendre. Planning, notes et flashcards complètent le suivi, dans le même outil.</p>
       <div class="hero-actions">
         <a href="auth.html#inscription" class="btn btn-primary">
-          Commencer gratuitement
+          Essayer gratuitement
           <svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
         </a>
-        <a href="#demo" class="btn btn-ghost">Voir la démo</a>
+        <a href="#demo" class="btn btn-ghost">Voir comment ça marche</a>
       </div>
       <div class="hero-trust">
         <svg class="icon" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
-        15 jours d'essai, sans carte bancaire
+        15 jours d'essai, sans carte bancaire.
       </div>
     </div>
 
@@ -841,7 +872,7 @@ html{scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:var(--primary)
       <div class="mock-sheet" role="img" aria-label="Aperçu du tableur P1Planner : matières, cours, tours et échéances J">
         <div class="mock-sheet-bar">
           <span class="mock-dot"></span><span class="mock-dot"></span><span class="mock-dot"></span>
-          <span class="mock-sheet-title">tableur.html — Biochimie</span>
+          <span class="mock-sheet-title">Mes cours — Biochimie</span>
         </div>
         <table class="mock-table">
           <thead>
@@ -879,25 +910,25 @@ html{scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:var(--primary)
 <section class="section" aria-labelledby="value-h">
   <div class="wrap">
     <div class="section-head reveal">
-      <span class="eyebrow warm">Avant P1Planner</span>
-      <h2 class="h-section" id="value-h">Trop de révisions se perdent entre les onglets</h2>
-      <p class="section-lead">Un cahier pour le programme, une appli de flashcards, un tableur fait maison pour le planning — et aucune vue d'ensemble de ce qu'il faut vraiment faire <em class="serif-accent">aujourd'hui</em>.</p>
+      <span class="eyebrow warm">Le suivi de tes révisions</span>
+      <h2 class="h-section" id="value-h">Savoir où tu en es, cours par cours</h2>
+      <p class="section-lead">Quel cours as-tu revu récemment ? Lequel te pose encore problème ? Qu'as-tu prévu de travailler aujourd'hui ? P1Planner rassemble ces repères pour t'aider à préparer la suite.</p>
     </div>
     <div class="value-grid">
       <div class="card value-card reveal">
         <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24"><path d="M4 19V6a2 2 0 0 1 2-2h13v15"/><path d="M6 22a2 2 0 0 1-2-2v-1h15v3"/></svg></div>
-        <h3>Le programme t'appartient</h3>
-        <p>Tu crées tes matières et tes cours — aucun programme imposé, aucune spécialité par défaut à trier.</p>
+        <h3>Ce que tu as travaillé</h3>
+        <p>Retrouve le nombre de passages sur chaque cours, la date de ta dernière révision et le niveau de confiance que tu as noté.</p>
       </div>
       <div class="card value-card reveal">
         <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3.2-6.9"/><polyline points="21 4 21 9 16 9"/></svg></div>
-        <h3>Un rythme de révision clair</h3>
-        <p>Chaque cours suit ses tours et, si tu le souhaites, une échéance de rappel espacé — sans y penser toi-même.</p>
+        <h3>Ce qui mérite d'être repris</h3>
+        <p>Repère les cours peu revus, laissés de côté depuis longtemps ou sur lesquels tu te sens moins à l'aise.</p>
       </div>
       <div class="card value-card reveal">
         <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
-        <h3>Un seul endroit, chaque matin</h3>
-        <p>Le Programme de la journée réunit tours, révisions et entraînements du jour — tu ouvres, tu vois, tu travailles.</p>
+        <h3>Ce que tu prévois aujourd'hui</h3>
+        <p>Prépare ta liste de travail et coche les tâches terminées pour suivre ta journée.</p>
       </div>
     </div>
   </div>
@@ -907,34 +938,34 @@ html{scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:var(--primary)
 <section class="section" id="methode" aria-labelledby="pillars-h" style="background:var(--bg-soft)">
   <div class="wrap">
     <div class="section-head reveal">
-      <span class="eyebrow">En bref</span>
-      <h2 class="h-section" id="pillars-h">Comment ça marche</h2>
-      <p class="section-lead">Quatre briques simples pour organiser ta P1 — Méthode des tours, Méthode des J, planning — qui s'articulent entre elles sans jamais te forcer la main.</p>
+      <span class="eyebrow">Prise en main</span>
+      <h2 class="h-section" id="pillars-h">De ta liste de cours à tes prochaines révisions</h2>
+      <p class="section-lead">Commence par ajouter ton programme. Enregistre ensuite tes révisions au fil des jours et utilise les rappels si tu souhaites espacer tes reprises.</p>
     </div>
     <div class="pillars-grid">
       <article class="card pillar-card reveal">
         <span class="pillar-num" aria-hidden="true">01</span>
         <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24" style="stroke:white"><path d="M4 19V6a2 2 0 0 1 2-2h13v15"/><path d="M6 22a2 2 0 0 1-2-2v-1h15v3"/></svg></div>
-        <h3>Cours</h3>
-        <p>Tes matières, tes cours, ta structure. P1Planner s'adapte à ton programme, pas l'inverse.</p>
+        <h3>Ajoute tes matières et tes cours</h3>
+        <p>Tu construis ta liste à partir du programme de ta fac. Aucun contenu imposé : tu choisis les intitulés et l'organisation.</p>
       </article>
       <article class="card pillar-card reveal">
         <span class="pillar-num" aria-hidden="true">02</span>
         <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24" style="stroke:white"><path d="M21 12a9 9 0 1 1-3.2-6.9"/><polyline points="21 4 21 9 16 9"/></svg></div>
-        <h3>Méthode des tours</h3>
-        <p>Chaque passage sur un cours est noté : confiance, durée, support utilisé. Un historique fidèle de ton travail.</p>
+        <h3>Enregistre tes tours de révision</h3>
+        <p>Un tour, c'est un passage de travail sur un cours. Tu en gardes la date, ton niveau de confiance, le temps passé et le support utilisé.</p>
       </article>
       <article class="card pillar-card reveal">
         <span class="pillar-num" aria-hidden="true">03</span>
         <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24" style="stroke:white"><rect x="3" y="4" width="18" height="17" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01M12 14h.01M16 14h.01"/></svg></div>
-        <h3>Méthode des J</h3>
-        <p>Un rappel espacé optionnel qui te dit quand reprendre un cours — ou juste au feeling, si tu préfères planifier toi-même.</p>
+        <h3>Active les rappels si tu le souhaites</h3>
+        <p>La méthode des J propose des rappels de consolidation à plusieurs jours d'intervalle. Elle est facultative et distincte du suivi des tours.</p>
       </article>
       <article class="card pillar-card reveal">
         <span class="pillar-num" aria-hidden="true">04</span>
         <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24" style="stroke:white"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
-        <h3>Programme de la journée</h3>
-        <p>Le point de départ de chaque journée : ce qu'il y a à faire, ce qui est en retard, ce que tu as déjà validé.</p>
+        <h3>Organise tes journées</h3>
+        <p>Utilise le planning et ta liste quotidienne pour préparer ton travail et suivre ce que tu as terminé.</p>
       </article>
     </div>
   </div>
@@ -945,8 +976,8 @@ html{scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:var(--primary)
   <div class="wrap">
     <div class="section-head reveal">
       <span class="eyebrow warm">Démonstration</span>
-      <h2 class="h-section" id="demo-h">D'un cours travaillé à un trophée débloqué</h2>
-      <p class="section-lead">Le même parcours, du premier tour jusqu'aux statistiques — une version simplifiée de ce que tu retrouves vraiment dans le tableur.</p>
+      <h2 class="h-section" id="demo-h">Une révision, concrètement</h2>
+      <p class="section-lead">Voici un exemple de suivi sur un cours de biochimie, du travail enregistré aux prochaines reprises.</p>
     </div>
 
     <div class="demo-shell reveal">
@@ -975,24 +1006,24 @@ html{scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:var(--primary)
   <div class="wrap">
     <div class="section-head reveal">
       <span class="eyebrow">Le tableur</span>
-      <h2 class="h-section" id="tableur-h">Dense, rapide, productif</h2>
-      <p class="section-lead">Le cœur de P1Planner reste un tableur — pas un tableau de bord qui cache l'information. Vue compacte ou détaillée, tout se fait au clavier comme à la souris.</p>
+      <h2 class="h-section" id="tableur-h">Tes cours et leur suivi dans un même tableau</h2>
+      <p class="section-lead">Recherche un cours, filtre la liste ou trie les colonnes pour retrouver l'information dont tu as besoin. Tu peux afficher une synthèse ou le détail de chaque tour.</p>
     </div>
     <div class="value-grid">
       <div class="card value-card reveal">
         <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div>
-        <h3>Mode compact ou détaillé</h3>
-        <p>Passe en un clic d'une vue dense pour aller vite à une vue détaillée pour creuser un cours en particulier.</p>
+        <h3>L'essentiel ou le détail</h3>
+        <p>La vue compacte résume les tours effectués et le dernier passage. La vue détaillée affiche les informations de chaque tour de révision.</p>
       </div>
       <div class="card value-card reveal">
         <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24"><path d="M12 2a5 5 0 0 0-5 5v3H6a3 3 0 0 0-3 3v6a3 3 0 0 0 3 3h12a3 3 0 0 0 3-3v-6a3 3 0 0 0-3-3h-1V7a5 5 0 0 0-5-5Z"/></svg></div>
-        <h3>Rien ne se perd</h3>
-        <p>Chaque modification est enregistrée tout de suite, même hors ligne, puis synchronisée dès que possible : fermer l'onglet, perdre le réseau ou changer d'appareil n'efface jamais rien.</p>
+        <h3>Un suivi enregistré au fil du travail</h3>
+        <p>Tes modifications sont sauvegardées au fur et à mesure. Tu retrouves ton suivi en te reconnectant à ton compte.</p>
       </div>
       <div class="card value-card reveal">
         <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg></div>
-        <h3>Priorité automatique</h3>
-        <p>P1Planner repère tout seul les cours à reprendre en priorité : ressenti faible, retard qui s'accumule, ou trop peu de tours faits jusque-là.</p>
+        <h3>Des repères pour choisir quoi revoir</h3>
+        <p>Les cours à reprendre sont classés selon la confiance renseignée, le temps depuis la dernière révision et le nombre de tours effectués.</p>
       </div>
     </div>
   </div>
@@ -1002,31 +1033,31 @@ html{scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:var(--primary)
 <section class="section" id="tableur-j" aria-labelledby="j-h">
   <div class="wrap">
     <div class="section-head reveal">
-      <span class="eyebrow">Optionnel, mais efficace</span>
-      <h2 class="h-section" id="j-h">La méthode des J, à ton rythme</h2>
-      <p class="section-lead">Choisis un rythme de rappel espacé, ou reste au feeling — dans les deux cas, tes tours sont comptés normalement.</p>
+      <span class="eyebrow">Rappels facultatifs</span>
+      <h2 class="h-section" id="j-h">Prévoir quand reprendre un cours</h2>
+      <p class="section-lead">Avec la méthode des J, tu prévois de courts rappels de consolidation après un tour de révision. Choisis un rythme proposé ou définis tes propres intervalles. Tu peux aussi laisser cette option désactivée.</p>
     </div>
     <div class="j-presets">
       <div class="card j-preset-card reveal">
         <h3><svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px;color:var(--accent)"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8Z"/></svg>Rapproché</h3>
-        <div class="j-timeline"><span class="j-chip">J0</span><span class="j-chip">J1</span><span class="j-chip">J3</span><span class="j-chip">J5</span><span class="j-chip">J8</span><span class="j-chip">J14</span><span class="j-chip">J30</span></div>
+        <div class="j-timeline"><span class="j-chip">J1</span><span class="j-chip">J3</span><span class="j-chip">J5</span><span class="j-chip">J8</span><span class="j-chip">J14</span><span class="j-chip">J30</span><span class="j-chip">J40</span></div>
       </div>
       <div class="card j-preset-card reveal">
         <h3><svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px;color:var(--primary-2)"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>Équilibré</h3>
-        <div class="j-timeline"><span class="j-chip">J0</span><span class="j-chip">J1</span><span class="j-chip">J3</span><span class="j-chip">J7</span><span class="j-chip">J14</span><span class="j-chip">J30</span></div>
+        <div class="j-timeline"><span class="j-chip">J1</span><span class="j-chip">J3</span><span class="j-chip">J7</span><span class="j-chip">J14</span><span class="j-chip">J21</span><span class="j-chip">J30</span><span class="j-chip">J45</span></div>
       </div>
       <div class="card j-preset-card reveal">
         <h3><svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px;color:var(--success)"><path d="M4 12h16M4 6h10M4 18h7"/></svg>Espacé</h3>
-        <div class="j-timeline"><span class="j-chip">J0</span><span class="j-chip">J3</span><span class="j-chip">J9</span><span class="j-chip">J25</span><span class="j-chip">J50</span></div>
+        <div class="j-timeline"><span class="j-chip">J3</span><span class="j-chip">J9</span><span class="j-chip">J20</span><span class="j-chip">J35</span><span class="j-chip">J55</span><span class="j-chip">J80</span><span class="j-chip">J110</span></div>
       </div>
       <div class="card j-preset-card reveal">
         <h3><svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px;color:var(--text-muted)"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Personnalisé</h3>
-        <div class="j-timeline"><span class="j-chip">J0</span><span class="j-chip">?</span><span class="j-chip">?</span><span class="j-chip">…</span></div>
+        <div class="j-timeline"><span class="j-chip">Tes propres intervalles</span></div>
       </div>
     </div>
     <p class="pill-tag reveal" style="margin-top:1.5rem">
       <svg class="icon" viewBox="0 0 24 24" style="width:14px;height:14px"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
-      Aucun de ces rythmes n'est une vérité scientifique — ce sont des points de départ, ajustables cours par cours.
+      Les intervalles sont des points de départ, à adapter à tes besoins.
     </p>
   </div>
 </section>
@@ -1035,30 +1066,26 @@ html{scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:var(--primary)
 <section class="section" id="tableur-today" aria-labelledby="today-h" style="background:var(--bg-soft)">
   <div class="wrap" style="display:grid;gap:2.5rem;align-items:center;grid-template-columns:1fr">
     <div class="section-head reveal" style="margin-bottom:0">
-      <span class="eyebrow warm">Chaque matin</span>
-      <h2 class="h-section" id="today-h">Ouvrir, voir, travailler, valider</h2>
-      <p class="section-lead">Un J en retard ? Deux actions suffisent : <strong>Valider</strong> ou <strong>Reporter</strong>. Tout le reste — planning, stats, trophées — se met à jour automatiquement.</p>
+      <span class="eyebrow warm">Au quotidien</span>
+      <h2 class="h-section" id="today-h">Une liste pour préparer ta journée</h2>
+      <p class="section-lead">Note les cours à travailler, les entraînements à faire et les autres tâches prévues. Coche ce qui est terminé pour voir ce qu'il reste sur ta liste.</p>
     </div>
     <div class="card today-mock reveal" style="max-width:640px">
       <div class="today-item">
         <div class="today-check done"><svg class="icon" viewBox="0 0 24 24" style="width:14px;height:14px"><polyline points="20 6 9 17 4 12"/></svg></div>
-        <div class="today-item-body"><h5>Structure de l'ADN — Tour 3</h5><span>Fait à 9h12</span></div>
+        <div class="today-item-body"><h5>Revoir la structure de l'ADN</h5><span>Terminé</span></div>
       </div>
       <div class="today-item">
         <div class="today-check"></div>
-        <div class="today-item-body"><h5>Cycle de Krebs — J3 en retard</h5><span>Prévu il y a 2 jours</span></div>
-        <div class="today-item-actions">
-          <button class="btn btn-primary btn-sm" type="button">Valider</button>
-          <button class="btn btn-ghost btn-sm" type="button">Reporter</button>
-        </div>
+        <div class="today-item-body"><h5>Reprendre le cycle de Krebs</h5><span>À faire</span></div>
       </div>
       <div class="today-item">
         <div class="today-check"></div>
-        <div class="today-item-body"><h5>Entraînement — QCM Biochimie</h5><span>À faire aujourd'hui</span></div>
+        <div class="today-item-body"><h5>Faire les QCM de biochimie</h5><span>À faire</span></div>
       </div>
       <div class="today-item">
         <div class="today-check"></div>
-        <div class="today-item-body"><h5>Réplication de l'ADN — J1</h5><span>Prévu aujourd'hui</span></div>
+        <div class="today-item-body"><h5>Relire les erreurs du dernier entraînement</h5><span>À faire</span></div>
       </div>
     </div>
   </div>
@@ -1068,9 +1095,9 @@ html{scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:var(--primary)
 <section class="section" id="tableur-planning" aria-labelledby="planning-h">
   <div class="wrap" style="display:grid;gap:2.5rem;grid-template-columns:1fr">
     <div class="section-head reveal" style="margin-bottom:0">
-      <span class="eyebrow">Vue d'ensemble</span>
-      <h2 class="h-section" id="planning-h">Le planning, semaine après semaine</h2>
-      <p class="section-lead">Tu choisis le type de chaque journée — l'état (en cours, en retard, partiellement réalisée…) est calculé pour toi à partir de ce que tu as réellement fait.</p>
+      <span class="eyebrow">Le planning</span>
+      <h2 class="h-section" id="planning-h">Prépare tes révisions sur le calendrier</h2>
+      <p class="section-lead">Repère tes journées de cours, de révision, de repos et tes examens. Consulte les rappels prévus pour organiser ton travail autour de ces dates.</p>
     </div>
     <div class="card cal-mock reveal" style="max-width:520px">
       <div class="cal-grid">
@@ -1095,29 +1122,34 @@ html{scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:var(--primary)
 <section class="section" id="tableur-stats" aria-labelledby="stats-h" style="background:var(--bg-soft)">
   <div class="wrap">
     <div class="section-head reveal">
-      <span class="eyebrow warm">Progression</span>
-      <h2 class="h-section" id="stats-h">Des statistiques qui donnent envie de continuer</h2>
-      <p class="section-lead">Vois ta progression réelle, matière par matière, et débloque des trophées au fil de tes efforts.</p>
+      <span class="eyebrow warm">Ton avancée</span>
+      <h2 class="h-section" id="stats-h">Vois le travail accompli au fil des jours</h2>
+      <p class="section-lead">Cours travaillés, tours enregistrés, temps de révision : retrouve une vue d'ensemble de ton activité et de sa répartition entre les matières.</p>
     </div>
+    <p class="pill-tag reveal" style="margin-bottom:1rem">
+      <svg class="icon" viewBox="0 0 24 24" style="width:14px;height:14px"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
+      Exemple de suivi
+    </p>
     <div class="stats-grid">
       <div class="card stat-card reveal">
         <div class="num">62%</div><div class="label">Cours entamés</div>
         <div class="progress-bar"><span style="width:62%"></span></div>
       </div>
       <div class="card stat-card reveal">
-        <div class="num">184</div><div class="label">Tours réalisés</div>
+        <div class="num">184</div><div class="label">Tours enregistrés</div>
         <div class="progress-bar"><span style="width:74%"></span></div>
       </div>
       <div class="card stat-card reveal">
-        <div class="num">91%</div><div class="label">J réalisées à temps</div>
-        <div class="progress-bar"><span style="width:91%"></span></div>
+        <div class="num">3 jours</div><div class="label">Retard rattrapé</div>
+        <div class="progress-bar"><span style="width:60%"></span></div>
       </div>
       <div class="card stat-card reveal">
-        <div class="num">37h</div><div class="label">Travail cette semaine</div>
+        <div class="num">37h</div><div class="label">Temps enregistré cette semaine</div>
         <div class="progress-bar"><span style="width:80%"></span></div>
       </div>
     </div>
 
+    <p class="section-lead reveal" style="margin-top:2rem;margin-bottom:1rem">Des trophées marquent aussi certaines étapes de ton travail.</p>
     <div class="trophy-grid reveal" aria-label="Exemples de trophées">
       <div class="trophy unlocked"><svg class="icon" viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4Z"/><path d="M7 6H4a3 3 0 0 0 3 5M17 6h3a3 3 0 0 1-3 5"/></svg></div>
       <div class="trophy unlocked"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="6"/><path d="M9 14l-2 7 5-3 5 3-2-7"/></svg></div>
@@ -1135,30 +1167,30 @@ html{scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:var(--primary)
 <section class="section" id="outils" aria-labelledby="outils-h">
   <div class="wrap">
     <div class="section-head reveal">
-      <span class="eyebrow">Mémorisation</span>
-      <h2 class="h-section" id="outils-h">Tout ce qu'il faut pour retenir</h2>
-      <p class="section-lead">Flashcards, notes, cahiers d'erreurs et suivi d'entraînements — pour chaque cours ou chaque matière.</p>
+      <span class="eyebrow">Notes et entraînement</span>
+      <h2 class="h-section" id="outils-h">Garde une trace de ce que tu veux retravailler</h2>
+      <p class="section-lead">Une erreur de QCM, une explication à conserver, une notion à tester : garde ces éléments à côté de ton suivi de révision.</p>
     </div>
     <div class="tools-grid">
       <div class="card tool-card reveal">
         <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="11" rx="2"/><path d="M8 3h12a2 2 0 0 1 2 2v9"/></svg></div>
         <h3>Flashcards</h3>
-        <p>Recto/verso par cours, avec un rythme de révision qui s'adapte : raté, hésitant ou su. La Session Flash enchaîne les cartes dues, toutes matières confondues, en une seule session.</p>
+        <p>Crée tes cartes question-réponse et révise-les selon ce que tu as retenu. La Session Flash rassemble les cartes à revoir de plusieurs matières.</p>
       </div>
       <div class="card tool-card reveal">
         <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></div>
-        <h3>Notes</h3>
-        <p>Une note riche par cours ou par matière — mise en forme, images, tout ce qu'il faut garder sous la main.</p>
+        <h3>Notes de cours</h3>
+        <p>Garde tes explications, tes résumés et tes images dans une note associée au cours, pour les retrouver lors du prochain passage.</p>
       </div>
       <div class="card tool-card reveal">
         <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg></div>
         <h3>Cahier d'erreurs</h3>
-        <p>Ce qu'il faut retravailler, cours par cours — pour ne plus refaire la même erreur deux fois.</p>
+        <p>Rassemble les erreurs et les points à reprendre dans le cahier de la matière. Tu peux les relire avant un nouvel entraînement.</p>
       </div>
       <div class="card tool-card reveal">
         <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24"><path d="M6.5 6.5 3 3M17.5 6.5 21 3M6.5 17.5 3 21M17.5 17.5 21 21"/><rect x="8" y="8" width="8" height="8" rx="2"/></svg></div>
-        <h3>Entraînement</h3>
-        <p>Suis tes QCM, dossiers et plateformes externes : à faire, à refaire, relu — avec une note associée.</p>
+        <h3>Suivi des entraînements</h3>
+        <p>Note les QCM, dossiers ou séances réalisés avec tes supports habituels. Suis ce qui reste à faire, à refaire ou à relire, avec tes remarques.</p>
       </div>
     </div>
   </div>
@@ -1168,9 +1200,9 @@ html{scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:var(--primary)
 <section class="section" id="premium" aria-labelledby="premium-h">
   <div class="wrap">
     <div class="section-head reveal">
-      <span class="eyebrow warm">Premium</span>
+      <span class="eyebrow warm">Essai et tarifs</span>
       <h2 class="h-section" id="premium-h">15 jours gratuits, sans carte bancaire</h2>
-      <p class="section-lead">Ensuite, choisis ta formule.</p>
+      <p class="section-lead">Essaie P1Planner avec tes propres cours. Si tu souhaites continuer après l'essai, choisis la formule qui te convient.</p>
     </div>
 
     <div class="premium-shell reveal">
@@ -1214,15 +1246,14 @@ html{scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:var(--primary)
       </div>
 
       <div class="card" style="padding:clamp(1.5rem,3vw,2.25rem)">
-        <h3 style="font-size:1.15rem;margin-bottom:1rem">Comment ça fonctionne</h3>
+        <h3 style="font-size:1.15rem;margin-bottom:1rem">Après l'inscription</h3>
         <ul class="price-detail-list">
-          <li><svg class="icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>15 jours d'essai gratuit à l'inscription, sans carte bancaire.</li>
-          <li><svg class="icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>À la fin de l'essai, indique la date approximative de ton concours ou de tes examens — la durée maximale disponible en couvre le mois, sans marge ajoutée.</li>
-          <li><svg class="icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Choisis un paiement unique pour la durée qui te convient, ou un abonnement mensuel sans engagement.</li>
-          <li><svg class="icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>À l'expiration, ton accès repasse en lecture seule — tes données ne sont jamais supprimées.</li>
-          <li><svg class="icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Le prix et la durée sont toujours vérifiés côté serveur — jamais calculés uniquement par ton navigateur.</li>
+          <li><svg class="icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Ton essai de 15 jours commence à l'inscription, sans carte bancaire.</li>
+          <li><svg class="icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>La date approximative de tes examens détermine la durée maximale proposée, jusqu'à la fin du mois concerné.</li>
+          <li><svg class="icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Pour continuer, choisis un paiement unique pour la durée souhaitée ou un abonnement mensuel sans engagement.</li>
+          <li><svg class="icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>À l'expiration de ton accès, ton compte passe en lecture seule : tu peux consulter tes données, mais plus les modifier.</li>
         </ul>
-        <a href="auth.html#inscription" class="btn btn-warm" style="margin-top:1.5rem;width:100%">Commencer l'essai gratuit</a>
+        <a href="auth.html#inscription" class="btn btn-warm" style="margin-top:1.5rem;width:100%">Essayer gratuitement</a>
       </div>
     </div>
   </div>
@@ -1232,13 +1263,13 @@ html{scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:var(--primary)
 <section class="section" id="createur" aria-labelledby="createur-h" style="background:var(--bg-soft)">
   <div class="wrap">
     <div class="section-head reveal">
-      <span class="eyebrow">À l'origine du projet</span>
-      <h2 class="h-section" id="createur-h">Origines</h2>
+      <span class="eyebrow">À l'origine de P1Planner</span>
+      <h2 class="h-section" id="createur-h">Pourquoi j'ai créé ce tableur</h2>
     </div>
     <div class="creator-block reveal">
       <div class="creator-avatar" aria-hidden="true">JZ</div>
       <div>
-        <p class="section-lead" style="font-size:1.02rem;max-width:60ch">Je m'appelle Jean Zennaro. J'ai fait ma P1 en comprenant vite que l'organisation comptait presque autant que le travail lui-même — et je n'ai jamais trouvé d'outil qui colle vraiment à une année de concours. P1Planner, c'est celui que j'aurais voulu avoir.</p>
+        <p class="section-lead" style="font-size:1.02rem;max-width:60ch">Je m'appelle Jean Zennaro. Pendant ma P1, j'avais besoin de savoir où j'en étais dans les cours et quoi reprendre ensuite. J'ai créé P1Planner à partir de ce besoin : un tableur pour garder une trace du travail fait et organiser les révisions à venir.</p>
         <div class="creator-facts">
           <div class="creator-fact">
             <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8Z"/></svg></div>
@@ -1261,25 +1292,28 @@ html{scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:var(--primary)
          Titre démoté en h3 (sous-partie d'"Origines", plus un h2 de
          section à part entière). -->
     <div class="typix-block reveal" style="margin-top:3rem;padding-top:2.5rem;border-top:1px solid var(--border)">
-      <div>
+      <div style="grid-column:1/-1">
         <span class="typix-badge">
           <svg class="icon" viewBox="0 0 24 24" style="width:14px;height:14px"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
           Depuis TypixClin
         </span>
-        <h3 style="font-family:var(--font-display);font-weight:600;font-size:clamp(1.25rem,2.4vw,1.6rem);letter-spacing:-.01em;margin-bottom:.75rem">Une expérience qui accompagne déjà des étudiants</h3>
-        <p class="section-lead" style="max-width:56ch">TypixClin accompagne déjà des étudiants en médecine, de la P2 au D4, avec un tableur utilisé au quotidien. P1Planner en reprend ce qui marche vraiment — sauvegarde, notes, flashcards, statistiques — mais pour un tout autre programme : le tien, dès la P1.</p>
-        <p class="section-lead" style="max-width:56ch;margin-top:.75rem">P1Planner n'est pas une déclinaison de TypixClin : c'est un produit indépendant, avec ses propres comptes et ses propres données, construit à partir de cette expérience.</p>
+        <h3 style="font-family:var(--font-display);font-weight:600;font-size:clamp(1.25rem,2.4vw,1.6rem);letter-spacing:-.01em;margin-bottom:.75rem">Un autre outil du même créateur</h3>
+        <p class="section-lead" style="max-width:56ch">J'ai également créé TypixClin, un tableur destiné aux étudiants en médecine de la P2 à la D4. P1Planner s'appuie sur cette expérience, avec un programme que tu construis toi-même pour tes révisions en PASS ou en LAS.</p>
+        <p class="section-lead" style="max-width:56ch;margin-top:.75rem">TypixClin propose des outils pour la rédaction d'examens cliniques personnalisés, ainsi qu'un tableur en ligne pour organiser l'externat.</p>
+        <div class="hero-actions" style="margin-top:1.25rem;margin-bottom:0">
+          <a href="https://typixclin.fr/index.html#tools" target="_blank" rel="noopener" class="btn" style="background:#3b82f6;color:#fff;box-shadow:0 12px 30px -10px rgba(59,130,246,.55)">
+            <svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px;stroke:#fff"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
+            Découvrir les outils
+          </a>
+          <a href="https://typixclin.fr/index.html#tableur" target="_blank" rel="noopener" class="btn" style="background:#10b981;color:#fff;box-shadow:0 12px 30px -10px rgba(16,185,129,.55)">
+            <svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px;stroke:#fff"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+            Découvrir les tableurs
+          </a>
+        </div>
         <a href="https://typixclin.fr/index.html" target="_blank" rel="noopener" class="link-cta" style="margin-top:1.1rem">
           Découvrir TypixClin
           <svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M7 17 17 7M8 7h9v9"/></svg>
         </a>
-      </div>
-      <div class="card" style="padding:1.75rem">
-        <ul class="price-detail-list">
-          <li><svg class="icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Sauvegarde locale + cloud éprouvée, anti-perte de données</li>
-          <li><svg class="icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Notes, flashcards et statistiques déjà utilisées en conditions réelles</li>
-          <li><svg class="icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Comptes, données et paiements strictement séparés</li>
-        </ul>
       </div>
     </div>
   </div>
@@ -1289,41 +1323,41 @@ html{scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:var(--primary)
 <section class="section" id="faq" aria-labelledby="faq-h">
   <div class="wrap">
     <div class="section-head reveal">
-      <span class="eyebrow">Questions fréquentes</span>
-      <h2 class="h-section" id="faq-h">Tout ce qu'on nous demande</h2>
+      <span class="eyebrow">Avant de commencer</span>
+      <h2 class="h-section" id="faq-h">Questions fréquentes</h2>
     </div>
     <div class="faq-list reveal">
       <details class="faq-item">
-        <summary>L'essai de 15 jours nécessite-t-il une carte bancaire ?<svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px"><polyline points="6 9 12 15 18 9"/></svg></summary>
-        <div class="faq-a">Non. L'essai gratuit de 15 jours démarre dès l'inscription, sans aucune information de paiement.</div>
+        <summary>Est-ce que les cours sont déjà dans le tableur ?<svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px"><polyline points="6 9 12 15 18 9"/></svg></summary>
+        <div class="faq-a">Non. Tu ajoutes tes propres matières et intitulés de cours à partir du programme de ta fac. P1Planner sert à organiser et suivre tes révisions ; il ne fournit pas les supports de cours.</div>
       </details>
       <details class="faq-item">
-        <summary>Que se passe-t-il si je ne renouvelle pas mon accès Premium ?<svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px"><polyline points="6 9 12 15 18 9"/></svg></summary>
-        <div class="faq-a">Ton compte repasse en lecture seule : tu peux toujours consulter tes cours, notes et statistiques, mais plus les modifier. Aucune donnée n'est jamais supprimée.</div>
+        <summary>Qu'est-ce qu'un tour de révision ?<svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px"><polyline points="6 9 12 15 18 9"/></svg></summary>
+        <div class="faq-a">C'est un passage de travail sur un cours. Tu l'enregistres pour garder une trace de la date, de ton niveau de confiance, du temps passé et du support utilisé. Tu retrouves ensuite l'historique de tes passages sur ce cours.</div>
       </details>
       <details class="faq-item">
-        <summary>Qu'est-ce que la méthode des tours ?<svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px"><polyline points="6 9 12 15 18 9"/></svg></summary>
-        <div class="faq-a">C'est le cœur du tableur P1 : à chaque fois que tu travailles un cours, tu enregistres un "tour" avec ton niveau de confiance, la date, le temps passé et le support utilisé. P1Planner s'appuie sur cet historique pour faire remonter en priorité les cours dont le dernier tour est le plus ancien ou la confiance la plus basse.</div>
+        <summary>Est-ce que je dois utiliser la méthode des J ?<svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px"><polyline points="6 9 12 15 18 9"/></svg></summary>
+        <div class="faq-a">Non. Tu peux utiliser le tableur pour suivre tes cours et organiser ton travail sans activer les rappels. Si tu les actives, ils complètent le suivi des tours : valider un rappel ne compte pas comme un nouveau tour.</div>
       </details>
       <details class="faq-item">
-        <summary>Dois-je utiliser la méthode des J ?<svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px"><polyline points="6 9 12 15 18 9"/></svg></summary>
-        <div class="faq-a">Non, elle est entièrement facultative. Tu peux réviser au feeling ou planifier toi-même chaque cours — les tours restent comptés dans tous les cas.</div>
+        <summary>Est-ce que P1Planner contient des QCM ?<svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px"><polyline points="6 9 12 15 18 9"/></svg></summary>
+        <div class="faq-a">Le suivi des entraînements te permet de noter le travail réalisé avec tes propres supports ou plateformes. Il ne constitue pas une banque de QCM intégrée. Tu peux aussi garder tes erreurs dans tes notes et créer tes flashcards.</div>
       </details>
       <details class="faq-item">
-        <summary>Comment organiser son année de P1 avec P1Planner ?<svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px"><polyline points="6 9 12 15 18 9"/></svg></summary>
-        <div class="faq-a">L'organisation P1 tient en trois briques : le tableur liste tes cours et tes tours de révision, le planning répartit tes semaines matière par matière, et le Programme de la journée réunit chaque matin ce qu'il reste à faire — tours en retard, rappels J du jour, tâches et entraînements. Tout reste modifiable à tout moment, sans structure imposée.</div>
+        <summary>Faut-il une carte bancaire pour essayer ?<svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px"><polyline points="6 9 12 15 18 9"/></svg></summary>
+        <div class="faq-a">Non. Les 15 jours d'essai commencent dès l'inscription, sans information de paiement.</div>
       </details>
       <details class="faq-item">
-        <summary>Quel est le lien avec TypixClin ?<svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px"><polyline points="6 9 12 15 18 9"/></svg></summary>
-        <div class="faq-a">TypixClin est un autre produit, destiné aux étudiants de P2 à D4. P1Planner en reprend l'expérience technique mais fonctionne de façon totalement indépendante : comptes, données et paiements séparés.</div>
+        <summary>Que se passe-t-il à la fin de mon accès ?<svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px"><polyline points="6 9 12 15 18 9"/></svg></summary>
+        <div class="faq-a">Sans accès actif, ton compte passe en lecture seule. Tu peux consulter tes données, mais tu ne peux plus les modifier. Les formules disponibles sont présentées dans la section tarifs.</div>
       </details>
       <details class="faq-item">
-        <summary>Puis-je changer de formule Premium en cours de route ?<svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px"><polyline points="6 9 12 15 18 9"/></svg></summary>
-        <div class="faq-a">Oui, tu peux changer de formule à tout moment depuis ton espace compte. Les deux formules ne sont pas cumulables : tu as soit un paiement unique en cours, soit un abonnement mensuel actif, jamais les deux à la fois.</div>
+        <summary>Mon compte TypixClin fonctionne-t-il sur P1Planner ?<svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px"><polyline points="6 9 12 15 18 9"/></svg></summary>
+        <div class="faq-a">Non. P1Planner et TypixClin sont deux outils indépendants, avec des comptes, des données et des paiements séparés.</div>
       </details>
       <details class="faq-item">
-        <summary>P1Planner est-il réservé aux études de médecine ?<svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px"><polyline points="6 9 12 15 18 9"/></svg></summary>
-        <div class="faq-a">Non. Il est pensé d'abord pour la P1/PASS/LAS, mais comme le programme est entièrement défini par l'utilisateur, il fonctionne pour toute filière basée sur des révisions structurées : droit, pharmacie, prépa, autres concours.</div>
+        <summary>Puis-je l'utiliser pour une autre formation ?<svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px"><polyline points="6 9 12 15 18 9"/></svg></summary>
+        <div class="faq-a">Oui. P1Planner est pensé pour la PASS et la LAS, mais tu définis toi-même tes matières et tes cours. Tu peux donc l'utiliser pour un autre programme de révision.</div>
       </details>
     </div>
   </div>
@@ -1333,10 +1367,10 @@ html{scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:var(--primary)
 <section class="section">
   <div class="wrap">
     <div class="final-cta reveal">
-      <h2>Ton prochain tour commence maintenant.</h2>
-      <p>15 jours d'essai, sans carte bancaire. Crée ton programme, choisis ton rythme, et arrête d'avoir à te demander ce qu'il reste à réviser.</p>
+      <h2>Commence avec les cours que tu travailles en ce moment</h2>
+      <p>Ajoute une matière, quelques cours et tes premières révisions. Tu as 15 jours pour voir si P1Planner te convient, sans carte bancaire.</p>
       <div class="final-actions">
-        <a href="auth.html#inscription" class="btn btn-primary">Commencer gratuitement</a>
+        <a href="auth.html#inscription" class="btn btn-primary">Essayer gratuitement</a>
       </div>
     </div>
   </div>
@@ -1353,14 +1387,14 @@ html{scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:var(--primary)
           <span class="brand-mark" aria-hidden="true">P1</span>
           P1Planner
         </a>
-        <p>Planification de révisions pour la P1/PASS/LAS et au-delà — cours, tours, méthode des J et Programme de la journée.</p>
+        <p>Le tableur pour suivre tes cours, organiser tes révisions et garder tes notes en PASS et en LAS.</p>
       </div>
       <div class="footer-col">
         <h5>Produit</h5>
-        <a href="#methode">Méthode</a>
+        <a href="#methode">Fonctionnement</a>
         <a href="#tableur">Tableur</a>
         <a href="#outils">Outils</a>
-        <a href="#premium">Premium</a>
+        <a href="#premium">Tarifs</a>
       </div>
       <div class="footer-col">
         <h5>Compte</h5>
@@ -1370,7 +1404,7 @@ html{scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:var(--primary)
       </div>
       <div class="footer-col">
         <h5>Informations</h5>
-        <a href="#createur">Origines</a>
+        <a href="#createur">Le créateur</a>
         <a href="#faq">FAQ</a>
         <a href="mentions-legales.html">Mentions légales</a>
       </div>
@@ -1581,46 +1615,46 @@ html{scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:var(--primary)
   /* ---------- Demo stepper ---------- */
   var steps = [
     {
-      title: "Cours travaillé",
+      title: "Tu travailles un cours",
       hint: "Étape 1 / 7",
       icon: '<path d="M4 19V6a2 2 0 0 1 2-2h13v15"/><path d="M6 22a2 2 0 0 1-2-2v-1h15v3"/>',
-      body: "Tu ouvres « Glycolyse » et tu commences à le travailler."
+      body: "Tu viens de revoir la glycolyse avec ton support de cours. Tu ouvres sa ligne dans le tableur pour enregistrer ce passage."
     },
     {
-      title: "Tour validé",
+      title: "Tu enregistres un tour",
       hint: "Étape 2 / 7",
       icon: '<path d="M21 12a9 9 0 1 1-3.2-6.9"/><polyline points="21 4 21 9 16 9"/>',
-      body: "Tour 3 terminé : confiance 4/5, 55 minutes, avec une fiche de cours."
+      body: "Tu notes ton niveau de confiance, par exemple 4 sur 5, ainsi que le temps passé et le support utilisé. Ce passage rejoint l'historique du cours."
     },
     {
-      title: "Échéance J posée",
+      title: "Tu retrouves ton historique",
       hint: "Étape 3 / 7",
-      icon: '<rect x="3" y="4" width="18" height="17" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/>',
-      body: "La méthode des J calcule automatiquement la prochaine échéance : J7, dans une semaine."
+      icon: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>',
+      body: "Tu vois combien de fois tu as travaillé ce cours, à quelles dates et avec quel niveau de confiance."
     },
     {
-      title: "Planning mis à jour",
+      title: "Tu prévois des rappels",
       hint: "Étape 4 / 7",
-      icon: '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4"/>',
-      body: "La journée correspondante passe automatiquement en « Révision » dans le planning."
+      icon: '<rect x="3" y="4" width="18" height="17" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01M12 14h.01M16 14h.01"/>',
+      body: "Si la méthode des J est activée, une série de rappels peut être créée après ce tour, par exemple à J+1, J+3 et J+7."
     },
     {
-      title: "Programme du jour",
+      title: "Tu reprends le cours",
       hint: "Étape 5 / 7",
-      icon: '<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
-      body: "Le jour J, ce cours apparaît en tête du Programme de la journée, prêt à être travaillé."
+      icon: '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4"/>',
+      body: "Tu retrouves les rappels prévus dans le planning. Tu peux les effectuer ou les reporter : ils restent distincts des tours enregistrés."
     },
     {
-      title: "Statistiques",
+      title: "Tu gardes les points à retravailler",
       hint: "Étape 6 / 7",
-      icon: '<path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/>',
-      body: "Le temps de travail, le taux de J réalisées à temps et la progression de la matière se mettent à jour."
+      icon: '<circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/>',
+      body: "Tu ajoutes une difficulté dans tes notes ou crées une flashcard sur une notion à retenir."
     },
     {
-      title: "Trophée débloqué",
+      title: "Tu consultes ton avancée",
       hint: "Étape 7 / 7",
-      icon: '<path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4Z"/><path d="M7 6H4a3 3 0 0 0 3 5M17 6h3a3 3 0 0 1-3 5"/>',
-      body: "50 tours cumulés cette semaine : un nouveau trophée apparaît sur ton profil."
+      icon: '<path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/>',
+      body: "Tes statistiques récapitulent le travail enregistré. Tu retrouves aussi les cours à reprendre en priorité pour préparer la suite."
     }
   ];
 
@@ -1725,7 +1759,7 @@ html{scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:var(--primary)
   var priceTotal = document.getElementById("priceTotal");
   var tierRows = document.querySelectorAll("#tierRows tr");
 
-  // Barème lu depuis p1-billing.js (source unique, partagée avec
+  // Barème lu depuis p1-pricing-rules.js (source unique, partagée avec
   // functions/premiumPlans.js et comptepremium.html) — jamais dupliqué en
   // dur ici.
   function tierFor(months){

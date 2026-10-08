@@ -7,11 +7,16 @@
 <meta name="description" content="Gère ton essai gratuit et ton abonnement Premium P1Planner : durée, tarif, moyen de paiement.">
 <meta name="theme-color" content="#0a0e1a">
 <meta name="robots" content="noindex, nofollow">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%236d5bf0'/%3E%3Cstop offset='1' stop-color='%234f9dfb'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='url(%23g)'/%3E%3Ctext x='32' y='42' font-family='Arial,sans-serif' font-weight='700' font-size='26' fill='white' text-anchor='middle'%3EP1%3C/text%3E%3C/svg%3E">
+<link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="shortcut icon" href="/favicon.ico" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-title" content="P1Planner" />
+<link rel="manifest" href="/site.webmanifest" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=Fraunces:ital,opsz,wght@0,9..144,500;1,9..144,500&display=swap" rel="stylesheet">
-<script src="p1-billing.js"></script>
+<script src="p1-pricing-rules.js"></script>
 <style>
 /* ============================================================
    P1PLANNER — DESIGN TOKENS (identiques à index.html / auth.html)
@@ -139,6 +144,22 @@ h1,h2,h3{font-family:var(--font-display);font-weight:600;line-height:1.15;letter
 .top-bar-logout:hover{color:var(--text);background:rgba(255,255,255,.06)}
 .top-bar-logout .icon{width:16px;height:16px}
 
+/* Bug réel remonté par l'utilisateur (capture à l'appui) : sur mobile
+   étroit, le bouton "Mon tableur" et "Déconnexion" ne tenaient pas sur
+   une ligne à côté du logo — le texte du bouton "Mon tableur" se repliait
+   sur deux lignes (aucun white-space:nowrap sur .btn), rendant tout le
+   bandeau tassé et visuellement cassé contre le logo. Corrigé : le
+   libellé "Déconnexion" passe en icône seule (voir .top-bar-logout-label),
+   et les boutons restants ne replient plus jamais leur texte. */
+@media (max-width: 480px){
+  .brand{font-size:.98rem;gap:.5rem}
+  .brand-mark{width:28px;height:28px}
+  .top-bar-actions{gap:.3rem}
+  .top-bar-actions .btn{white-space:nowrap;padding:.5rem .85rem;font-size:.82rem;min-height:34px}
+  .top-bar-logout{padding:.55rem;gap:0}
+  .top-bar-logout-label{display:none}
+}
+
 main{padding-block:clamp(1.75rem,4vw,3rem) 5rem}
 .page-head{margin-bottom:1.75rem}
 .page-head h1{font-size:clamp(1.5rem,3vw,2rem);margin-top:.6rem}
@@ -177,6 +198,102 @@ main{padding-block:clamp(1.75rem,4vw,3rem) 5rem}
 .alert-info{background:var(--primary-soft);border-color:rgba(124,108,246,.35);color:#d6cffc}
 .alert-warning{background:var(--warning-soft);border-color:rgba(255,209,102,.35);color:#ffe6a3}
 .alert .icon{margin-top:1px;flex-shrink:0}
+
+/* ============================================================
+   PARRAINAGE (2026-09-26) — barre de progression, tuile cliquable,
+   liste des filleuls, notification dédiée (jamais #globalAlert).
+   ============================================================ */
+/* ============================================================
+   PARRAINAGE — refonte 2026-09-27 (même structure que le produit
+   frère : carte, progression, deux tuiles, bloc code + lien, bouton
+   de copie qui devient VERT avec une coche).
+   ============================================================ */
+.referral-section .icon{width:1em;height:1em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.referral-subtitle{color:var(--text-muted);font-size:.95rem;line-height:1.55;max-width:70ch;margin:-.2rem 0 1.4rem}
+.referral-subtitle strong{color:var(--text)}
+.referral-card{padding:1.75rem;display:flex;flex-direction:column;gap:1.75rem}
+.referral-progress-head{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.referral-progress-label{display:inline-flex;align-items:center;gap:.5rem;font-weight:700;color:var(--text)}
+.referral-progress-label .icon{color:var(--primary);font-size:1.1rem}
+.referral-progress-value{font-family:var(--font-display);font-weight:800;color:var(--primary)}
+.referral-progress-track{display:flex;gap:6px;margin-top:.75rem}
+.referral-progress-seg{flex:1;height:10px;border-radius:var(--radius-pill);background:var(--surface-2);border:1px solid var(--border);overflow:hidden}
+.referral-progress-fill{height:100%;width:0;border-radius:var(--radius-pill);background:var(--gradient-brand);transition:width .45s cubic-bezier(.34,1.2,.64,1)}
+.referral-progress-track.is-maxed .referral-progress-fill{background:var(--success)}
+.referral-progress-caption{margin:.6rem 0 0;color:var(--text-muted);font-size:.9rem}
+.referral-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem}
+.referral-stat{position:relative;text-align:center;padding:1.25rem 1rem;border-radius:var(--radius-md);background:var(--primary-soft);border:1px solid rgba(124,108,246,.28);transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+.referral-stat-icon{color:var(--primary);font-size:1.4rem;margin-bottom:.35rem;display:flex;justify-content:center}
+.referral-stat-value{font-family:var(--font-display);font-size:2.4rem;font-weight:800;color:var(--text);line-height:1.1}
+.referral-stat-label{margin-top:.4rem;font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);font-weight:700}
+.referral-stat-hint,.referral-stat-cta{display:none}
+.referral-stat.clickable{cursor:pointer}
+.referral-stat.clickable .referral-stat-hint{display:flex;position:absolute;top:.6rem;right:.6rem;width:24px;height:24px;border-radius:8px;align-items:center;justify-content:center;font-size:.75rem;color:var(--primary);background:rgba(124,108,246,.16);pointer-events:none;transition:background .18s,color .18s,transform .18s}
+.referral-stat.clickable .referral-stat-cta{display:inline-flex;align-items:center;gap:.4rem;margin-top:.75rem;padding:.3rem .75rem;border-radius:var(--radius-pill);font-family:var(--font-display);font-size:.72rem;font-weight:700;color:var(--primary);background:rgba(124,108,246,.12);border:1px solid rgba(124,108,246,.3);pointer-events:none;transition:all .18s}
+.referral-stat-cta-arrow{transition:transform .18s}
+.referral-stat.clickable:hover{transform:translateY(-3px);box-shadow:0 12px 26px -12px rgba(93,73,246,.55);border-color:rgba(124,108,246,.6)}
+.referral-stat.clickable:active{transform:translateY(-1px)}
+.referral-stat.clickable:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.referral-stat.clickable:hover .referral-stat-hint,.referral-stat.clickable:focus-visible .referral-stat-hint{background:var(--gradient-brand);color:#fff;transform:scale(1.08)}
+.referral-stat.clickable:hover .referral-stat-cta,.referral-stat.clickable:focus-visible .referral-stat-cta{background:var(--gradient-brand);color:#fff;border-color:transparent}
+.referral-stat.clickable:hover .referral-stat-cta-arrow{transform:translateX(3px)}
+.referral-code-label{display:block;font-weight:700;color:var(--text);margin-bottom:.6rem}
+.referral-code-display{color:var(--text-muted);font-size:.92rem;line-height:1.5;margin:0 0 .8rem}
+.referral-code-value{display:inline-block;font-weight:700;color:var(--text-muted);padding:.15rem .6rem;border-radius:8px}
+.referral-code-value.has-code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-weight:800;font-size:1.1rem;letter-spacing:.14em;color:var(--primary);background:var(--surface-2);border:1px solid var(--border)}
+.referral-code-row{display:flex;gap:.75rem;flex-wrap:wrap}
+.referral-code-input{flex:1 1 240px;min-width:0;padding:.75rem 1rem;border-radius:var(--radius-sm);border:1px solid var(--border-strong);background:var(--surface-2);color:var(--text);font-family:var(--font-body);font-size:.9rem}
+.referral-code-input:focus-visible{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(124,108,246,.25)}
+.referral-copy-btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;min-width:10.5rem;padding:.75rem 1.1rem;border-radius:var(--radius-sm);border:1px solid var(--border-strong);background:rgba(255,255,255,.04);color:var(--text);font:600 .9rem var(--font-body);cursor:pointer;white-space:nowrap;transition:transform .15s ease,box-shadow .15s ease,background .25s ease}
+.referral-copy-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 10px 24px -12px rgba(0,0,0,.6)}
+.referral-copy-btn.primary{background:var(--gradient-brand);color:#fff;border-color:transparent}
+.referral-copy-btn.copied,.referral-copy-btn.copied:hover:not(:disabled){background:var(--success);color:#0b1a12;border-color:transparent;transform:none;box-shadow:none}
+.referral-copy-btn:disabled{opacity:.5;cursor:not-allowed}
+.referral-copy-btn:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(124,108,246,.4)}
+.referral-copy-btn .spinner{display:none}
+.referral-copy-btn.is-loading .spinner{display:inline-block}
+.referral-apply-block{padding-top:1.5rem;border-top:1px solid var(--border)}
+.referral-check-status{margin:.6rem 0 0;font-size:.88rem;min-height:1.1em}
+@media (max-width:560px){.referral-card{padding:1.15rem}.referral-stats{gap:.65rem}.referral-stat-value{font-size:1.9rem}.referral-copy-btn{flex:1 1 100%}}
+@media (prefers-reduced-motion: reduce){.referral-progress-fill,.referral-stat,.referral-copy-btn{transition:none}.referral-spin{animation:none}}
+.referral-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.6rem;max-height:min(50vh,360px);overflow-y:auto}
+.referral-row{display:flex;align-items:center;gap:.85rem;flex-wrap:wrap;padding:.75rem .9rem;border-radius:var(--radius-md);background:var(--primary-soft);border:1px solid rgba(124,108,246,.24)}
+.referral-row-avatar{width:38px;height:38px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;color:#fff;background:var(--gradient-brand)}
+.referral-row-avatar .icon{width:1.05em;height:1.05em}
+.referral-row-info{flex:1 1 8rem;min-width:0;display:flex;flex-direction:column;gap:.1rem}
+.referral-row-name{font-weight:700;color:var(--text);overflow-wrap:anywhere}
+.referral-row-name.unknown{font-weight:500;font-style:italic;color:var(--text-dim)}
+.referral-row-date{font-size:.74rem;color:var(--text-dim)}
+.referral-row-actions{display:flex;align-items:center;gap:.6rem;flex-shrink:0;margin-left:auto}
+.referral-row-code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-weight:800;letter-spacing:.1em;font-size:.85rem;color:var(--primary);background:var(--surface-2);padding:.2rem .55rem;border-radius:8px}
+.referral-row-code.none{font-family:var(--font-body);font-weight:500;font-style:italic;font-size:.78rem;letter-spacing:0;color:var(--text-dim);background:none;padding:0}
+.referral-row-copy{flex-shrink:0;min-width:6.5rem;padding:.45rem .8rem;font-size:.8rem}
+.referral-modal-state{display:flex;flex-direction:column;align-items:center;text-align:center;gap:.6rem;padding:2rem 1rem;color:var(--text-dim);font-size:.9rem}
+.referral-modal-state .icon{width:1.7rem;height:1.7rem;color:var(--primary)}
+.referral-modal-state.is-error .icon{color:var(--danger)}
+.referral-spin{animation:referral-spin .9s linear infinite}
+@keyframes referral-spin{to{transform:rotate(360deg)}}
+.referral-modal-more{margin:.7rem 0 0;text-align:center;font-size:.78rem;color:var(--text-dim)}
+@media (max-width:480px){.referral-row-actions{flex:1 1 100%;flex-direction:column;align-items:stretch;margin-left:0}.referral-row-code{text-align:center}.referral-row-copy{width:100%}}
+.referral-toast{
+  position:fixed;right:1rem;bottom:1rem;z-index:140;max-width:min(380px,calc(100vw - 2rem));
+  display:none;align-items:flex-start;gap:.65rem;padding:.9rem 1rem;border-radius:var(--radius-sm);
+  background:var(--primary-soft);border:1px solid rgba(124,108,246,.35);color:#d6cffc;font-size:.87rem;
+  box-shadow:0 10px 30px rgba(0,0,0,.35);
+}
+.referral-toast.is-visible{display:flex}
+.referral-toast strong{display:block;margin-bottom:.15rem}
+.referral-toast-close{background:none;border:0;color:inherit;cursor:pointer;font-size:1.1rem;line-height:1;padding:.1rem .3rem;margin-left:auto}
+/* Notice de réactivation (onglet "Abonnement mensuel" quand l'abonnement en
+   cours est résilié) — même langage visuel que .alert-warning. */
+.reactivate-notice{
+  display:flex;align-items:flex-start;gap:.65rem;padding:.9rem 1.1rem;border-radius:var(--radius-sm);
+  font-size:.87rem;margin-bottom:1.2rem;border:1px solid rgba(255,209,102,.35);
+  background:var(--warning-soft);color:#ffe6a3;
+}
+.reactivate-notice .icon{margin-top:1px;flex-shrink:0}
+.reactivate-notice p{margin:0;line-height:1.5}
+.reactivate-notice strong{color:#fff}
 
 /* ============================================================
    COMPTE / STATUT
@@ -436,9 +553,9 @@ main{padding-block:clamp(1.75rem,4vw,3rem) 5rem}
     </a>
     <div class="top-bar-actions">
       <a href="tableur.html" class="btn btn-primary btn-sm">Mon tableur</a>
-      <button type="button" class="top-bar-logout" id="btnLogout">
+      <button type="button" class="top-bar-logout" id="btnLogout" aria-label="Déconnexion">
         <svg class="icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
-        Déconnexion
+        <span class="top-bar-logout-label">Déconnexion</span>
       </button>
     </div>
   </div>
@@ -465,8 +582,8 @@ main{padding-block:clamp(1.75rem,4vw,3rem) 5rem}
     <div id="stateSignedOut" class="section-block" style="display:none">
       <div class="card state-card">
         <div class="state-icon"><svg class="icon" viewBox="0 0 24 24" style="width:26px;height:26px"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></div>
-        <h2>Connecte-toi pour accéder à ton abonnement</h2>
-        <p>Cette page est réservée à ton espace personnel P1Planner.</p>
+        <h2 id="signedOutTitle">Connecte-toi pour accéder à ton abonnement</h2>
+        <p id="signedOutText">Cette page est réservée à ton espace personnel P1Planner.</p>
         <a href="auth.html?redirect=%2Fcomptepremium.html" class="btn btn-primary">Se connecter</a>
       </div>
     </div>
@@ -520,7 +637,7 @@ main{padding-block:clamp(1.75rem,4vw,3rem) 5rem}
               <p class="status-desc" style="margin-bottom:1rem;max-width:60ch">Indique cette date pour savoir combien de mois tu peux choisir — le tarif est dégressif : plus tu prends de mois d'un coup, moins c'est cher par mois.</p>
               <div class="exam-date-row">
                 <div class="field date-field">
-                  <label for="examDateBtn">Date approximative du concours ou des examens S2</label>
+                  <label for="examDateBtn">Date approximative du concours ou des examens S2 <span style="color:var(--text-muted);font-weight:400">(optionnel)</span></label>
                   <div class="date-picker">
                     <button type="button" class="date-picker-btn" id="examDateBtn" aria-haspopup="dialog" aria-expanded="false">
                       <svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
@@ -587,15 +704,37 @@ main{padding-block:clamp(1.75rem,4vw,3rem) 5rem}
           </div>
 
           <div id="recurrentPlanBlock" style="display:none">
-            <div class="price-row"><span class="price-amount">3,00&nbsp;€</span><span class="price-suffix">/ mois</span></div>
-            <p class="status-desc" style="font-size:.85rem">Sans engagement — résiliable à tout moment.</p>
-            <button type="button" class="btn btn-warm" id="btnBuyRecurrent" style="width:100%;margin-top:1.4rem">Continuer</button>
+            <!-- Abonnement mensuel déjà résilié (cancelAtPeriodEnd) : un
+                 nouveau Checkout est refusé côté serveur tant que l'ancien
+                 abonnement Stripe existe encore (hasBlockingStripeSubscription
+                 sans ignoreCanceling pour "monthly", functions/index.js) — au
+                 lieu de laisser cliquer "Continuer" et retomber sur l'erreur
+                 générique "Tu as déjà un abonnement en cours.", on explique
+                 directement la vraie marche à suivre : réactiver l'abonnement
+                 existant depuis le portail Stripe (Gérer mon abonnement),
+                 sans en recréer un second. Demande explicite utilisateur. -->
+            <div class="reactivate-notice" id="recurrentReactivateNotice" style="display:none">
+              <svg class="icon" viewBox="0 0 24 24" style="width:20px;height:20px;stroke:currentColor"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 3v5h5"/></svg>
+              <p>Ton abonnement mensuel est résilié mais reste actif jusqu'à son terme — il n'y a rien à racheter. Pour annuler cette résiliation et reprendre le renouvellement automatique, utilise <strong>« Gérer mon abonnement »</strong> ci-dessous.</p>
+            </div>
+            <div id="recurrentBuyBlock">
+              <div class="price-row"><span class="price-amount">3,00&nbsp;€</span><span class="price-suffix">/ mois</span></div>
+              <p class="status-desc" style="font-size:.85rem">Sans engagement — résiliable à tout moment.</p>
+              <button type="button" class="btn btn-warm" id="btnBuyRecurrent" style="width:100%;margin-top:1.4rem">Continuer</button>
+            </div>
           </div>
           </div>
 
           <ul class="info-list">
             <li><svg class="icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Le prix et la durée sont toujours recalculés et confirmés par nos serveurs.</li>
             <li><svg class="icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Les deux formules ne sont pas cumulables : tu peux changer à tout moment, mais tu n'as jamais un paiement unique et un abonnement mensuel actifs en même temps.</li>
+            <!-- Demande explicite : lever l'ambiguïté quand un essai gratuit
+                 est encore en cours (le badge "X jours restants" pourrait
+                 laisser croire à tort que l'achat n'active l'accès qu'à la
+                 fin de l'essai — le serveur démarre en réalité toujours
+                 premiumUntil à partir de MAINTENANT, voir
+                 handleOneTimePurchase() dans functions/index.js). -->
+            <li><svg class="icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Un paiement unique démarre immédiatement à la confirmation du paiement, aujourd'hui — même pendant un essai gratuit encore en cours, il ne se met jamais en attente de sa fin.</li>
             <li><svg class="icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>À l'expiration, ton accès repasse en lecture seule — aucune donnée n'est jamais supprimée.</li>
           </ul>
         </div>
@@ -609,6 +748,67 @@ main{padding-block:clamp(1.75rem,4vw,3rem) 5rem}
           <button type="button" class="btn btn-ghost" id="btnManageSubscription">
             <span class="btn-label">Ouvrir le portail de facturation</span><span class="spinner" aria-hidden="true"></span>
           </button>
+        </div>
+      </section>
+
+      <!-- ================= PARRAINAGE (refonte 2026-09-27) ================= -->
+      <section class="section-block referral-section" id="referralSection" aria-labelledby="referralHeading" style="display:none">
+        <h2 id="referralHeading">Parrainage</h2>
+        <p class="referral-subtitle">Partage ton code : <strong>3 filleuls actifs</strong> (compte créé et adresse email confirmée) t'offrent <strong>1 mois</strong>, et <strong>6 filleuls actifs</strong> t'en offrent <strong>3 au total</strong>. Au-delà de 6, rien de plus — et ces mois s'ajoutent à ce que tu as déjà.</p>
+
+        <div class="card referral-card">
+          <div class="referral-progress">
+            <div class="referral-progress-head">
+              <span class="referral-progress-label"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M5 12v8a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-8"/><path d="M7.5 8a2.5 2.5 0 1 1 0-5C10 3 12 8 12 8s2-5 4.5-5a2.5 2.5 0 1 1 0 5"/></svg><span id="referralProgressLabel">3 filleuls actifs = 1 mois offert</span></span>
+              <span class="referral-progress-value" id="referralFraction">0 / 3</span>
+            </div>
+            <div class="referral-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="6" aria-valuenow="0" aria-label="Progression vers les paliers de parrainage" id="referralBar">
+              <div class="referral-progress-seg" id="referralSeg1"><div class="referral-progress-fill" id="referralBarFill1"></div></div>
+              <div class="referral-progress-seg" id="referralSeg2"><div class="referral-progress-fill" id="referralBarFill2"></div></div>
+            </div>
+            <p class="referral-progress-caption" id="referralNextTier"></p>
+          </div>
+
+          <div class="referral-stats">
+            <div class="referral-stat" id="referralActiveTile">
+              <span class="referral-stat-hint" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></span>
+              <div class="referral-stat-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c.6-3.3 3-5 6-5s5.4 1.7 6 5"/><path d="M17 11a2.6 2.6 0 1 0 0-5.2M18.5 15.2c1.6.6 2.6 2 3 4.8"/></svg></div>
+              <div class="referral-stat-value" id="referralActiveCountValue">0</div>
+              <div class="referral-stat-label">Filleuls actifs</div>
+              <div class="referral-stat-cta" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg><span>Voir la liste</span><svg class="icon referral-stat-cta-arrow" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
+            </div>
+            <div class="referral-stat">
+              <div class="referral-stat-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg></div>
+              <div class="referral-stat-value" id="referralMonthsGrantedValue">0</div>
+              <div class="referral-stat-label">Mois offerts (au total)</div>
+            </div>
+          </div>
+
+          <div class="referral-code-block">
+            <label class="referral-code-label" for="referralLinkInput">Ton lien de parrainage</label>
+            <p class="referral-code-display">Ton code : <span class="referral-code-value" id="referralCodeBox">…</span></p>
+            <div class="referral-code-row">
+              <input type="text" id="referralLinkInput" class="referral-code-input" readonly value="Chargement…" aria-label="Lien de parrainage">
+              <button type="button" class="referral-copy-btn primary" id="btnCopyReferralLink" disabled>
+                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg><span class="referral-copy-btn-label">Copier le lien</span>
+              </button>
+              <button type="button" class="referral-copy-btn" id="btnCopyReferralCode" disabled>
+                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg><span class="referral-copy-btn-label">Copier le code</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="referral-apply-block" id="referralApplyBlock" style="display:none">
+            <label class="referral-code-label" for="referralApplyInput">Quelqu'un t'a fait découvrir P1Planner ?</label>
+            <p class="referral-code-display">Indique son code de parrainage : cela peut lui offrir plusieurs mois. Tu peux le faire une seule fois, à tout moment, et c'est définitif. Ton prénom et ton nom seront communiqués à la personne qui te parraine.</p>
+            <div class="referral-code-row">
+              <input type="text" id="referralApplyInput" class="referral-code-input" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="6" placeholder="Ex. AB23DE" aria-label="Code de parrainage" style="text-transform:uppercase;letter-spacing:.06em">
+              <button type="button" class="referral-copy-btn primary" id="btnApplyReferralCode">
+                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg><span class="referral-copy-btn-label">Valider le code</span><span class="spinner" aria-hidden="true"></span>
+              </button>
+            </div>
+            <p id="referralApplyMessage" class="referral-check-status" style="display:none" role="status"></p>
+          </div>
         </div>
       </section>
 
@@ -646,6 +846,38 @@ main{padding-block:clamp(1.75rem,4vw,3rem) 5rem}
       </button>
     </div>
   </div>
+</div>
+
+<!-- ================= MODALE FILLEULS (parrainage) ================= -->
+<div class="modal-backdrop" id="referralModal" role="dialog" aria-modal="true" aria-labelledby="referralModalTitle">
+  <div class="card modal-box">
+    <div class="modal-head">
+      <div class="modal-icon" aria-hidden="true">
+        <svg class="icon" viewBox="0 0 24 24" style="width:20px;height:20px;stroke:currentColor"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c.6-3.3 3-5 6-5s5.4 1.7 6 5"/><path d="M17 11a2.6 2.6 0 1 0 0-5.2M18.5 15.2c1.6.6 2.6 2 3 4.8"/></svg>
+      </div>
+      <h2 id="referralModalTitle">Tes filleuls actifs</h2>
+      <button type="button" class="modal-close" id="referralModalCloseX" aria-label="Fermer">
+        <svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p class="status-desc" id="referralModalSummary" style="margin:0 0 .6rem"></p>
+      <p class="status-desc" id="referralModalHelp" style="margin:0 0 .9rem;display:none">Pour les parrainer à ton tour, copie le code du compte de ton choix puis colle-le dans le champ « Quelqu'un t'a fait découvrir P1Planner… ? » de cette page. Un seul code peut être renseigné, et il est définitif.</p>
+      <div id="referralModalState" class="status-desc" role="status" style="display:none"></div>
+      <button type="button" class="btn btn-ghost" id="referralModalRetry" style="display:none;margin-bottom:.8rem"><span class="btn-label">Réessayer</span></button>
+      <ul id="referralModalList" class="referral-list"></ul>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn btn-ghost" id="referralModalClose">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= NOTIFICATION NOUVEAU FILLEUL (dédiée, n'écrase jamais #globalAlert) ================= -->
+<div class="referral-toast" id="referralToast" role="status" aria-live="polite">
+  <svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px;flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>
+  <div><strong id="referralToastTitle"></strong><span id="referralToastText"></span></div>
+  <button type="button" class="referral-toast-close" id="referralToastClose" aria-label="Fermer la notification">×</button>
 </div>
 
 <!-- ================= MODALE CGV ================= -->
@@ -698,6 +930,9 @@ main{padding-block:clamp(1.75rem,4vw,3rem) 5rem}
 
       <h3>8. Droit applicable</h3>
       <p>Les présentes conditions générales de vente sont soumises au droit français. En cas de litige et à défaut de résolution amiable, les tribunaux français sont seuls compétents.</p>
+
+      <h3>9. Programme de parrainage</h3>
+      <p>Le parrainage est facultatif et gratuit. Un filleul est actif dès que son compte est créé avec ton code, que son adresse email est vérifiée et qu'il s'est connecté. Un compte ne peut renseigner qu'un seul code de parrainage, une seule fois : à l'inscription ou plus tard depuis « Mon abonnement », et ce choix est définitif. Ton prénom et ton nom, ainsi que ton code de parrainage, sont communiqués à la personne qui te parraine (notification puis liste de ses filleuls). Le parrain gagne 1 mois offert à 3 filleuls actifs, puis 3 mois offerts au total à 6 filleuls actifs (au-delà, rien de plus) ; ces mois s'ajoutent à son accès existant. Les mois offerts n'ont aucune valeur monétaire et ne sont ni remboursables ni échangeables. P1Planner peut refuser ou annuler une récompense obtenue par fraude ou au moyen de comptes multiples.</p>
 
       <p class="cgv-modal-updated">Dernière mise à jour : <span id="cgvUpdateDate"></span>.</p>
     </div>
@@ -826,6 +1061,18 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
     Object.keys(states).forEach(function (k) { states[k].style.display = k === name ? "" : "none"; });
   }
 
+  // Variante rassurante de l'écran "non connecté", utilisée uniquement au
+  // retour de Stripe (?success=true) quand la session s'avère réellement
+  // perdue après le délai de grâce ci-dessus — jamais annoncer "paiement
+  // réussi" ici (seul Firestore/le webhook fait foi), mais ne pas non plus
+  // laisser croire que le paiement a disparu simplement parce qu'il faut
+  // se reconnecter.
+  function showSignedOutAfterPayment() {
+    $("signedOutTitle").textContent = "Reconnecte-toi pour retrouver ton compte";
+    $("signedOutText").textContent = "Ton paiement a bien été transmis à Stripe — reconnecte-toi pour voir ton accès mis à jour ici.";
+    showState("signedOut");
+  }
+
   /* ============================================================
      RENDU DU STATUT — testable indépendamment de Firebase
      (normalized = { displayName, email, createdAt, premium:
@@ -887,9 +1134,14 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
     var heroLeft = $("statusHeroLeft"), heroTag = $("statusHeroTag"), desc = $("statusDesc"), metrics = $("statusDates");
     metrics.innerHTML = "";
     var examDateBlock = $("examDateBlock"), planSection = $("planSection"), manageSection = $("manageSection");
+    var recurrentReactivateNotice = $("recurrentReactivateNotice"), recurrentBuyBlock = $("recurrentBuyBlock");
     examDateBlock.style.display = "none";
     planSection.style.display = "none";
     manageSection.style.display = "none";
+    // Par défaut, l'onglet "Abonnement mensuel" propose l'achat normal —
+    // seul le cas résilié (plus bas) bascule vers la notice de réactivation.
+    recurrentReactivateNotice.style.display = "none";
+    recurrentBuyBlock.style.display = "";
 
     function setTone(tone) {
       heroLeft.className = "status-hero-left tone-" + tone;
@@ -953,7 +1205,17 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
         // l'affichage bloquait). Un nouveau paiement unique confirmé
         // remplace directement l'accès en cours ; l'abonnement résilié,
         // déjà voué à s'arrêter, ne fait ensuite plus rien à son terme.
+        // examDateBlock (date de concours) doit réapparaître avec le reste
+        // de la formule paiement unique — oubli initial, corrigé sur retour
+        // utilisateur (le champ de date avait disparu du tout).
+        examDateBlock.style.display = "";
         planSection.style.display = "";
+        // L'onglet "Abonnement mensuel" ne doit pas proposer un nouveau
+        // Checkout ici : le serveur le refuserait (l'ancien abonnement
+        // Stripe existe encore tant que la période payée n'est pas
+        // terminée) — on explique la vraie marche à suivre à la place.
+        recurrentReactivateNotice.style.display = "flex";
+        recurrentBuyBlock.style.display = "none";
       } else if (stillInFreeTrial) {
         // Cas : abonnement mensuel confirmé pendant l'essai — pas encore
         // prélevé. Sans ce cas, "Jours restants : 15 jours" à côté d'un
@@ -968,11 +1230,14 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
         manageSection.style.display = "";
       } else {
         setTone("active");
-        heroTag.textContent = isMonthly ? "Abonné · mensuel" : "Premium actif";
+        var isReferralGift = p.planType === "referral";
+        heroTag.textContent = isMonthly ? "Abonné · mensuel" : (isReferralGift ? "Accès offert" : "Premium actif");
         desc.textContent = isMonthly
           ? "Ton abonnement mensuel est actif, résiliable à tout moment."
-          : "Ton accès Premium est actif — paiement unique, aucun renouvellement automatique : aucun prélèvement ne sera fait à l'expiration.";
-        addMetric("Statut", isMonthly ? "Abonnement mensuel" : "Premium actif");
+          : (isReferralGift
+            ? "Ton accès est offert grâce au parrainage — aucun prélèvement ne sera fait à l'expiration."
+            : "Ton accès Premium est actif — paiement unique, aucun renouvellement automatique : aucun prélèvement ne sera fait à l'expiration.");
+        addMetric("Statut", isMonthly ? "Abonnement mensuel" : (isReferralGift ? "Accès offert (parrainage)" : "Premium actif"));
         addMetric("Accès jusqu'au", fmtDate(p.accessEnd));
         addMetric("Jours restants", daysLeftHtml(p.accessEnd));
         // Demande explicite : plus de changement de formule proposé tant
@@ -1006,7 +1271,7 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
   var monthsRange = $("monthsRange"), priceAmount = $("priceAmount"), priceMonths = $("priceMonths"),
       priceTotal = $("priceTotal"), tierRows = document.querySelectorAll("#tierRows tr"), maxMonthsLabel = $("maxMonthsLabel");
 
-  // Barème lu depuis p1-billing.js (source unique, partagée avec
+  // Barème lu depuis p1-pricing-rules.js (source unique, partagée avec
   // functions/premiumPlans.js) — jamais dupliqué en dur ici, pour ne
   // jamais pouvoir afficher un prix différent de celui réellement facturé.
   function tierKeyFor(months) {
@@ -1201,7 +1466,7 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
   })();
 
   /* ============================================================
-     DATE DE CONCOURS — estimation client immédiate (p1-billing.js,
+     DATE DE CONCOURS — estimation client immédiate (p1-pricing-rules.js,
      source unique partagée avec functions/premiumPlans.js), confirmée et
      ENREGISTRÉE par la Cloud Function saveExamDate (seule source de
      vérité pour maxMonths — jamais une valeur calculée uniquement côté
@@ -1252,35 +1517,33 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
      être ouverts l'un par-dessus l'autre (CGV cliqué depuis le
      consentement) : compteur pour ne déverrouiller qu'à la fermeture du
      DERNIER des deux, jamais au milieu.
-     Bug réel corrigé (3 essais) : passer overflow:hidden sur <html> (1er
-     essai) casse position:sticky sur `#topBar` — le header "disparaissait"
-     (le navigateur perd la référence de scroll de son ancêtre défilant tant
-     que <html> est en overflow:hidden). Puis `scrollbar-gutter:auto` (2e
-     essai, pour la piste de la barre du modal CGV) réintroduisait le
-     décalage horizontal que `scrollbar-gutter:stable` évitait justement
-     (la disparition RÉELLE de la barre élargit le viewport). 3e essai :
-     compenser via padding-right sur `body` ET sur `#topBar` — DOUBLE
-     compensation (`#topBar` est en position:sticky, donc dans le flux
-     normal, il hérite déjà de la largeur réduite de `body` ; lui ajouter
-     SON PROPRE padding-right en plus décalait tout de 10px de trop vers la
-     gauche, mesuré précisément : `#topBar` finissait à 1117px de large au
-     lieu des 1127px attendus). Correction finale : compenser UNIQUEMENT
-     `body`, jamais `#topBar` séparément. */
+     Bug réel corrigé (3 essais, puis un 4e après réapparition) : passer
+     overflow:hidden sur <html> (1er essai) casse position:sticky sur
+     `#topBar` — le header "disparaissait" (le navigateur perd la référence
+     de scroll de son ancêtre défilant tant que <html> est en
+     overflow:hidden). Puis `scrollbar-gutter:auto` (2e essai) réintroduisait
+     un décalage horizontal. 3e essai : compenser la largeur de la barre de
+     défilement via padding-right sur `body` — fonctionnait à l'époque, mais
+     a régressé (4e bug, remonté par l'utilisateur) : `body` a par ailleurs
+     `overflow-x:hidden` en permanence (voir CSS, section HEADER) — combiné
+     à `scrollbar-gutter:stable` sur `<html>`, la largeur RÉELLE de `body`
+     (mesurée via getBoundingClientRect sur `#topBar`, qui la reflète en
+     position:sticky) NE CHANGE PLUS DU TOUT quand on bascule
+     `body.style.overflow`, contrairement à l'hypothèse initiale (vérifié en
+     direct : `#topBar` reste à 1127px avec overflow seul, mais retombe à
+     1117px dès qu'on ajoute le padding-right — le padding compense un
+     élargissement qui, sur cette page, n'a jamais lieu). Correction finale :
+     ne plus toucher à `paddingRight` du tout, seul `overflow` change. */
   var _scrollLockCount = 0;
   function lockPageScroll() {
     _scrollLockCount++;
     if (_scrollLockCount > 1) return; // déjà verrouillé par l'autre modal
-    var scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
     document.body.style.overflow = "hidden";
-    if (scrollbarWidth > 0) {
-      document.body.style.paddingRight = scrollbarWidth + "px";
-    }
   }
   function unlockPageScroll() {
     _scrollLockCount = Math.max(0, _scrollLockCount - 1);
     if (_scrollLockCount === 0) {
       document.body.style.overflow = "";
-      document.body.style.paddingRight = "";
     }
   }
 
@@ -1455,13 +1718,42 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
     showState("signedOut");
     showAlert("error", "Configuration Firebase manquante — ce projet P1Planner n'est pas encore relié à un vrai projet Firebase (voir docs/ARCHITECTURE.md).");
   } else {
+    // Bug réel remonté par l'utilisateur (déstabilisant, pas juste
+    // cosmétique) : au retour de Stripe Checkout (?success=true), la page
+    // se recharge entièrement sur une nouvelle URL — certains navigateurs
+    // (Safari notamment, en sortie d'un aller-retour cross-site vers
+    // checkout.stripe.com) mettent un instant de plus à restaurer la
+    // session Firebase persistée, et le tout premier onAuthStateChanged
+    // peut alors arriver avec `user: null` avant de se corriger. Sans
+    // filet, l'utilisateur qui vient de payer atterrit directement sur
+    // "Connecte-toi", ce qui laisse croire à tort que le paiement a
+    // disparu. Un seul re-essai après un court délai suffit à absorber
+    // cette course ; si la session est réellement perdue, on retombe sur
+    // l'écran de connexion, mais avec un message rassurant plutôt que
+    // générique (voir plus bas).
+    var authRetriedForSuccess = false;
     onAuthStateChanged(auth, function (user) {
       if (!user || !user.emailVerified) {
-        showState("signedOut");
+        if (params.get("success") === "true" && !authRetriedForSuccess) {
+          authRetriedForSuccess = true;
+          window.setTimeout(function () {
+            if (!auth.currentUser || !auth.currentUser.emailVerified) {
+              showSignedOutAfterPayment();
+            }
+          }, 1500);
+          return;
+        }
+        if (params.get("success") === "true") {
+          showSignedOutAfterPayment();
+        } else {
+          showState("signedOut");
+        }
         return;
       }
       showState("account");
       if (params.get("success") === "true") { startActivationPoll(user.uid); }
+      referralUid = user.uid;
+      loadReferralInfo();
 
       // Deux documents distincts (voir firestore.rules / docs/ARCHITECTURE.md) :
       // users/{uid} = identité (créé par onUserCreated), entitlements/{uid} =
@@ -1504,10 +1796,370 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
 
       onSnapshot(doc(db, "entitlements", user.uid), function (snap) {
         latestEntitlement = snap.exists() ? snap.data() : null;
+        referralSeenFromDoc = (latestEntitlement && latestEntitlement.referralSeenCount) || 0; // parrainage : valeur lue sur ton propre document
         renderIfReady();
       }, function (err) { showAlert("error", translateError(err)); });
     });
   }
+
+  /* ============================================================
+     PARRAINAGE (2026-09-25, complété 2026-09-26)
+     Règle d'or : rien ne doit dépendre d'un champ NOUVEAU de la réponse
+     serveur (référencée après un déploiement non simultané) — chaque champ
+     ajouté (referralSeenCount, newReferrals) est optionnel côté page.
+     Tous les noms affichés passent par textContent, jamais par du HTML.
+     ============================================================ */
+  var referralSection = $("referralSection"), codeBox = $("referralCodeBox"),
+      activeCountEl = $("referralActiveCountValue"), monthsGrantedEl = $("referralMonthsGrantedValue"),
+      activeTile = $("referralActiveTile"),
+      applyBlock = $("referralApplyBlock"), applyInput = $("referralApplyInput"),
+      applyBtn = $("btnApplyReferralCode"), applyMessage = $("referralApplyMessage"),
+      copyBtn = $("btnCopyReferralCode"), copyLinkBtn = $("btnCopyReferralLink"),
+      barEl = $("referralBar"), barFill1 = $("referralBarFill1"), barFill2 = $("referralBarFill2"), nextTierEl = $("referralNextTier"),
+      linkInput = $("referralLinkInput"), fractionEl = $("referralFraction"), progressLabelEl = $("referralProgressLabel");
+  var REFERRAL_SHARE_BASE = "https://p1planner.fr/auth.html?ref=";
+  var referralInfo = { code: null, activeCount: 0, monthsGranted: 0, alreadyReferred: true };
+  var referralUid = null, referralSeenFromDoc = 0;
+
+  function copyText(text, onDone) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(onDone).catch(function () { legacyCopy(text, onDone); });
+    } else {
+      legacyCopy(text, onDone);
+    }
+  }
+  function legacyCopy(text, onDone) {
+    // Repli sans Clipboard API (contexte non sécurisé / ancien navigateur).
+    var ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    try { if (document.execCommand("copy")) onDone(); } catch (e) { /* rien à faire */ }
+    document.body.removeChild(ta);
+  }
+  /* Animation de copie (comme sur le produit frère) : le bouton devient VERT, l'icône devient une coche,
+     le libellé « Copié ! » — puis retour à l'état normal au bout de 1,4 s (largeur fixe : le bouton ne saute pas). */
+  var COPY_ICON = "<svg class=\"icon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><rect x=\"9\" y=\"9\" width=\"11\" height=\"11\" rx=\"2\"/><path d=\"M5 15V6a2 2 0 0 1 2-2h9\"/></svg>";
+  function flashCopied(btn) {
+    if (!btn || btn.classList.contains("copied")) return;
+    var icon = btn.querySelector(".icon"), label = btn.querySelector(".referral-copy-btn-label");
+    var oldIcon = icon ? icon.outerHTML : "", oldLabel = label ? label.textContent : "";
+    btn.classList.add("copied");
+    if (icon) icon.outerHTML = "<svg class=\"icon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><polyline points=\"20 6 9 17 4 12\"/></svg>";
+    if (label) label.textContent = "Copié !";
+    window.setTimeout(function () {
+      btn.classList.remove("copied");
+      var i2 = btn.querySelector(".icon"); if (i2) i2.outerHTML = oldIcon;
+      var l2 = btn.querySelector(".referral-copy-btn-label"); if (l2) l2.textContent = oldLabel;
+    }, 1400);
+  }
+
+  /* Palier suivant (B6) — mêmes paliers que functions/referral.js (3 -> 1 mois, 6 -> 3 mois au total). */
+  function nextTierText(count, monthsGranted) {
+    if (count >= 6) return "Palier maximum atteint : 3 mois offerts au total. Merci de faire connaître P1Planner !";
+    var need = count < 3 ? 3 - count : 6 - count;
+    var months = count < 3 ? 1 : 2;
+    var more = monthsGranted > 0 ? " de plus" : "";
+    return "Il te manque encore " + need + " filleul" + (need > 1 ? "s" : "") + " actif" + (need > 1 ? "s" : "") +
+      " pour débloquer " + months + " mois offert" + (months > 1 ? "s" : "") + more + ".";
+  }
+
+  function renderReferral() {
+    referralSection.style.display = "";
+    codeBox.textContent = referralInfo.code || "—";
+    codeBox.classList.toggle("has-code", !!referralInfo.code);
+    linkInput.value = referralInfo.code ? REFERRAL_SHARE_BASE + referralInfo.code : "";
+    copyBtn.disabled = copyLinkBtn.disabled = !referralInfo.code;
+    // Progression « x / palier » : 0/3, 1/3, 2/3, puis 3/6 … 6/6.
+    var cnt = referralInfo.activeCount, goal = cnt < 3 ? 3 : 6;
+    fractionEl.textContent = Math.min(cnt, goal) + " / " + goal;
+    progressLabelEl.textContent = cnt < 3 ? "3 filleuls actifs = 1 mois offert" : "6 filleuls actifs = 3 mois offerts au total";
+    activeCountEl.textContent = referralInfo.activeCount;
+    monthsGrantedEl.textContent = referralInfo.monthsGranted;
+    barEl.setAttribute("aria-valuenow", String(Math.min(referralInfo.activeCount, 6)));
+    // Deux segments distincts (un par palier, 3 filleuls chacun) plutôt qu'une seule barre sur 6 avec un
+    // repère au milieu : plus intuitif, chaque segment se remplit à son tour (retour explicite de Jean,
+    // qui trouvait un simple trait au centre de la barre peu clair).
+    barFill1.style.width = Math.round(Math.min(referralInfo.activeCount, 3) / 3 * 100) + "%";
+    barFill2.style.width = Math.round(Math.max(0, Math.min(referralInfo.activeCount, 6) - 3) / 3 * 100) + "%";
+    barEl.classList.toggle("is-maxed", referralInfo.activeCount >= 6);
+    nextTierEl.textContent = nextTierText(referralInfo.activeCount, referralInfo.monthsGranted);
+    applyBlock.style.display = referralInfo.alreadyReferred ? "none" : "";
+    // Tuile « Filleuls actifs » : inerte à 0, cliquable dès 1.
+    var clickable = referralInfo.activeCount > 0;
+    activeTile.classList.toggle("clickable", clickable);
+    if (clickable) {
+      activeTile.setAttribute("role", "button");
+      activeTile.setAttribute("tabindex", "0");
+      activeTile.setAttribute("aria-haspopup", "dialog");
+      activeTile.setAttribute("aria-label", "Voir les " + referralInfo.activeCount + " filleuls actifs");
+    } else {
+      activeTile.removeAttribute("role"); activeTile.removeAttribute("tabindex");
+      activeTile.removeAttribute("aria-haspopup"); activeTile.removeAttribute("aria-label");
+    }
+  }
+
+  function loadReferralInfo() {
+    if (!functions || !referralSection) return;
+    httpsCallable(functions, "referralEnsureCode")()
+      .then(function (res) {
+        var data = res.data || {};
+        referralInfo = {
+          code: data.referralCode || null,
+          activeCount: data.referralActiveCount || 0,
+          monthsGranted: data.referralMonthsGranted || 0,
+          alreadyReferred: !!data.alreadyReferred
+        };
+        renderReferral();
+        maybeAnnounceNewReferrals(data);
+      })
+      .catch(function (err) {
+        console.warn("referralEnsureCode a échoué :", err);
+      });
+  }
+
+  if (copyBtn) {
+    copyBtn.addEventListener("click", function () {
+      var code = referralInfo.code;
+      if (code) copyText(code, function () { flashCopied(copyBtn); });
+    });
+  }
+  if (copyLinkBtn) {
+    copyLinkBtn.addEventListener("click", function () {
+      var code = referralInfo.code;
+      if (code) copyText(REFERRAL_SHARE_BASE + code, function () { flashCopied(copyLinkBtn); });
+    });
+  }
+
+  /* Bouton « Valider » (saisie rétroactive) : UNE seule écoute, même si la
+     section est rechargée ; message d'erreur serveur inséré en texte. */
+  if (applyBtn && !applyBtn.dataset.bound) {
+    applyBtn.dataset.bound = "1";
+    applyInput.addEventListener("input", function () { applyInput.value = applyInput.value.toUpperCase(); });
+    applyBtn.addEventListener("click", function () {
+      var code = applyInput.value.trim();
+      applyMessage.style.display = "none";
+      if (!code || !functions || applyBtn.disabled) return;
+      applyBtn.disabled = true;
+      applyBtn.classList.add("is-loading");
+      var succeeded = false;
+      httpsCallable(functions, "referralApplyCode")({ code: code })
+        .then(function () {
+          succeeded = true;
+          referralInfo.alreadyReferred = true;
+          // Confirmation VISIBLE avant de masquer le bloc (retour explicite : « ça disparaît sans rien dire »
+          // — le bloc restait affiché juste assez longtemps pour qu'on ne sache pas si ça avait marché).
+          applyMessage.style.display = "";
+          applyMessage.className = "referral-check-status";
+          applyMessage.style.color = "var(--success)";
+          applyMessage.innerHTML = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true" style="width:1em;height:1em;vertical-align:-2px;margin-right:.35rem"><polyline points="20 6 9 17 4 12"/></svg>Code de parrainage enregistré, merci !';
+          applyInput.disabled = true;
+          window.setTimeout(function () {
+            applyBlock.style.display = "none"; // masqué ensuite : aucune phrase « déjà renseigné » au rechargement
+            loadReferralInfo();
+          }, 1800);
+        })
+        .catch(function (err) {
+          applyMessage.style.display = "";
+          applyMessage.style.color = "var(--danger)"; applyMessage.className = "referral-check-status";
+          var messages = {
+            "invalid-argument": "Ce code n'est pas valide (6 caractères attendus).",
+            "not-found": "Ce code de parrainage n'existe pas.",
+            "failed-precondition": err && err.message ? err.message : "Impossible d'utiliser ce code."
+          };
+          applyMessage.textContent = messages[err && err.code] || "Une erreur est survenue, réessaie plus tard.";
+        })
+        .finally(function () {
+          // En cas de succès, le bouton reste désactivé le temps que la confirmation s'affiche
+          // (le bloc entier disparaît juste après) — évite un second envoi pendant ce court délai.
+          if (succeeded) return;
+          applyBtn.disabled = false;
+          applyBtn.classList.remove("is-loading");
+        });
+    });
+  }
+
+  /* ---------- Notification « nouveau filleul » (B2) ----------
+     Élément DÉDIÉ (#referralToast) : n'écrase jamais #globalAlert (erreurs qui
+     doivent rester visibles) ni #activationBanner (retour de paiement), et
+     n'est jamais écrasé par eux. « Déjà vu » = max(réponse serveur, valeur lue
+     sur ton propre document entitlements, mémoire localStorage par uid) ; la
+     mémoire locale est écrite AVANT d'afficher (page toujours correcte face à
+     une ancienne réponse serveur : jamais d'annonce à chaque ouverture). */
+  var toastEl = $("referralToast"), toastText = $("referralToastText"), toastTitle = $("referralToastTitle"), toastTimer = null;
+  function seenKey() { return "p1planner:referralSeen:" + referralUid; }
+  function readLocalSeen() {
+    try { var v = parseInt(window.localStorage.getItem(seenKey()) || "0", 10); return isNaN(v) || v < 0 ? 0 : v; }
+    catch (e) { return 0; }
+  }
+  function writeLocalSeen(n) { try { window.localStorage.setItem(seenKey(), String(n)); } catch (e) { /* stockage indisponible */ } }
+
+  function referralToastMessage(n, names) {
+    if (n <= 0) return null;
+    var title = n === 1 ? "Nouveau filleul" : "Nouveaux filleuls";
+    var named = names.slice(0, 3);
+    if (!named.length) {
+      return { title: title, text: n === 1 ? "Un nouveau filleul a utilisé ton code de parrainage." : n + " nouveaux filleuls ont utilisé ton code de parrainage." };
+    }
+    var rest = n - named.length;
+    var list;
+    if (rest > 0) list = named.join(", ") + " et " + rest + " autre" + (rest > 1 ? "s" : "");
+    else if (named.length === 1) list = named[0];
+    else list = named.slice(0, -1).join(", ") + " et " + named[named.length - 1];
+    var verb = (named.length === 1 && rest === 0) ? "a utilisé" : "ont utilisé";
+    return { title: title, text: list + " " + verb + " ton code de parrainage." };
+  }
+
+  function hideReferralToast() {
+    toastEl.classList.remove("is-visible");
+    if (toastTimer) { window.clearTimeout(toastTimer); toastTimer = null; }
+  }
+  function showReferralToast(msg) {
+    toastTitle.textContent = msg.title;
+    toastText.textContent = msg.text;
+    toastEl.classList.add("is-visible");
+    if (toastTimer) window.clearTimeout(toastTimer);
+    toastTimer = window.setTimeout(hideReferralToast, 15000);
+  }
+  $("referralToastClose").addEventListener("click", hideReferralToast);
+
+  function maybeAnnounceNewReferrals(data) {
+    var active = data.referralActiveCount || 0;
+    var seen = Math.max(data.referralSeenCount || 0, referralSeenFromDoc || 0, readLocalSeen());
+    seen = Math.min(seen, active);
+    if (active <= seen) { if (seen > readLocalSeen()) writeLocalSeen(seen); return; }
+    var n = active - seen;
+    var names = [];
+    var list = Array.isArray(data.newReferrals) ? data.newReferrals : [];
+    list.forEach(function (r) { if (r && typeof r.name === "string" && r.name.trim()) names.push(r.name.trim()); });
+    names = names.slice(0, n);
+    var msg = referralToastMessage(n, names);
+    writeLocalSeen(active); // AVANT d'afficher
+    showReferralToast(msg);
+    // Accusé de réception côté serveur (best-effort) : éteint aussi la pastille du tableur.
+    httpsCallable(functions, "referralMarkSeen")().catch(function () { /* ancienne fonction : la mémoire locale suffit */ });
+  }
+
+  /* ---------- Tuile cliquable -> modal des filleuls (B3) ---------- */
+  var refModal = $("referralModal"), refList = $("referralModalList"), refState = $("referralModalState"),
+      refRetry = $("referralModalRetry"), refSummary = $("referralModalSummary"), refHelp = $("referralModalHelp");
+  var refModalSeq = 0, refModalOpen = false;
+
+  var REF_STATE_ICONS = {
+    loading: '<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 9 9"/>',
+    error: '<circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/>',
+    empty: '<circle cx="9" cy="8" r="3.2"/><path d="M3 20c.6-3.3 3-5 6-5s5.4 1.7 6 5"/>'
+  };
+  function refSetState(kind, text) {
+    if (!kind) { refState.style.display = "none"; refState.innerHTML = ""; return; }
+    refState.className = "referral-modal-state" + (kind === "error" ? " is-error" : "");
+    refState.innerHTML = '<svg class="icon' + (kind === "loading" ? " referral-spin" : "") + '" viewBox="0 0 24 24" aria-hidden="true">' + REF_STATE_ICONS[kind] + '</svg><span></span>';
+    refState.querySelector("span").textContent = text;
+    refState.style.display = "";
+  }
+  function fmtRefDate(ms) {
+    if (!ms) return "";
+    try { return new Date(ms).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }); } catch (e) { return ""; }
+  }
+  /* Initiales pour l'avatar du filleul (comme le produit frère) : 2 lettres si prénom + nom, 1 sinon. */
+  function refInitials(name) {
+    var parts = name.trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return "";
+    return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
+  }
+  function renderReferralList(res) {
+    refList.textContent = "";
+    var rows = (res && Array.isArray(res.referrals)) ? res.referrals : [];
+    var total = (res && typeof res.total === "number") ? res.total : rows.length;
+    if (!rows.length) { refSetState("empty", "Aucun filleul actif pour l'instant."); refSummary.textContent = ""; return; }
+    refSetState(null);
+    refSummary.textContent = total + " filleul" + (total > 1 ? "s actifs ont" : " actif a") + " utilisé ton code de parrainage." +
+      (total > rows.length ? " (les " + rows.length + " plus récents sont listés)" : "");
+    rows.forEach(function (r) {
+      var name = (r && typeof r.name === "string" && r.name) ? r.name : "";
+      var code = (r && typeof r.code === "string") ? r.code : "";
+      var li = document.createElement("li");
+      li.className = "referral-row";
+
+      var avatar = document.createElement("span");
+      avatar.className = "referral-row-avatar"; avatar.setAttribute("aria-hidden", "true");
+      if (name) avatar.textContent = refInitials(name);
+      else avatar.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.2"/><path d="M5 20c.7-3.5 3.3-5.5 7-5.5s6.3 2 7 5.5"/></svg>';
+      li.appendChild(avatar);
+
+      var info = document.createElement("div");
+      info.className = "referral-row-info";
+      var nameEl = document.createElement("div");
+      nameEl.className = "referral-row-name" + (name ? "" : " unknown");
+      nameEl.textContent = name || "Filleul sans nom";
+      info.appendChild(nameEl);
+      var when = fmtRefDate(r && r.at);
+      if (when) { var dateEl = document.createElement("div"); dateEl.className = "referral-row-date"; dateEl.textContent = "Parrainé le " + when; info.appendChild(dateEl); }
+      li.appendChild(info);
+
+      var actions = document.createElement("div");
+      actions.className = "referral-row-actions";
+      var codeEl = document.createElement("span");
+      codeEl.className = "referral-row-code" + (code ? "" : " none");
+      codeEl.textContent = code || "Code indisponible";
+      actions.appendChild(codeEl);
+      if (code) {
+        var btn = document.createElement("button");
+        btn.type = "button"; btn.className = "referral-copy-btn referral-row-copy";
+        btn.setAttribute("aria-label", "Copier le code" + (name ? " de " + name : ""));
+        btn.innerHTML = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg><span class="referral-copy-btn-label">Copier</span>';
+        btn.addEventListener("click", function () { copyText(code, function () { flashCopied(btn); }); });
+        actions.appendChild(btn);
+      }
+      li.appendChild(actions);
+      refList.appendChild(li);
+    });
+  }
+  function loadReferralList() {
+    var mySeq = ++refModalSeq;
+    refRetry.style.display = "none";
+    refList.textContent = "";
+    refSummary.textContent = "";
+    refSetState("loading", "Chargement de la liste…");
+    if (!functions) { refSetState("error", "Impossible de charger la liste pour le moment."); refRetry.style.display = ""; return; }
+    httpsCallable(functions, "referralListReferrals")()
+      .then(function (res) {
+        if (mySeq !== refModalSeq || !refModalOpen) return; // réponse tardive après fermeture / nouvelle demande
+        renderReferralList(res.data);
+      })
+      .catch(function () {
+        if (mySeq !== refModalSeq || !refModalOpen) return;
+        refSetState("error", "Impossible de charger la liste pour le moment.");
+        refRetry.style.display = "";
+      });
+  }
+  function openReferralModal() {
+    if (referralInfo.activeCount <= 0) return;
+    refModal.classList.remove("is-closing");
+    refModal.classList.add("is-open");
+    refModalOpen = true;
+    refHelp.style.display = referralInfo.alreadyReferred ? "none" : "";
+    lockPageScroll();
+    loadReferralList();
+    window.setTimeout(function () { $("referralModalCloseX").focus(); }, 30);
+  }
+  function closeReferralModal() {
+    if (!refModalOpen) return;
+    refModalOpen = false; refModalSeq++;
+    refModal.classList.remove("is-open");
+    refModal.classList.add("is-closing");
+    window.setTimeout(function () { refModal.classList.remove("is-closing"); }, MODAL_ANIM_MS);
+    unlockPageScroll();
+    if (activeTile.getAttribute("tabindex")) activeTile.focus(); // focus rendu à la tuile
+  }
+  activeTile.addEventListener("click", openReferralModal);
+  activeTile.addEventListener("keydown", function (e) {
+    if ((e.key === "Enter" || e.key === " ") && activeTile.getAttribute("role") === "button") { e.preventDefault(); openReferralModal(); }
+  });
+  $("referralModalCloseX").addEventListener("click", closeReferralModal);
+  $("referralModalClose").addEventListener("click", closeReferralModal);
+  refRetry.addEventListener("click", loadReferralList);
+  refModal.addEventListener("click", function (e) { if (e.target === refModal) closeReferralModal(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && refModalOpen) closeReferralModal(); });
 })();
 </script>
 </body>

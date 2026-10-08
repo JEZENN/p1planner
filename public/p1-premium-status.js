@@ -1,10 +1,20 @@
 /* ============================================================
-   P1Planner — tpx-billing.js
+   P1Planner — p1-premium-status.js
    ============================================================
    Adaptation P1 du tpx-billing.js TypixClin. Source unique de vérité
    "Premium" côté frontend pour tableur.html : lit entitlements/{uid}
    (jamais écrit par le client — voir firestore.rules) et expose le
    statut réel d'accès en écriture.
+
+   Renommé depuis tpx-billing.js (bug réel trouvé en vérifiant la prod
+   avant publicité) : "billing" est un mot très couramment bloqué par les
+   bloqueurs de publicité/traceurs (règles de filtrage visant les scripts
+   de facturation/analytics) — confirmé via un vrai chargement de
+   p1planner.fr : la requête ressortait en `net::ERR_BLOCKED_BY_CLIENT`.
+   Comme ce fichier est la SEULE source du statut Premium/essai pour
+   tableur.html, le bloquer cassait silencieusement tout l'accès en
+   écriture pour quiconque utilise un bloqueur — une part significative
+   des visiteurs réels, pas un cas isolé.
 
    P1Planner n'a pas encore de projet Stripe propre (voir CLAUDE.md :
    "pas Stripe maintenant sauf besoin bloquant"). Ce fichier ne propose
@@ -33,6 +43,9 @@
      tpxScheduleRecheck(date, cb) -> programme cb à `date`, avec
                                   troncature (setTimeout plafonne à
                                   ~24,8 jours)
+   Les noms de fonctions "tpx*" restent inchangés (contrat interne avec
+   tableur.html, sans rapport avec le nom du fichier qui, lui, déclenche
+   les bloqueurs) — seul le NOM DU FICHIER a changé.
    ============================================================ */
 (function () {
   'use strict';
@@ -112,7 +125,7 @@
 
     var db = window._fsDb, doc = window._fsDoc, onSnap = window._fsOnSnapshot;
     if (!db || !doc || !onSnap) {
-      console.warn('[P1 billing] Pont Firestore indisponible (window._fsDb/_fsDoc/_fsOnSnapshot) — statut Premium inconnu.');
+      console.warn('[P1 premium] Pont Firestore indisponible (window._fsDb/_fsDoc/_fsOnSnapshot) — statut Premium inconnu.');
       if (window.tpxSetUnknownState) window.tpxSetUnknownState();
       return;
     }
@@ -136,7 +149,7 @@
         if (window.tpxApplyPremiumState) window.tpxApplyPremiumState(normalized);
       },
       function (err) {
-        console.warn('[P1 billing] Lecture entitlements impossible :', err);
+        console.warn('[P1 premium] Lecture entitlements impossible :', err);
         if (window.tpxSetUnknownState) window.tpxSetUnknownState();
       }
     );

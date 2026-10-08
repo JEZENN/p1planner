@@ -7,7 +7,12 @@
 <meta name="description" content="Connecte-toi ou crée ton compte P1Planner pour organiser tes révisions : cours, tours, méthode des J et Programme de la journée.">
 <meta name="theme-color" content="#0a0e1a">
 <meta name="robots" content="noindex, follow">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%236d5bf0'/%3E%3Cstop offset='1' stop-color='%234f9dfb'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='url(%23g)'/%3E%3Ctext x='32' y='42' font-family='Arial,sans-serif' font-weight='700' font-size='26' fill='white' text-anchor='middle'%3EP1%3C/text%3E%3C/svg%3E">
+<link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="shortcut icon" href="/favicon.ico" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-title" content="P1Planner" />
+<link rel="manifest" href="/site.webmanifest" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=Fraunces:ital,opsz,wght@0,9..144,500;1,9..144,500&display=swap" rel="stylesheet">
@@ -511,6 +516,14 @@ h1,h2,h3{font-family:var(--font-display);font-weight:600;line-height:1.15;letter
             <div class="field-success" id="signupPasswordConfirmSuccess"><svg class="icon" viewBox="0 0 24 24" style="width:14px;height:14px"><polyline points="20 6 9 17 4 12"/></svg><span>Les mots de passe correspondent.</span></div>
           </div>
 
+          <div class="field" style="margin-bottom:.5rem">
+            <label for="signupReferralCode">Code de parrainage <span style="color:var(--text-dim);font-weight:400">(facultatif)</span></label>
+            <input type="text" id="signupReferralCode" name="referralCode" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="6" placeholder="Ex. AB23DE" style="text-transform:uppercase;letter-spacing:.06em" aria-describedby="signupReferralCodeError signupReferralCodeSuccess signupReferralCodeHint">
+            <div class="field-hint" id="signupReferralCodeHint">Le code de la personne qui t'a fait découvrir P1Planner, si tu en as un. Ton prénom et ton nom seront communiqués à la personne qui te parraine.</div>
+            <div class="field-error" id="signupReferralCodeError"><svg class="icon" viewBox="0 0 24 24" style="width:14px;height:14px"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span>Ce code de parrainage n'existe pas.</span></div>
+            <div class="field-success" id="signupReferralCodeSuccess"><svg class="icon" viewBox="0 0 24 24" style="width:14px;height:14px"><polyline points="20 6 9 17 4 12"/></svg><span>Code valide.</span></div>
+          </div>
+
           <div class="checkbox-row">
             <input type="checkbox" id="signupConsent" required>
             <label for="signupConsent">J'ai lu et j'accepte les <button type="button" class="cgu-link-btn" id="openCguModal">Conditions d'utilisation</button> de P1Planner.</label>
@@ -603,6 +616,9 @@ h1,h2,h3{font-family:var(--font-display);font-weight:600;line-height:1.15;letter
       <h3>9. Modification des conditions et droit applicable</h3>
       <p>Ces conditions peuvent évoluer ; la version en vigueur au moment de ton inscription (ou de ta dernière acceptation) est celle qui s'applique. Elles sont soumises au droit français ; en cas de litige non résolu à l'amiable, les tribunaux français sont seuls compétents.</p>
 
+      <h3>10. Programme de parrainage</h3>
+      <p>Le parrainage est facultatif et gratuit. Un filleul est actif dès que son compte est créé avec ton code, que son adresse email est vérifiée et qu'il s'est connecté. Un compte ne peut renseigner qu'un seul code de parrainage, une seule fois : à l'inscription ou plus tard depuis « Mon abonnement », et ce choix est définitif. Ton prénom et ton nom, ainsi que ton code de parrainage, sont communiqués à la personne qui te parraine (notification puis liste de ses filleuls). Le parrain gagne 1 mois offert à 3 filleuls actifs, puis 3 mois offerts au total à 6 filleuls actifs (au-delà, rien de plus) ; ces mois s'ajoutent à son accès existant. Les mois offerts n'ont aucune valeur monétaire et ne sont ni remboursables ni échangeables. P1Planner peut refuser ou annuler une récompense obtenue par fraude ou au moyen de comptes multiples.</p>
+
       <p class="cgu-modal-updated">Dernière mise à jour : <span id="cguUpdateDate"></span>.</p>
     </div>
     <div class="cgu-modal-foot">
@@ -682,6 +698,21 @@ function resendEmailVerification(user) {
     });
   }
   return sendEmailVerification(user);
+}
+
+// Même contournement que resendEmailVerification ci-dessus : le mailer par
+// défaut Firebase (sendPasswordResetEmail du SDK client) s'est révélé peu
+// fiable — Cloud Function dédiée (Brevo) en priorité, repli sur le SDK
+// client uniquement si elle échoue techniquement (Functions indisponibles).
+function sendPasswordResetEmailViaBrevo(email) {
+  if (functionsInstance) {
+    const call = httpsCallable(functionsInstance, "sendPasswordResetEmail");
+    return call({ email: email }).catch(function (err) {
+      console.warn("sendPasswordResetEmail (Cloud Function) a échoué, repli sur le SDK client :", err);
+      return sendPasswordResetEmail(auth, email);
+    });
+  }
+  return sendPasswordResetEmail(auth, email);
 }
 
 (function () {
@@ -799,6 +830,77 @@ function resendEmailVerification(user) {
     confirmPwd.addEventListener("input", checkMatch);
   })();
 
+  /* ---------- Parrainage : vérification du code saisi ----------
+     PARRAINAGE (2026-09-26) — trois verdicts, jamais deux :
+       true  = le serveur confirme que le code existe ;
+       false = confirmé INCONNU par le serveur, ou longueur ≠ 6 ;
+       null  = contrôle injoignable (réseau/serveur) : NEUTRE, ne bloque pas
+               (décision de Jean : une panne de Functions ne doit jamais
+               empêcher de s'inscrire ni afficher un faux « code inexistant » ;
+               le code part quand même à referralInit, qui ignore de toute
+               façon un code invalide sans jamais faire échouer l'inscription).
+     checkReferralCode() est la SOURCE DE VÉRITÉ : elle renvoie toujours le
+     verdict du code qu'elle a réellement interrogé. Le compteur de séquence
+     (seq) ne sert qu'à l'AFFICHAGE pendant la frappe, jamais à transformer une
+     réponse « dépassée » en « ne bloque pas » (bug réel vécu sur le produit frère :
+     un code faux + clic dans les ~400 ms créait le compte sans parrain).
+     referralCheckCode est appelable SANS authentification et ne renvoie qu'un
+     booléen (jamais l'identité du parrain). */
+  var referralCodeState = "empty"; // 'empty' | 'partial' | 'checking' | 'valid' | 'invalid' | 'unknown'
+  var referralValidCodes = {};      // codes déjà confirmés valides (les verdicts « faux » ne sont jamais mémorisés)
+  function checkReferralCode(code) {
+    if (!code) return Promise.resolve(true);
+    if (code.length !== 6) return Promise.resolve(false);
+    if (referralValidCodes[code]) return Promise.resolve(true);
+    if (!functionsInstance) return Promise.resolve(null);
+    return httpsCallable(functionsInstance, "referralCheckCode")({ code: code })
+      .then(function (res) {
+        var ok = !!(res && res.data && res.data.valid);
+        if (ok) referralValidCodes[code] = true;
+        return ok;
+      })
+      .catch(function () { return null; });
+  }
+  var referralLiveSetState = function () {};
+  (function () {
+    var input = $("signupReferralCode");
+    var errorEl = $("signupReferralCodeError"), successEl = $("signupReferralCodeSuccess"), hintEl = $("signupReferralCodeHint");
+    if (!input || !errorEl || !successEl || !hintEl) return;
+    var timer = null, seq = 0;
+    function setState(state) {
+      referralCodeState = state;
+      errorEl.classList.toggle("is-visible", state === "invalid");
+      successEl.classList.toggle("is-visible", state === "valid");
+      hintEl.style.display = (state === "checking") ? "none" : "";
+      input.setAttribute("aria-invalid", state === "invalid" ? "true" : "false");
+    }
+    referralLiveSetState = setState;
+    function onInput() {
+      input.value = input.value.toUpperCase();
+      var raw = input.value.trim();
+      if (timer) window.clearTimeout(timer);
+      var mySeq = ++seq;
+      if (!raw) { setState("empty"); return; }
+      if (raw.length !== 6) { setState("partial"); return; }
+      setState("checking");
+      timer = window.setTimeout(function () {
+        checkReferralCode(raw).then(function (verdict) {
+          if (mySeq !== seq) return; // AFFICHAGE seulement : une frappe plus récente a pris le relais
+          setState(verdict === true ? "valid" : (verdict === false ? "invalid" : "unknown"));
+        });
+      }, 400);
+    }
+    input.addEventListener("input", onInput);
+
+    /* Lien de parrainage : auth.html?ref=CODE pré-remplit le champ (voir plus bas l'ouverture de page). */
+    var params = new URLSearchParams(window.location.search);
+    var ref = (params.get("ref") || "").trim().toUpperCase();
+    if (/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/.test(ref)) {
+      input.value = ref;
+      onInput();
+    }
+  })();
+
   /* ---------- Redirection anti open-redirect ---------- */
   function sanitizeRedirect(raw) {
     if (!raw) return null;
@@ -882,19 +984,55 @@ function resendEmailVerification(user) {
           pendingUnverifiedUser = cred.user;
           showPanel("login");
           showVerifyNotice(cred.user.email);
+          // Filet automatique (demande explicite) : si le premier email de
+          // vérification (envoyé à l'inscription, voir
+          // sendVerificationEmailOnCreate) n'est jamais arrivé — ex. quota
+          // Brevo dépassé pendant un pic d'inscriptions —, chaque tentative
+          // de connexion bloquée relance ici une tentative d'envoi, SANS
+          // que l'utilisateur ait besoin de savoir/penser à cliquer sur
+          // "Renvoyer l'email". Silencieux : resendEmailVerification()
+          // essaie déjà Brevo puis le mailer par défaut de Firebase en
+          // dernier recours (voir plus haut), et le throttle serveur de
+          // 60s (verificationEmailThrottle/{uid}) évite tout spam si la
+          // personne retente sa connexion plusieurs fois de suite. Le
+          // bouton "Renvoyer" manuel reste disponible et affiche, lui, un
+          // vrai retour (succès/erreur).
+          resendEmailVerification(cred.user).catch(function (err) {
+            console.warn("Renvoi automatique de l'email de vérification échoué :", err);
+          });
+          setLoading(btn, false); // on reste sur cette page : réactiver le bouton ici
           return;
         }
-        window.location.href = getRedirectTarget();
+        // PARRAINAGE — 1re connexion RÉUSSIE avec email vérifié : compte ce
+        // filleul et déclenche la récompense de son parrain (voir
+        // functions/index.js, referralMarkActive). Idempotente et
+        // silencieuse (sans parrain, ou filleul déjà comptabilisé, ne fait
+        // rien) : ne doit JAMAIS bloquer ni retarder perceptiblement la
+        // connexion en cas d'échec — best-effort strict.
+        // A3 (2026-09-26) : la connexion ne dépend JAMAIS du parrainage — appel non
+        // attendu (le SDK a un délai par défaut d'environ 70 s), redirection après
+        // un court délai fixe pour laisser partir la requête. Idempotent : le
+        // prochain login retente si elle n'a pas abouti.
+        if (functionsInstance) {
+          httpsCallable(functionsInstance, "referralMarkActive")().catch(function (err) {
+            console.warn("referralMarkActive a échoué (connexion non bloquée) :", err);
+          });
+        }
+        // Le bouton reste en chargement JUSQU'À la redirection (pas de setLoading(false) ici) : le
+        // remettre à l'état normal 1,5 s avant que la page ne change laissait croire à un échec
+        // (retour explicite : « le bouton redevient normal, on dirait que ça n'a pas marché »).
+        window.setTimeout(function () { window.location.href = getRedirectTarget(); }, 1500);
       })
       .catch(function (err) {
         showAlert("error", translateAuthError(err, "login"));
-      })
-      .finally(function () { setLoading(btn, false); });
+        setLoading(btn, false);
+      });
   });
 
   /* ============================================================
      FORMULAIRE INSCRIPTION
      ============================================================ */
+  var signupInFlight = false;
   $("formSignup").addEventListener("submit", function (e) {
     e.preventDefault();
     hideAlert();
@@ -923,31 +1061,73 @@ function resendEmailVerification(user) {
 
     if (!consent.checked) { showAlert("error", "Merci d'accepter les Conditions d'utilisation pour continuer."); valid = false; }
 
+    // PARRAINAGE (A1/A2, 2026-09-26) — blocage strict, sans faille de timing.
+    // Le code réellement présent au moment du clic est re-vérifié (source de
+    // vérité) ; seul un code de longueur ≠ 6 ou CONFIRMÉ inconnu par le
+    // serveur bloque. Un contrôle injoignable (null) ne bloque pas.
+    var referralCodeInput = $("signupReferralCode");
+    var referralCodeRaw = referralCodeInput.value.trim().toUpperCase();
+    if (referralCodeRaw && referralCodeRaw.length !== 6) {
+      referralLiveSetState("partial");
+      showAlert("error", "Le code de parrainage doit contenir 6 caractères. Corrige-le ou laisse le champ vide pour continuer.");
+      valid = false;
+    }
+
     if (!valid || !requireFirebase()) return;
+    if (signupInFlight) return; // double clic / Entrée répétée : une seule inscription
+    signupInFlight = true;
 
     var btn = $("btnSignup");
-    setLoading(btn, true);
-    createUserWithEmailAndPassword(auth, email, password)
+    setLoading(btn, true);            // désactivé AVANT le premier await
+    referralCodeInput.readOnly = true; // le code vérifié est celui qui part à referralInit
+    var BLOCKED = { blocked: true };
+    checkReferralCode(referralCodeRaw)
+      .then(function (verdict) {
+        if (verdict === false) {
+          referralLiveSetState("invalid");
+          showAlert("error", "Le code de parrainage saisi n'existe pas. Corrige-le ou laisse le champ vide pour continuer.");
+          throw BLOCKED;
+        }
+        return createUserWithEmailAndPassword(auth, email, password);
+      })
       .then(function (cred) {
         return updateProfile(cred.user, { displayName: name })
           .then(function () {
-            // Le profil Firestore (essai gratuit, etc.) ET l'email de
-            // vérification sont pris en charge côté SERVEUR par les Cloud
-            // Functions onUserCreated / sendVerificationEmailOnCreate —
-            // auth.html ne fait aucune écriture Firestore ni appel
-            // sendEmailVerification() ici (voir docs/ARCHITECTURE.md,
-            // risque P1-9, et docs/DECISIONS.md pour le choix Brevo).
-            return signOut(auth).then(function () {
-              showPanel("login");
-              $("loginEmail").value = email;
-              showVerifyNotice(email);
+            // PARRAINAGE — réserve le code du NOUVEAU compte et enregistre le
+            // lien avec le parrain si un code a été saisi. Appelée pendant
+            // la fenêtre où cred.user est authentifié mais PAS encore
+            // vérifié (avant le signOut() ci-dessous) : referralInit ne
+            // requiert volontairement pas d'email vérifié (voir
+            // functions/index.js). Best-effort strict : ne doit JAMAIS faire
+            // échouer l'inscription, y compris si Functions est indisponible.
+            var referralPromise = functionsInstance
+              ? httpsCallable(functionsInstance, "referralInit")({ referredBy: referralCodeRaw || null })
+                  .catch(function (err) { console.warn("referralInit a échoué (inscription non bloquée) :", err); })
+              : Promise.resolve();
+            return referralPromise.then(function () {
+              // Le profil Firestore (essai gratuit, etc.) ET l'email de
+              // vérification sont pris en charge côté SERVEUR par les Cloud
+              // Functions onUserCreated / sendVerificationEmailOnCreate —
+              // auth.html ne fait aucune écriture Firestore ni appel
+              // sendEmailVerification() ici (voir docs/ARCHITECTURE.md,
+              // risque P1-9, et docs/DECISIONS.md pour le choix Brevo).
+              return signOut(auth).then(function () {
+                showPanel("login");
+                $("loginEmail").value = email;
+                showVerifyNotice(email);
+              });
             });
           });
       })
       .catch(function (err) {
+        if (err === BLOCKED) return; // message déjà affiché
         showAlert("error", translateAuthError(err, "signup"));
       })
-      .finally(function () { setLoading(btn, false); });
+      .finally(function () {
+        signupInFlight = false;
+        referralCodeInput.readOnly = false;
+        setLoading(btn, false);
+      });
   });
 
   /* ============================================================
@@ -965,7 +1145,7 @@ function resendEmailVerification(user) {
     var btn = $("btnReset");
     var successMsg = "Si un compte existe avec cette adresse, un lien de réinitialisation vient d'être envoyé.";
     setLoading(btn, true);
-    sendPasswordResetEmail(auth, email)
+    sendPasswordResetEmailViaBrevo(email)
       .then(function () { showAlert("success", successMsg); })
       .catch(function (err) {
         // Ne jamais révéler si le compte existe : même message pour
@@ -1029,7 +1209,8 @@ function resendEmailVerification(user) {
      OUVERTURE DE PAGE : onglet initial + redirect param
      ============================================================ */
   var hash = window.location.hash.replace("#", "");
-  if (hash === "inscription") { showPanel("signup"); }
+  var hasRefParam = /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/.test((new URLSearchParams(window.location.search).get("ref") || "").trim().toUpperCase());
+  if (hash === "inscription" || hasRefParam) { showPanel("signup"); }
   else { showPanel("login"); }
 
   /* Si une session valide et vérifiée existe déjà au chargement de la page
@@ -1044,6 +1225,15 @@ function resendEmailVerification(user) {
       if (initialAuthCheckDone) return;
       initialAuthCheckDone = true;
       if (user && user.emailVerified) {
+        // PARRAINAGE — filet de sécurité : couvre le cas rare où la session
+        // était déjà persistée AVANT que l'email ne soit vérifié (vérifié
+        // dans un autre onglet/appareil, jamais repassé par formLogin
+        // ci-dessus). Idempotente, ne bloque JAMAIS la redirection — envoyée
+        // en tâche de fond, jamais attendue (la redirection ne doit pas être
+        // ralentie pour le cas courant, déjà couvert par formLogin).
+        if (functionsInstance) {
+          httpsCallable(functionsInstance, "referralMarkActive")().catch(function () {});
+        }
         window.location.href = getRedirectTarget();
       }
     });
