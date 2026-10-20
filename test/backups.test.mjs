@@ -25,7 +25,7 @@ async function clearBackupTestCollections() {
   const collections = ["users", "backups"]; // "backups" est une sous-collection : purge récursive via users
   const usersSnap = await db.collection("users").get();
   for (const u of usersSnap.docs) {
-    for (const sub of ["backups", "courses", "subjects", "notes", "notesEntrainements", "trainingItems", "tasks", "calendarDays", "dailyStats", "flashcards", "errorEntries"]) {
+    for (const sub of ["backups", "courses", "subjects", "notes", "notesEntrainements", "trainingItems", "tasks", "calendarDays", "dailyStats", "flashcards", "errorEntries", "workSessions", "streak"]) {
       const subSnap = await db.collection(`users/${u.id}/${sub}`).get();
       for (const d of subSnap.docs) {
         const partsSnap = await d.ref.collection("parts").get().catch(() => ({ docs: [] }));
@@ -139,6 +139,59 @@ describe("Sauvegardes/restauration — Cloud Functions (vrai code)", function ()
       assert.equal(restoreRes.mode, "replace");
       const c1After = (await db.doc("users/U5/courses/c1").get()).data();
       assert.equal(c1After.tourCount, 1, "le mode remplacer n'a pas réécrit un document pourtant présent (régression du comportement historique)");
+    });
+
+    it("workSessions (2026-10-11) : incluses dans la sauvegarde ; « compléter » recrée une session absente, RÉTABLIT une session supprimée depuis (deletedAt) et ne touche pas une session active", async () => {
+      await seedAdmin("ADM11");
+      await seedTargetUser("U11");
+      const mk = (over) => Object.assign({ date: "2026-10-11", kind: null, label: "QCM", minutes: 60, createdAt: new Date(), updatedAt: new Date(), deletedAt: null }, over);
+      await db.doc("users/U11/workSessions/keep").set(mk({ minutes: 60 }));
+      await db.doc("users/U11/workSessions/gone").set(mk({ label: "Annales", minutes: 90 }));
+      await db.doc("users/U11/workSessions/lost").set(mk({ label: "Fiches", minutes: 30 }));
+      const backupRes = await callAsAdmin("adminCreateBackup", "ADM11", { targetUid: "U11" });
+      const snapshot = await fns.__backupTest._readBackupSnapshot(await db.doc(`users/U11/backups/${backupRes.backupId}`).get());
+      assert.ok(Array.isArray(snapshot.workSessions) && snapshot.workSessions.length === 3, "workSessions absentes de la sauvegarde : " + JSON.stringify(snapshot.workSessions && snapshot.workSessions.length));
+
+      // Après la sauvegarde : keep modifiée par un travail plus récent, gone supprimée (douce), lost supprimée (physique).
+      await db.doc("users/U11/workSessions/keep").set({ minutes: 75 }, { merge: true });
+      await db.doc("users/U11/workSessions/gone").set({ deletedAt: new Date(), updatedAt: new Date() }, { merge: true });
+      await db.doc("users/U11/workSessions/lost").delete();
+
+      const res = await callAsAdmin("adminRestoreBackup", "ADM11", { targetUid: "U11", backupId: backupRes.backupId });
+      assert.equal(res.mode, "merge");
+      assert.equal((await db.doc("users/U11/workSessions/keep").get()).data().minutes, 75, "« compléter » a écrasé une session active avec la valeur plus ANCIENNE de la sauvegarde");
+      const gone = (await db.doc("users/U11/workSessions/gone").get()).data();
+      assert.equal(gone.deletedAt, null, "la session supprimée depuis la sauvegarde n'a pas été rétablie par « compléter » : " + JSON.stringify(gone.deletedAt));
+      assert.equal(gone.minutes, 90);
+      const lost = await db.doc("users/U11/workSessions/lost").get();
+      assert.ok(lost.exists && lost.data().minutes === 30, "la session absente n'a pas été recréée");
+    });
+
+    it("streak (2026-10-12) : incluse dans la sauvegarde ; compléter ET remplacer ne font JAMAIS reculer une série plus récente, mais recréent une série absente ou rattrapent une série plus ANCIENNE", async () => {
+      await seedAdmin("ADM12");
+      await seedTargetUser("U12");
+      const st = (over) => Object.assign({ last: "2026-10-10", count: 4, best: 6, lives: 2, week: "2026-10-05", used: null, gift: null, anim: null }, over);
+      await db.doc("users/U12/streak/state").set(st());
+      const b1 = await callAsAdmin("adminCreateBackup", "ADM12", { targetUid: "U12" });
+      const snapshot = await fns.__backupTest._readBackupSnapshot(await db.doc(`users/U12/backups/${b1.backupId}`).get());
+      assert.ok(Array.isArray(snapshot.streak) && snapshot.streak.length === 1 && snapshot.streak[0].id === "state", "streak absente de la sauvegarde : " + JSON.stringify(snapshot.streak));
+
+      // Depuis la sauvegarde la série a avancé (plus récente) : ni « compléter » ni « remplacer » ne doivent la faire reculer.
+      await db.doc("users/U12/streak/state").set(st({ last: "2026-10-12", count: 6 }));
+      for (const mode of ["merge", "replace"]) {
+        await callAsAdmin("adminRestoreBackup", "ADM12", { targetUid: "U12", backupId: b1.backupId, mode });
+        const cur = (await db.doc("users/U12/streak/state").get()).data();
+        assert.equal(cur.last, "2026-10-12", "mode " + mode + " : une série plus récente a été ramenée en arrière : " + JSON.stringify(cur));
+        assert.equal(cur.count, 6);
+      }
+      // Série absente : recréée.
+      await db.doc("users/U12/streak/state").delete();
+      await callAsAdmin("adminRestoreBackup", "ADM12", { targetUid: "U12", backupId: b1.backupId });
+      assert.equal((await db.doc("users/U12/streak/state").get()).data().count, 4, "série absente non recréée");
+      // Série actuelle plus ANCIENNE que la sauvegarde : la sauvegarde la rattrape.
+      await db.doc("users/U12/streak/state").set(st({ last: "2026-10-01", count: 1 }));
+      await callAsAdmin("adminRestoreBackup", "ADM12", { targetUid: "U12", backupId: b1.backupId, mode: "replace" });
+      assert.equal((await db.doc("users/U12/streak/state").get()).data().last, "2026-10-10", "une série plus ancienne n'a pas été rattrapée");
     });
 
     it("settings/preferences : recréé s'il est absent (compléter), toujours réécrit en mode remplacer", async () => {

@@ -1839,8 +1839,20 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
   /* Animation de copie (comme sur le produit frère) : le bouton devient VERT, l'icône devient une coche,
      le libellé « Copié ! » — puis retour à l'état normal au bout de 1,4 s (largeur fixe : le bouton ne saute pas). */
   var COPY_ICON = "<svg class=\"icon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><rect x=\"9\" y=\"9\" width=\"11\" height=\"11\" rx=\"2\"/><path d=\"M5 15V6a2 2 0 0 1 2-2h9\"/></svg>";
+  /* Verrou global : UNE seule copie à la fois sur la page (lien, code, codes des filleuls). Tant qu'un bouton
+     affiche « Copié ! », les autres boutons de copie sont inertes (le presse-papiers garde donc bien la valeur
+     du bouton qui affiche la coche — jamais deux « Copié ! » en même temps). Filet : le verrou se libère de
+     lui-même si la copie échoue (onDone jamais appelé). */
+  var copyLocked = false, copyLockSafety = null;
+  function releaseCopyLock() { copyLocked = false; window.clearTimeout(copyLockSafety); copyLockSafety = null; }
+  function copyAndFlash(btn, text) {
+    if (copyLocked || !text) return;
+    copyLocked = true;
+    copyLockSafety = window.setTimeout(releaseCopyLock, 2500);
+    copyText(text, function () { flashCopied(btn); });
+  }
   function flashCopied(btn) {
-    if (!btn || btn.classList.contains("copied")) return;
+    if (!btn || btn.classList.contains("copied")) { releaseCopyLock(); return; }
     var icon = btn.querySelector(".icon"), label = btn.querySelector(".referral-copy-btn-label");
     var oldIcon = icon ? icon.outerHTML : "", oldLabel = label ? label.textContent : "";
     btn.classList.add("copied");
@@ -1850,6 +1862,7 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
       btn.classList.remove("copied");
       var i2 = btn.querySelector(".icon"); if (i2) i2.outerHTML = oldIcon;
       var l2 = btn.querySelector(".referral-copy-btn-label"); if (l2) l2.textContent = oldLabel;
+      releaseCopyLock();
     }, 1400);
   }
 
@@ -1920,13 +1933,13 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
   if (copyBtn) {
     copyBtn.addEventListener("click", function () {
       var code = referralInfo.code;
-      if (code) copyText(code, function () { flashCopied(copyBtn); });
+      if (code) copyAndFlash(copyBtn, code);
     });
   }
   if (copyLinkBtn) {
     copyLinkBtn.addEventListener("click", function () {
       var code = referralInfo.code;
-      if (code) copyText(REFERRAL_SHARE_BASE + code, function () { flashCopied(copyLinkBtn); });
+      if (code) copyAndFlash(copyLinkBtn, REFERRAL_SHARE_BASE + code);
     });
   }
 
@@ -2107,7 +2120,7 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
         btn.type = "button"; btn.className = "referral-copy-btn referral-row-copy";
         btn.setAttribute("aria-label", "Copier le code" + (name ? " de " + name : ""));
         btn.innerHTML = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg><span class="referral-copy-btn-label">Copier</span>';
-        btn.addEventListener("click", function () { copyText(code, function () { flashCopied(btn); }); });
+        btn.addEventListener("click", function () { copyAndFlash(btn, code); });
         actions.appendChild(btn);
       }
       li.appendChild(actions);

@@ -181,6 +181,63 @@ service cloud.firestore {
         allow delete: if false;
       }
 
+      /* ---------- sessions de travail et entraînements du jour (2026-10-11) ----------
+         Un document par ajout (id généré côté client), jamais dans calendarDays/{jour} : l'écoute de
+         ce document ne recopie que status/specialties/notes et p1SaveDay l'écrit en merge:false avec
+         ces 3 champs -- le premier changement de statut ou de notes du jour aurait effacé les sessions.
+         Création : champs EXACTS (aucun champ inconnu), types et bornes vérifiés ici.
+         Mise à jour : uniquement deletedAt (suppression douce / restauration) et updatedAt -- minutes,
+         date, type et durée ne sont plus réécrivables après coup. Suppression physique : jamais.
+         Le plafond de 24 h par jour (somme sur plusieurs documents) ne peut PAS s'exprimer en Rules :
+         il est contrôlé côté client ; chaque document reste borné à 1 440 min. */
+      match /workSessions/{sessionId} {
+        function validWorkSession(d) {
+          return d.keys().hasOnly(['date', 'kind', 'label', 'count', 'minutes', 'createdAt', 'updatedAt', 'deletedAt'])
+            && d.keys().hasAll(['date', 'label', 'minutes', 'createdAt', 'updatedAt'])
+            && d.date is string && d.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+            && (!('kind' in d) || d.kind == null || (d.kind is string && d.kind.size() >= 1 && d.kind.size() <= 40))
+            && d.label is string && d.label.size() >= 1 && d.label.size() <= 40
+            && (!('count' in d) || d.count == null || (d.count is int && d.count >= 1 && d.count <= 1000))
+            && d.minutes is int && d.minutes >= 1 && d.minutes <= 1440
+            && d.createdAt is timestamp && d.updatedAt is timestamp
+            && (!('deletedAt' in d) || d.deletedAt == null || d.deletedAt is timestamp);
+        }
+        allow read: if isSelfVerified(uid);
+        allow create: if canWrite(uid) && validWorkSession(request.resource.data);
+        allow update: if canWrite(uid)
+          && validWorkSession(request.resource.data)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deletedAt', 'updatedAt']);
+        allow delete: if false;
+      }
+
+      /* ---------- flammes et vies (2026-10-12) : users/{uid}/streak/state ----------
+         Règles des vies (décision de Jean, 12/10 soir) : 5 au maximum ; UNE vie par absence, quelle que soit sa durée (used.n vaut donc toujours 1).
+         Document UNIQUE à usage unique (id imposé « state »). Lecture et écriture pour tout compte vérifié, y
+         compris en lecture seule (isSelfVerified, PAS canWrite) : la série de connexion ne dépend pas de l'accès
+         payant. Schéma verrouillé (champs exacts, types, bornes) ; suppression interdite.
+         ⚠ Limite assumée : le client calcule la série et peut donc s'inventer des flammes. Sans enjeu (ne
+         concerne que lui, aucun privilège). Un anti-triche exigerait une fonction serveur (horloge serveur +
+         fuseau de l'élève) -- décision laissée à Jean. */
+      match /streak/{docId} {
+        function streakDate(v) { return v is string && v.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$'); }
+        function streakDateOrNull(d, k) { return !(k in d) || d[k] == null || streakDate(d[k]); }
+        function validStreak(d) {
+          return d.keys().hasOnly(['last', 'count', 'best', 'lives', 'week', 'used', 'gift', 'anim'])
+            && d.keys().hasAll(['last', 'count', 'best', 'lives'])
+            && streakDate(d.last)
+            && d.count is int && d.count >= 1 && d.count <= 100000
+            && d.best is int && d.best >= d.count && d.best <= 100000
+            && d.lives is int && d.lives >= 0 && d.lives <= 5
+            && streakDateOrNull(d, 'week') && streakDateOrNull(d, 'gift') && streakDateOrNull(d, 'anim')
+            && (!('used' in d) || d.used == null
+                || (d.used is map && d.used.keys().hasOnly(['day', 'n']) && d.used.keys().hasAll(['day', 'n'])
+                    && streakDate(d.used.day) && d.used.n == 1));
+        }
+        allow read: if isSelfVerified(uid);
+        allow create, update: if isSelfVerified(uid) && docId == 'state' && validStreak(request.resource.data);
+        allow delete: if false;
+      }
+
       /* ---------- planning ---------- */
       match /calendarDays/{dateKey} {
         allow read: if isSelfVerified(uid);

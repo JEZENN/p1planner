@@ -730,3 +730,110 @@ contre l'émulateur réel juste avant la rédaction du rapport final.
 - [x] Sauvegarde nocturne : bug de démarrage à froid corrigé (`getAuth()` -> `auth_()`), `scheduled-backup-init.test.mjs`
   avec contre-épreuve ; `backups.test.mjs` auto-nettoyant (12/12 x3). Fonctions : **141/141** à la 1re exécution complète (après la recopie du nom), puis 139-142 selon les exécutions : 1 à 3 tests de CONCURRENCE du parrainage (« Transaction is invalid or closed », émulateur) échouent de façon intermittente -- mesuré SANS mes changements (version HEAD) : 4/8 puis 6/8 exécutions en échec, contre 6/8 puis 3/8 avec eux : instabilité d'environnement préexistante, pas une régression.
 - [ ] À vérifier demain : `firebase functions:log` -> l'exécution de 03:00 de `scheduledUserBackup` crée des sauvegardes.
+
+## Sessions de travail, entraînements, graphique, Paramètres, copie Premium (2026-10-11) — local, rien déployé
+
+- [x] `test/e2e/work-sessions.mjs` : F1/F2/E1/A1-A4 (lots d'origine), S1-S7, C1, N1, G1, T1 (switchs Paramètres, clair + sombre, 2 tailles),
+  P1-P3 (pastilles : souris réelle, sombre, tactile 390). Contre-épreuves faites sur l'ancienne version (F1, F2, E1, A1-A3, T1, N1, S1 échouent).
+  Les pastilles du complément n'ont pas de contre-épreuve « avant » (aucun instantané pris avant ce complément).
+- [x] `referral-ui.mjs` C2 (jamais deux « Copié ! ») : échoue sur l'ancienne page, passe ; `T/C/V` 7/7.
+- [x] Mocha : `firestore.rules.test.mjs` **51/51** (contre-épreuve : règles d'origine → 4 échecs sur les 7 tests workSessions),
+  `backups.test.mjs` **13/13** (contre-épreuves : sans `workSessions` dans la sauvegarde, sans `deletedAt` dans la restauration).
+- [x] Non-régression e2e : `battery` 19/19, `tours-lock` (5 passés avant l'arrêt de ma session de test), `layout-tours` 7/7, `pdd-popovers` 4/4,
+  `j-day-groups` 4/4, `delete-animation` 4/4, `signup-form` 3/3, `pop-legend-keyboard` 12/12, `settings-persist` 1/1.
+- [ ] Non rejoués après cette session : `test:bootstrap`, `catalog-*`, `subject-bank`, `train-catalog`, `data-durability`, `smoke`, `flash-orphan-subject`,
+  `ipad-img-bar`, `scrollbar-lock-visual`, mutants permanents (`mutants.mjs` non étendu).
+- [ ] Sans test dédié : captures iPad (portrait/paysage) des nouvelles cartes/fenêtres ; bouton « Du jour » de la page Entraînements (≤ 480 px,
+  chevauchement avec « ? »/pagination) ; `<script>` : 57 blocs, 0 erreur ; trap de focus clavier des fenêtres non implémenté.
+
+## Flammes et vies + retouches du 12/10 — local, rien déployé
+
+- [x] `test/streak.test.mjs` **21/21** (vrai code de la page dans `vm`, faux Firestore transactionnel, stockage local PIÈGE) ; 6 mutants du calcul
+  tous détectés (don de vie, `<=`, `>=`, plafond 3, vie double, `localStorage`) ; la page d'avant échoue (module absent).
+- [x] `test/firestore.rules.test.mjs` **57/57** (6 tests `streak`, dont compte en lecture seule autorisé) ; sans le bloc de règles : 3 échecs.
+- [x] `test/backups.test.mjs` **14/14** (`streak` sauvegardée, jamais de retour en arrière en compléter/remplacer) ; sans `streak` : échec.
+- [x] `test/e2e/streak.mjs` **9/9** (E1 nouveau compte + rechargement + aucun stockage local, E2 hier 4→5 « +1 », E3 2e navigateur sans animation,
+  E4 cœur brisé / « Série sauvée », E5 série qui repart, E6 vie offerte, E7 téléphone 390 sombre, E8 mouvements réduits, E9 place/aria-label) ;
+  la page d'avant échoue. E7 a échoué une fois (carte hors écran → animation jamais jouée) : test corrigé (grande hauteur).
+- [x] `work-sessions.mjs` : H-A (fondu), H-B (hauteurs fixes, PC/iPad/390/360), H-C, H-D1/H-D2 (compact) ; contre-épreuves : H-A, H-B, H-D1, H-D2 échouent
+  sur la version d'avant, **H-C passe aussi sur l'ancienne (rien à retirer dans P1)**. Plusieurs tests rendus déterministes (lecture des transitions
+  plutôt que minuteurs) : ce Chrome sans GPU décale les animations de plusieurs centaines de ms quand il est chargé.
+- [x] Non-régression : `battery` 19/19 ; `work-sessions` (F, E, A, S, C, N, G, H, P, E3) tous passés au moins une fois en isolation — **en suite
+  longue, C1, H-A et H-B ont échoué de façon intermittente (lenteur de l'environnement, pas de défaut reproductible)**.
+- [ ] Non rejoués : `test:bootstrap`, `test/*.test.mjs` hors rules/backups/streak, e2e `catalog-*`, `subject-bank`, `train-catalog`, `data-durability`,
+  `smoke`, `referral-ui` complet, `tours-lock` complet, `layout-tours` (non relancés après les derniers changements de CSS).
+- [ ] Non testé : iPad pour la carte « Flammes » ; téléphone 360 px ; thème pastel ; hors ligne réel de la synchro (couvert seulement par le faux Firestore).
+
+## Complément du 12/10 (soir) : 5 vies, une vie par absence — local, rien déployé
+
+- [x] `test/streak.test.mjs` **22/22** (nouvelles règles : 1/2/10 jours manqués, 0 vie, 8 semaines d'absence = +5 puis 1 utilisée, plafond 5, vie offerte qui sauve,
+  données abîmées/9 vies → 5, fuseaux) ; 7 mutants détectés ; la page d'avant échoue (7 échecs).
+- [x] `firestore.rules.test.mjs` **57/57** (`lives: 5` accepté, `6` et `9` refusés, `used.n: 2` refusé) ; avec les règles d'avant : 2 échecs.
+- [x] `backups.test.mjs` 14/14 ; trio rules + streak + backups : **93/93**.
+- [x] `test/e2e/streak.mjs` **13/13** (E1 5 cœurs, E4 un seul cœur brisé de ≥ 0,9 s puis flamme ≥ 0,85 s après, E5 absence à 0 vie, E10 10 jours / 2 vies → 13 flammes /
+  1 vie, E11 360 px sombre, H1 aides, N2 Nouveautés) ; la page d'avant échoue sur E1, E4, E10, E11, H1, N2. L'échantillonneur (15 ms) tourne DANS la page.
+- [x] `work-sessions.mjs` N1 (Flammes 1re, Sessions 2e), S1, G1, H-A, H-D1 ; `battery` : voir ci-dessous.
+- [ ] Non rejoués : `test:bootstrap`, autres `test/*.test.mjs`, e2e `catalog-*`, `subject-bank`, `train-catalog`, `data-durability`, `smoke`, `referral-ui` complet, `tours-lock`, `layout-tours`.
+
+## Harmonisation de l'interface (2026-10-14) — local, rien déployé
+
+- [x] `test/e2e/work-ui.mjs` (nouveau, remplace les scénarios sessions/entraînements de `work-sessions.mjs`) : S1-S7, C1-C2, G1, H-A, H-B, H-C, H-D1/D2, N1, P1 (clair/sombre), P2, P3, E3 — tous passés au moins une fois ;
+  en suite longue H-A (animation du graphique) a échoué une fois (Chrome sans GPU lent) et passe 3/3 seul. Contre-épreuve : la version d'avant échoue (S1, C2 ; E1, E10, E11 flammes).
+- [x] `test/e2e/streak.mjs` **13/13** (cœur qui bat puis se fend, « −1 », flamme APRÈS le cœur, mouvements réduits, 360 px, aides, Nouveautés). `streak.test.mjs` 22/22 (7 mutants détectés), rules 57/57, backups 14/14, battery 19/19,
+  `work-sessions.mjs` F/E/A 9/9, layout-tours 7/7, pdd-popovers 4/4, delete-animation 4/4, tours-lock 6/6, j-day-groups 4/4, referral-ui T/C 6/6 ; `pop-legend-keyboard` A1 a échoué une fois en suite et passe 2/2 seul.
+- [ ] Non rejoués : `test:bootstrap`, `T1` (switchs des Paramètres) après ces changements, e2e `catalog-*`, `subject-bank`, `train-catalog`, `data-durability`, `smoke` ; pas de captures iPad ; thème pastel non vérifié.
+
+## Retouches du 2026-10-15 — local, rien déployé
+
+Exécuté pour de vrai (vraie page, émulateurs Auth+Firestore, Chrome headless ; la sauvegarde est relue SUR LE SERVEUR en attendant 1 à 6 s) :
+- [x] `node test/e2e/note-checklist.mjs` : **19/19** (CK1-CK9 liste à cocher dont deux appareils et note vide, ST1 clair/pastel, HD1 ×3 thèmes, SP1, CL1 ×3 thèmes, NR1 barre d'outils / compteur / hors ligne). Contre-épreuve sur la version d'avant : 18 échecs sur 19 attendus
+  (CL1 sombre passe aussi sur l'ancienne version : le sombre n'avait pas le défaut ; NR1 échoue sur l'ancienne uniquement faute de cases, la barre d'outils et le compteur y passent).
+- [x] `node test/e2e/retouches-15-10.mjs` : **12/12** (jours depuis la révision à 00 h 30 et 12 h 00 heure de Paris, horloge simulée ; jour local des statistiques ; trophée fantôme ; couronne Premium ; suppression de tâche ×2 ;
+  graduations entières ; « Mes amis » ; icône des titres PC + téléphone ; changement d'onglet avec 100 lignes par page). Version d'avant : 10 échecs ; passent aussi : « 12 h 00 » et « jour local des statistiques » (défauts absents à ces cas).
+- [x] `npm run test:rules` **57/57** ; `mocha test/streak.test.mjs test/backups.test.mjs` **36/36** ; e2e `delete-animation` 4/4, `pdd-popovers` 4/4, `battery` 19/19, `j-day-groups` 4/4, `layout-tours` 7/7, `tours-lock` 6/6,
+  `catalog-custom` 14/14, `subject-bank` 6/6, `smoke`, `settings-persist`, `streak` 13/13 ; `work-ui` et `work-sessions` : échecs intermittents en suite longue (S6, H-B, P1, P3, T1), TOUS verts rejoués seuls (S6, H-B, P1, P3 sur la nouvelle ET l'ancienne version ; T1 sur la nouvelle seulement).
+- [x] `test:bootstrap` **3/3** (émulateurs P1 avec Functions, `FUNCTIONS_DISCOVERY_TIMEOUT=60` : le délai par défaut de 10 s est trop court sur cette machine). Le fichier attend le projet `p1planner` alors que les émulateurs e2e tournent sous `p1planner-e2e` : exécuté via une copie temporaire pointée sur `p1planner-e2e` (supprimée), le test d'origine n'a pas été modifié.
+- [ ] Non testé : iPad, Safari/iPhone réel (le correctif du trophée fantôme est vérifié par styles calculés, pas sur Safari 26), 360 px pour la liste à cocher (seulement 390 px) ; les titres sont mesurés à 360 px sans débordement (HD1).
+- Captures : `docs/captures-15-10/` (PC + téléphone, clair / sombre / pastel). Script : `test/e2e/captures-15-10.mjs`.
+
+- Complément du 17/10 : rapprochement avec la version de référence (lecture seule) → deux écarts réels corrigés : (1) sur une note VIDE, les boutons « puces » et « cases » ne créaient rien (`notesInput` effaçait la liste vide aussitôt créée) — défaut reproduit (CK9, la version d'avant échoue) puis corrigé ; (2) couronne / bouton d'essai masqués aussi en paysage téléphone et par le verrou de défilement ; mouvements de la suppression de tâche et de « Mes amis » alignés sur la référence. Rejoué : `retouches-15-10.mjs` 12/12 (ancienne : 10 échecs), `note-checklist.mjs` 19/19, rules 57/57, streak+backups 36/36, battery 19/19, streak 13/13, delete-animation, pdd-popovers, j-day-groups, layout-tours, tours-lock, catalog-custom, subject-bank, smoke, settings-persist verts ; `work-ui` : 6 échecs en suite longue, 6/6 verts rejoués seuls.
+
+### Passage final du 17/10 (suites restantes) — local, rien déployé
+- [x] 360×780 : `note-checklist.mjs` CK4 + CK7 et `retouches-15-10.mjs` FB1 + IC1 téléphone verts (variables `PHONE_W=360 PHONE_H=780`).
+- [x] e2e verts : `catalog-keyboard` 7/7, `data-durability` 9/9, `flash-orphan-subject` 1/1, `train-catalog` 8/8, `ipad-img-bar` 5/5, `pop-legend-keyboard` 12/12, `scrollbar-lock-visual` 2/2, `signup-form` 3/3, `referral-ui` 26/26, `catalog-safety` 4/4 (CAT2/CAT3 : délai de navigation en suite, verts seuls, y compris sur la version d'avant), `work-sessions` T1 (échoue en suite longue, vert seul).
+- [x] mocha : premium-plans, profile-name-mirror, referral-audit/functions/logic/lotAB, scheduled-backup-init, note-size-error-code, point3-error-code : 134 tests, 1 échec intermittent (`referral-lotAB`, « 3e ET 4e filleul en Promise.all », ≈ 1 passage sur 5) = erreur de l'émulateur « Transaction is invalid or closed » sous contention ; code de parrainage non modifié dans l'arbre de travail.
+- [ ] Jamais testé : Safari / iPhone réel, iPad, production (aucune donnée de production consultée).
+
+### Annale / Colle / Concours blanc en QCM, barre de sauvegarde, flammes (2026-10-18) — local, rien déployé
+- [x] `node test/e2e/epreuves-qcm.mjs` **2/2** (20 + 30 + 50 QCM = 3 annales / 100 QCM ; détail par épreuve ; cartes, semaine, récap ; QCM inchangé ; « − » retire la dernière épreuve ; colle + concours blanc sur téléphone 390 sans défilement horizontal) ; la version d'avant échoue 2/2.
+- [x] `node test/e2e/save-bar.mjs` **5/5** (bleu qui avance, vert puis effacée, rouge si refusée, orange réseau muet puis vert au retour, 3 thèmes) ; la version d'avant échoue 5/5.
+- [x] Flammes : reproduit avec les règles du dernier commit chargées dans l'émulateur (flammes « – », session refusée) ; avec les règles du dépôt : flamme 1, session acceptée.
+- [x] Non-régression : `work-ui` adapté (C2, P2 : nouvelle sémantique) — verts, y compris H-B (hauteurs identiques), S6, G1, H-A, P1, P3 rejoués seuls (instables en suite longue, comme avant) ; `streak` 13/13, `battery` 19/19, `note-checklist` 19/19, `retouches-15-10` 12/12 (échecs ponctuels de DEL1, battery T1/T3 quand une suite en suit une autre, verts rejoués seuls).
+- [ ] Jamais testé : Safari / iPhone réel, iPad, production.
+- [x] 19/10 : présélections du concours blanc = celles de l'annale (epreuves-qcm.mjs 2/2 : vérifie les pastilles de QCM et de temps de l'annale et du concours blanc ; la version d'avant échoue sur le concours blanc ; work-ui C1, C2, P2, H-B verts). Local seulement à ce stade.
+
+### Thème dans les Paramètres (2026-10-19) — local, rien déployé
+- [x] `node test/e2e/theme-settings.mjs` **13/13** : header sans bouton et sans décalage (PC 1366 et 1024, iPad 820, tablette 768, téléphone 390 et 360) ; carte placée juste sous « Listes personnalisables », 3 thèmes avec phrase, thème en cours coché ; clic = appliqué + indiqué + enregistré SUR LE SERVEUR + conservé au rechargement ; clavier (flèches) ; toucher iPad / 390 / 360 sans débordement, cibles >= 56 px ; contraste du nom et de la phrase >= 4,5 dans les 3 thèmes ; thème reçu du serveur reflété dans la carte. La version d'avant échoue 13/13.
+- [x] Non-régression : `catalog-keyboard` 7/7, `catalog-custom` 14/14, `subject-bank` 6/6, `settings-persist`, `pdd-popovers` 4/4, `work-sessions` T1 (Paramètres), `note-checklist` 19/19 et `retouches-15-10` 12/12 (3 thèmes), `save-bar` 5/5, `epreuves-qcm` 2/2.
+- [ ] Jamais testé : Safari / iPhone réel, iPad réel.
+
+### Police, écran vide, thème (2026-10-19, suite) — local, rien déployé
+- [x] `node test/e2e/theme-font-empty.mjs` **24/24** : TH1 thème ×7 formats (PC clair / sombre / pastel, iPad portrait et paysage, téléphone 390 et 360 : en-tête sans bouton, mêmes positions et hauteur qu'AVANT, carte sous « Listes personnalisables », un seul actif, clic = appliqué + localStorage + settings/preferences.theme relu côté serveur, re-clic sans réécriture, thème reçu du compte, rechargement) ; FN1 police ×7 (carte sous « Thème » sans description, police de départ avant DOMContentLoaded, corps / titres / `document.fonts.check` / logo Outfit / localStorage / settings/preferences.font, rechargement) ; FN2 ×4 (3 polices × 5 onglets sur PC 1366, PC 1024, iPad 820, téléphone 360 : scrollWidth <= largeur, en-tête de 70 px) ; FN3 (autre contexte sans rien en local : police du compte) ; EM1 ×5 (jour + semaine, 3 thèmes PC, téléphone 390 et 360 : nouvel écran, ancien absent, bouton visible, clic = fenêtre fermée + « Mes cours » actif + page défilable + onglets en vue). **La version d'avant échoue 24/24.**
+- [x] Non-régression : `theme-settings` 13/13, `catalog-keyboard` 7/7, `catalog-custom` 14/14, `subject-bank` 6/6, `settings-persist`, `note-checklist` 19/19, `retouches-15-10` 12/12, `save-bar` 5/5, `epreuves-qcm` 2/2, `battery` 19/19, `layout-tours` 7/7, `pdd-popovers` 4/4, `delete-animation` 4/4, `j-day-groups`, `tours-lock`, `streak` 13/13, `smoke`, `data-durability` 9/9, `train-catalog` 8/8, `pop-legend-keyboard` 12/12, `signup-form`, `referral-ui`, `ipad-img-bar`, `catalog-safety`, `flash-orphan-subject`, `scrollbar-lock-visual`. `work-ui` : 5 échecs en suite longue (S6, H-B, P1, P3), verts rejoués seuls (P1-dark vert au 2ᵉ passage, vert aussi sur la version d'avant).
+- [ ] Non exécutés cette fois : `test:rules` / mocha (règles et Functions non modifiées). Jamais testé : Safari / iPhone réel, iPad réel.
+- [x] 19/10 : entrée Nouveautés « Police et thème » sans notification — `theme-font-empty.mjs` NV1 vert (compte ayant lu la v7 : aucune pastille, aucun point d'avatar, seule clé « vu » = `whatsNewSeen_v7`, texte exact) et échoue sur la version d'avant ; `streak.mjs` N2 et `work-ui.mjs` N1 adaptés à l'ordre (Police et thème, Flammes, Sessions) et verts. Capture : `docs/captures-15-10/nouveautes-police-theme.png`.
+- [x] 19/10 : Nouveautés sans émojis dans les titres et sans étiquette « Cette semaine » — NV1 (vérifie aussi l'absence d'émojis dans tous les titres), streak N2 et work-ui N1 verts ; NV1 échoue sur la version d'avant.
+- [x] 19/10 : tiroir Session Flash — `theme-font-empty.mjs` FL1 ×4 (PC 1366, iPad 820, téléphone 390 et 360 × 3 polices : « Tout sélectionner », « Uniquement les dues », « Toutes les flashcards », « Choisir des items » sur une seule ligne, rien ne déborde du tiroir, les deux pastilles sur la même rangée sauf à 360 px) verts ; sans le correctif : 3 échecs sur 4 (le cas de Jean reproduit). `flash-orphan-subject` et `work-sessions` A1-A4 (flashcards) verts. Captures : `docs/captures-15-10/tiroir-flash-arrondie-{pc,tel360}.png`. Autres zones des flashcards non rescannées au-delà du tiroir et du tableau de bord (scan « coupé seulement en Arrondie » : aucune autre).
+- [x] 19/10 : survol des « + » en sombre — `theme-font-empty.mjs` HV1 ×3 (clair, sombre, pastel × les 2 boutons : au survol dégradé + icône blanche + bordure effacée, retour au repos en sortant) verts ; sans le correctif HV1-sombre échoue (clair et pastel passent). Capture : `docs/captures-15-10/plus-survol-sombre.png`. Autres boutons à règle sombre de même spécificité non recensés un à un.
+
+### Tour enregistré / modifié / supprimé : animation sur place (2026-10-19) — local, rien déployé
+- [x] `node test/e2e/tour-fx.mjs` **18/18** (lancé en deux passes : 11 + 7 scénarios, tous verts) : FX1 nouveau tour ×5 (PC 1366 clair / sombre / pastel, iPad 820, téléphone 390 : classe `p1-tour-pop`, 2 ondes, 10 rayons, pastille « +1 tour », ≥ 20 confettis, ligne `p1-row-added`, contour lumineux dans la partie visible de la ligne, aucun grand check, animation partie APRÈS la fermeture de la fenêtre, calque à z-index 30, calques retirés après 1,8 à 3,3 s, serveur à jour) ; FX2 modification (« Modifié », 0 confetti) ; FX3 suppression ×3 (PC clair / sombre, téléphone : fantôme à la classe de l'ancienne couleur avec le numéro de la case, « Tour supprimé », case vide, ligne `p1-row-removed`, serveur vidé) ; FX4 case hors écran (60 cours, fenêtre ouverte depuis « Révisions J » : la page défile, case centrée à ±120 px, animation ≥ 450 ms plus tard) ; FX5a autre onglet, FX5b mode compact (grand check joué UNE fois, aucun calque), FX5c écriture refusée (vrai refus : cours « restauré » après le chargement) et FX5d suppression refusée : ni animation ni check ; FX6a / FX6b Méthode des J (rien pendant la fenêtre J, animation à sa fermeture, « Planifier » comme « Pas cette fois ») ; FX7 mouvement réduit (aucun calque, ligne teintée) ; ERR1 aucune erreur JS.
+- [x] Contre-épreuve sur la copie d'AVANT (`PUBLIC_DIR`) : **14 échecs sur 18** (FX1 ×5, FX2, FX3 ×3, FX4, FX5c — l'ancienne version jouait le check même quand l'écriture échouait —, FX6 ×2, FX7) ; seuls FX5a, FX5b, FX5d et ERR1 passent aussi sur l'ancienne (comportement de repli inchangé, voulu).
+- [x] Non-régression (Chrome, un lot de 15 suites) : `layout-tours` 7/7, `delete-animation` 4/4, `j-day-groups` 4/4, `pdd-popovers` 4/4, `battery` 19/19, `smoke`, `settings-persist`, `theme-font-empty` 32/32, `theme-settings` 13/13, `save-bar` 5/5, `streak` 13/13, `epreuves-qcm` 2/2, `note-checklist` 19/19 ; `tours-lock` TL11 en échec dans le lot mais **6/6 rejoué seul** (et 6/6 sur l'ancienne version) ; `retouches-15-10` 11/12 : DEL1 (animation de suppression d'une TÂCHE, échantillonnage temporel) échoue **à l'identique sur la version d'avant** avec Chrome — sans lien avec cette modification.
+- [ ] Non testé : Safari / iPhone réel, iPad réel (seulement l'émulation 820 px), 360 px. Non relancés : `test:rules` / mocha (règles et Functions non modifiées). À 390 px, la pastille « Tour supprimé » peut être coupée par le bord droit de l'écran quand la case est près de ce bord (comportement identique à la référence).
+- Captures : `docs/captures-15-10/tour-fx-*.png` (nouveau tour PC clair + sombre + téléphone, modification PC, suppression PC + téléphone). Script : `test/e2e/tour-fx.mjs` (`TOURFX_SHOTS=1` pour les captures).
+
+### Rythme des J dans les Paramètres (2026-10-20) — local, rien déployé
+- [x] `node test/e2e/j-preset-settings.mjs` **3/3** (vrais clics : J1 « Personnalisé » non enregistré puis « Équilibré » ; J2 personnalisé enregistré → « Équilibré » enregistré ; J3 « Rapproché » → « Personnalisé » → retour → « Espacé »). Copie d'AVANT : J1 et J3 échouent (case restée sur « Personnalisé », rythme enregistré inchangé), J2 passe.
+- [x] Non-régression : `settings-persist`, `theme-settings`, `j-day-groups`, `catalog-custom` verts (voir sortie ci-dessus lors de la session).
+- [ ] Jamais testé : Safari / iPhone réel.

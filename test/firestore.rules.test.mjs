@@ -589,3 +589,143 @@ describe("Parrainage (referralCodes / referrals)", () => {
     await assertFails(updateDoc(doc(db, "users", USER_A), { referralCode: "ZZ99ZZ" }));
   });
 });
+
+/* ============================================================
+   SESSIONS DE TRAVAIL / ENTRAÎNEMENTS DU JOUR — users/{uid}/workSessions/{id}
+   (2026-10-11). Un document par ajout ; champs EXACTS validés ; mise à jour limitée à
+   deletedAt/updatedAt ; jamais de suppression physique.
+   ============================================================ */
+describe("Sessions de travail (workSessions)", () => {
+  const ws = (over = {}) => ({
+    date: "2026-10-11", kind: null, label: "QCM", minutes: 60,
+    createdAt: new Date(), updatedAt: new Date(), deletedAt: null, ...over
+  });
+  const ref = (db, uid = USER_A, id = "s1") => doc(db, "users", uid, "workSessions", id);
+
+  it("compte actif : crée une session valide et un entraînement (kind + count) → ALLOW ; lit les siennes → ALLOW", async () => {
+    await seedUser(USER_A, { writeAccessUntil: future() });
+    const db = ctxFor(USER_A).firestore();
+    await assertSucceeds(setDoc(ref(db), ws()));
+    await assertSucceeds(setDoc(ref(db, USER_A, "e1"), ws({ kind: "qcm", label: "QCM", count: 3, minutes: 45 })));
+    await assertSucceeds(getDoc(ref(db)));
+  });
+
+  it("accès en lecture seule (écriture expirée) : créer → DENY, lire → ALLOW", async () => {
+    await seedUser(USER_A, { writeAccessUntil: past() });
+    await testEnv.withSecurityRulesDisabled(async (ctx) => { await setDoc(ref(ctx.firestore()), ws()); });
+    const db = ctxFor(USER_A).firestore();
+    await assertFails(setDoc(ref(db, USER_A, "s2"), ws()));
+    await assertSucceeds(getDoc(ref(db)));
+  });
+
+  it("minutes hors bornes ou de mauvais type → DENY (0, 1441, décimal, texte)", async () => {
+    await seedUser(USER_A, { writeAccessUntil: future() });
+    const db = ctxFor(USER_A).firestore();
+    for (const [i, bad] of [0, -5, 1441, 90.5, "60"].entries()) {
+      await assertFails(setDoc(ref(db, USER_A, "bad" + i), ws({ minutes: bad })));
+    }
+    await assertSucceeds(setDoc(ref(db, USER_A, "max"), ws({ minutes: 1440 })));
+    await assertSucceeds(setDoc(ref(db, USER_A, "min"), ws({ minutes: 1 })));
+  });
+
+  it("date mal formée, libellé vide/trop long, count invalide, champ inconnu → DENY", async () => {
+    await seedUser(USER_A, { writeAccessUntil: future() });
+    const db = ctxFor(USER_A).firestore();
+    await assertFails(setDoc(ref(db, USER_A, "d1"), ws({ date: "11/10/2026" })));
+    await assertFails(setDoc(ref(db, USER_A, "d2"), ws({ date: "2026-10-11T08:00" })));
+    await assertFails(setDoc(ref(db, USER_A, "l1"), ws({ label: "" })));
+    await assertFails(setDoc(ref(db, USER_A, "l2"), ws({ label: "x".repeat(41) })));
+    await assertFails(setDoc(ref(db, USER_A, "c1"), ws({ kind: "qcm", count: 0 })));
+    await assertFails(setDoc(ref(db, USER_A, "c2"), ws({ kind: "qcm", count: 1.5 })));
+    await assertFails(setDoc(ref(db, USER_A, "u1"), ws({ isAdmin: true })));
+    await assertFails(setDoc(ref(db, USER_A, "u2"), { date: "2026-10-11", label: "QCM", minutes: 10 })); // createdAt/updatedAt manquants
+  });
+
+  it("écriture chez un AUTRE uid → DENY ; lecture des sessions d'un autre → DENY", async () => {
+    await seedUser(USER_A, { writeAccessUntil: future() });
+    await seedUser(USER_B, { writeAccessUntil: future() });
+    await testEnv.withSecurityRulesDisabled(async (ctx) => { await setDoc(ref(ctx.firestore(), USER_A, "s1"), ws()); });
+    const dbB = ctxFor(USER_B).firestore();
+    await assertFails(setDoc(ref(dbB, USER_A, "intrus"), ws()));
+    await assertFails(getDoc(ref(dbB, USER_A, "s1")));
+    await assertFails(updateDoc(ref(dbB, USER_A, "s1"), { deletedAt: new Date(), updatedAt: new Date() }));
+  });
+
+  it("e-mail non vérifié : créer et lire → DENY", async () => {
+    await seedUser(USER_A, { writeAccessUntil: future() });
+    const db = ctxFor(USER_A, { verified: false }).firestore();
+    await assertFails(setDoc(ref(db), ws()));
+    await assertFails(getDoc(ref(db)));
+  });
+
+  it("suppression DOUCE (deletedAt) et restauration → ALLOW ; autre champ ou suppression physique → DENY", async () => {
+    await seedUser(USER_A, { writeAccessUntil: future() });
+    const db = ctxFor(USER_A).firestore();
+    await assertSucceeds(setDoc(ref(db), ws()));
+    await assertSucceeds(updateDoc(ref(db), { deletedAt: new Date(), updatedAt: new Date() }));
+    await assertSucceeds(updateDoc(ref(db), { deletedAt: null, updatedAt: new Date() })); // restauration
+    await assertFails(updateDoc(ref(db), { minutes: 600, updatedAt: new Date() })); // minutes non réécrivables
+    await assertFails(updateDoc(ref(db), { date: "2026-10-12", updatedAt: new Date() }));
+    await assertFails(updateDoc(ref(db), { label: "Autre", updatedAt: new Date() }));
+    await assertFails(deleteDoc(ref(db)));
+  });
+});
+
+describe("Flammes et vies (users/{uid}/streak/state)", () => {
+  const st = (over = {}) => ({ last: "2026-10-12", count: 5, best: 6, lives: 2, week: "2026-10-12", used: null, gift: null, anim: null, ...over });
+  const ref = (db, uid = USER_A, id = "state") => doc(db, "users", uid, "streak", id);
+
+  it("soi-même : crée puis met à jour un état valide, le relit → ALLOW (y compris used renseigné)", async () => {
+    await seedUser(USER_A, { writeAccessUntil: future() });
+    const db = ctxFor(USER_A).firestore();
+    await assertSucceeds(setDoc(ref(db), st()));
+    await assertSucceeds(setDoc(ref(db), st({ count: 6, used: { day: "2026-10-12", n: 1 }, gift: "2026-10-12" })));
+    await assertSucceeds(setDoc(ref(db), st({ lives: 5 })));    // 5 vies : accepté (maximum)
+    await assertSucceeds(updateDoc(ref(db), { anim: "2026-10-12" }));
+    await assertSucceeds(getDoc(ref(db)));
+  });
+
+  it("compte en LECTURE SEULE (écriture expirée) : lire ET écrire → ALLOW (décision : la série ne dépend pas de l'accès payant)", async () => {
+    await seedUser(USER_A, { writeAccessUntil: past() });
+    const db = ctxFor(USER_A).firestore();
+    await assertSucceeds(setDoc(ref(db), st()));
+    await assertSucceeds(getDoc(ref(db)));
+  });
+
+  it("autre utilisateur : lire / écrire l'état d'autrui → DENY", async () => {
+    await seedUser(USER_A, { writeAccessUntil: future() });
+    await seedUser(USER_B, { writeAccessUntil: future() });
+    await testEnv.withSecurityRulesDisabled(async (ctx) => { await setDoc(ref(ctx.firestore()), st()); });
+    const dbB = ctxFor(USER_B).firestore();
+    await assertFails(getDoc(ref(dbB, USER_A)));
+    await assertFails(setDoc(ref(dbB, USER_A), st()));
+    await assertFails(updateDoc(ref(dbB, USER_A), { count: 99 }));
+  });
+
+  it("e-mail non vérifié ou non connecté → DENY", async () => {
+    await seedUser(USER_A, { writeAccessUntil: future() });
+    await assertFails(setDoc(ref(ctxFor(USER_A, { verified: false }).firestore()), st()));
+    await assertFails(getDoc(ref(ctxFor(null).firestore())));
+  });
+
+  it("schéma invalide → DENY : lives 4 / -1, champ en trop, count 0, best < count, date mal formée, used mal formé, autre id de document", async () => {
+    await seedUser(USER_A, { writeAccessUntil: future() });
+    const db = ctxFor(USER_A).firestore();
+    for (const bad of [st({ lives: 6 }), st({ lives: 9 }), st({ lives: -1 }), st({ lives: 1.5 }), st({ extra: 1 }), st({ count: 0 }), st({ count: 100001, best: 100001 }), st({ best: 4 }),
+      st({ last: "12/10/2026" }), st({ last: 20261012 }), st({ week: "lundi" }), st({ used: { day: "2026-10-12", n: 0 } }), st({ used: { day: "2026-10-12", n: 2 } }), st({ used: { day: "2026-10-12", n: 4 } }),
+      st({ used: { day: "2026-10-12", n: 1, x: 1 } }), st({ used: "oui" })]) {
+      await assertFails(setDoc(ref(db), bad));
+    }
+    await assertFails(setDoc(ref(db, USER_A, "autre"), st()));
+    const { last, ...sansLast } = st();
+    await assertFails(setDoc(ref(db), sansLast));
+  });
+
+  it("suppression → DENY ; les champs facultatifs (week/used/gift/anim) peuvent être absents ou null", async () => {
+    await seedUser(USER_A, { writeAccessUntil: future() });
+    const db = ctxFor(USER_A).firestore();
+    await assertSucceeds(setDoc(ref(db), { last: "2026-10-12", count: 1, best: 1, lives: 3 }));
+    await assertSucceeds(setDoc(ref(db), st({ week: null, used: null, gift: null, anim: null })));
+    await assertFails(deleteDoc(ref(db)));
+  });
+});

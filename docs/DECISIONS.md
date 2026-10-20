@@ -1299,3 +1299,175 @@ noms de filleuls lisent Firestore. Correctif (option 1 choisie par Jean, pas de 
   purge) ; stable sur 3 exécutions consécutives sans nettoyage manuel.
 
 - **Réserve honnête sur les tests de concurrence du parrainage** (`referral-functions` « 2 filleuls activés en concurrence », `referral-audit` F3 « deux alias en Promise.all ») : sur l'émulateur ils échouent désormais de façon intermittente (« 3 INVALID_ARGUMENT: Transaction is invalid or closed »), alors qu'ils passaient en début de journée. Mesuré en A/B : version HEAD (sans la recopie du nom) 4/8 et 6/8 exécutions en échec, version avec recopie 6/8 puis 3/8 (émulateur redémarré à neuf) : le défaut est préexistant et indépendant de ce lot. À investiguer à part : si le message provient du SDK Admin en production et non du seul émulateur, il concernerait deux activations simultanées pour un même parrain.
+
+## Sessions de travail, entraînements du jour, graphique « Temps », Paramètres, copie Premium (2026-10-11)
+
+> Tout en local (émulateurs) : **aucun déploiement, commit ni push** (le prompt l'interdisait). Fichiers à publier au GO de Jean :
+> `public/tableur.html`, `public/comptepremium.html`, `firestore.rules`, `functions/index.js` (+ `public/auth.html`, modifié avant).
+
+- **Stockage** : `users/{uid}/workSessions/{id}`, UN document par ajout (`date` locale AAAA-MM-JJ, `kind` null = session de travail /
+  id de type d'entraînement, `label` ≤ 40, `count`, `minutes` 1..1440, `createdAt/updatedAt`, `deletedAt`). Jamais dans `calendarDays`
+  (`p1SaveDay` y écrit en `merge:false` avec 3 champs : il effacerait les sessions). Écriture immédiate (`_fsSetDoc`, donc comptée dans
+  `_p1UnconfirmedWrites`), id généré côté client, suppression = soft delete (`deletedAt`, `updateDoc`). Règles : create/update par
+  `canWrite`, update limité à `deletedAt`/`updatedAt`, delete interdit. Ajouté à `ADMIN_BACKUP_SUBCOLLECTIONS` ; la restauration
+  « compléter » rétablit une session supprimée depuis (`deletedAt` traité comme `archivedAt`).
+- **Plafond de 24 h/jour** (tours + sessions + entraînements) : garde d'INTERFACE uniquement (les Rules ne peuvent pas sommer une
+  collection) — un client modifié pourrait le contourner, sans effet sur la sécurité des données d'autrui.
+- **Cache hors ligne** : Firestore persistant (IndexedDB) si disponible, sinon mémoire ; en mémoire, une écriture non confirmée est perdue
+  au rechargement (comme tous les autres écrits ; l'avertissement avant de quitter les compte). Non vérifiable en Safari privé ici.
+- **Types d'entraînement** (réponse de Jean) : QCM, Annale, Colle, Concours blanc, tous en mode « saisie » (table générique
+  `{id,label,couleur,mode:'plus1'|'saisie',minutesParDéfaut}` ; `plus1` géré mais inutilisé). Zone « saisie » : nombre ±1 (valeur
+  d'origine 1) et temps ±5 min, avec répétition à l'appui prolongé et pastilles de valeurs ; **le prompt disait « −/+ de 5 » pour les deux : à valider**.
+- **Temps** : les cartes « Temps » (jour, général) = tours + sessions + entraînements ; elles restent visibles en mode compact
+  (avant : masquées car seules les durées de tours y comptaient). `calculateStats/calculateDailyStats/getWeeklyData` exposent les
+  minutes de sessions/entraînements ; `window.p1ToursMinutesFor(date)` sert au plafond.
+- **Graphique** : 3 parts empilées (Tours #3b82f6 / Sessions #d97706 / Entraînements #8b5cf6), légende HTML à bascule (`aria-pressed`),
+  échelle FIXE (max = jour le plus chargé arrondi au pas 0,5/1/2/4 h, axe de 46 px). Aucune reconstruction fenêtre ouverte ; UNE seule
+  à la fermeture, et seulement si la signature (données, thème, pastel, taille des canevas) a changé.
+- **Pastilles** (complément) : vrais boutons ; actif ambre en `#b45309` (et non `#f59e0b`) car texte blanc exigé → 5:1 au lieu de 2,1:1.
+  Survol sous `@media (hover:hover)` uniquement. La bordure de 1,5 px est déclarée telle quelle ; Chrome l'arrondit au pixel physique.
+- **Défauts d'origine corrigés** : « aujourd'hui » en date LOCALE (6 endroits) ; total hebdo en minutes exactes. **Volontairement non
+  corrigés** (à lister à Jean) : date de sauvegarde quotidienne (`getTodayDateString`) et dates des trophées (UTC).
+- **Paramètres** : sélecteurs à deux choix (`.settings-seg`, `.tpx-seg`) → fond blanc qui glisse (CSS, `:has()`).
+- **Compte premium** : un seul « Copié ! » à la fois (verrou global, filet de 2,5 s si la copie échoue).
+- **Nouveautés** : clés `whatsNewSeen_v6`/`whatsNew_seen_v6` → `v7` (tous les comptes revoient la pastille) + entrée en tête.
+
+## Flammes et vies + retouches du 12/10 (graphique, fenêtres, mode compact) (2026-10-12)
+
+> Tout en local : aucun déploiement, commit ni push. À publier au GO : `public/tableur.html`, `firestore.rules` (document `streak`),
+> `functions/index.js` (sauvegardes). Instantané d'avant : `rollback/tableur.html.avant-flammes-2026-10-12`.
+
+- **A — graphique** : masquer/ré-afficher une part passe par `chart.hide(i)` / `chart.show(i)` (fondu Chart.js ; repli
+  `setDatasetVisibility + update`), après recalcul des `fill` sur la visibilité d'ARRIVÉE. Échelle et zone de tracé inchangées.
+- **B — fenêtre Entraînements** : hauteur fixe quel que soit le contenu : cadre de la liste en grille (titre rangée 1 ; cases
+  ET message « vide » dans la MÊME case rangée 2), 2 colonnes × 2 rangées réservées (4 types), message « vide » en fondu
+  (`opacity/visibility`, 0,16 s / 0,22 s) au lieu de `display:none`, pastilles du récap sur 2 lignes réservées ≤ 560 px.
+  Mesuré avant : liste 87 → 147 → 242 px, récap 81 → 108 px (360 px). Après : écart < 1 px.
+- **C — ligne « Entraînement »** : P1 n'avait pas de détail entre parenthèses (rien à retirer) ; test de non-régression ajouté.
+- **D — mode compact** (`getToursViewMode() === 'compact'`) : plus de ligne « Tours » dans la fenêtre « Temps de travail » (sous-titre
+  « Sessions de travail + entraînements »), plus de part « Tours » dans le graphique ; temps du jour/semaine = sessions + entraînements
+  SEULEMENT (une ancienne durée de tour ne s'y ajoute plus) ; plafond de 24 h calculé de même ; le total général « depuis toujours »
+  est inchangé. Le mode est dans la signature qui décide de reconstruire le graphique ; `applyToursModeToStats` ne relance le rendu
+  (`setTimeout`) que lorsque le mode a CHANGÉ (pas de boucle). La couleur suit la part, pas sa position.
+- **E — flammes et vies** : `users/{uid}/streak/state` (document unique, 8 champs, schéma verrouillé, delete interdit).
+  **Lecture/écriture pour tout compte vérifié, y compris en lecture seule** (`isSelfVerified`, pas `canWrite`) — décision proposée, à confirmer.
+  **Pas d'anti-triche serveur** : un client peut s'inventer des flammes (sans enjeu, ne concerne que lui) ; un anti-triche exigerait une
+  fonction serveur (horloge serveur + fuseau de l'élève) — décision laissée à Jean.
+  Calcul = fonction pure `step()` (dates LOCALES, `new Date(a, m, j)`, insensible aux changements d'heure). Synchro = TRANSACTION
+  (lecture serveur + écriture atomiques) : hors ligne, rien n'est écrit ni calculé de mémoire ; deux appareils le même jour = même
+  résultat ; écriture refusée → le passage suivant relit le serveur. Déclencheurs : chargement, `visibilitychange`, `focus`, `online`, 30 s.
+  Animation : une fois par jour tous appareils confondus (`anim = aujourd'hui` écrit AVANT de jouer ; `IntersectionObserver` ≥ 50 %).
+  AUCUN stockage local (ni série, ni « animation vue »). Sauvegardes : `streak` ajouté ; restauration spéciale `_restoreStreak`
+  (compléter ET remplacer ne font jamais reculer une série plus récente : on garde le `last` le plus grand).
+  Pas d'entrée « Nouveautés » ajoutée (proposée, non demandée).
+
+## Complément du 12/10 (soir) : 5 vies, UNE vie par absence, cœurs plus lents, aides, Nouveautés (2026-10-12)
+
+> Remplace les règles de vies du § précédent. Local seulement, rien déployé. Instantanés d'avant : `rollback/tableur.html.avant-5vies-2026-10-12`,
+> `rollback/firestore.rules.avant-5vies-2026-10-12`. À publier au GO : `public/tableur.html` et `firestore.rules`.
+
+- **Vies** : `MAX_LIVES = 5` (5 au départ ET au maximum ; la vie offerte du lundi reste +1, plafonnée à 5). **Une absence = UNE vie**, quelle que soit
+  sa durée (1 jour ou 10) : `missed ≥ 1` et `lives ≥ 1` → `lives − 1`, `count + 1`, `used = { day, n: 1 }` ; les jours manqués ne rapportent pas de
+  flamme. La série repart à 1 seulement avec 0 vie (vie offerte de la semaine déjà comptée). « Vivante » à l'affichage = `step()` donnerait un +1
+  (donc `last ≥ hier` ou une vie disponible, dons de la semaine inclus).
+- **Règles Firestore** : `lives ≤ 5`, `used.n == 1`. Les anciens documents (lives ≤ 3, `used.n ≤ 3` jamais écrits en production) restent valides.
+- **Migration** : `a232785` n'a pas de `p1Streak` → rien en production à migrer. Je n'ai AUCUN moyen d'interroger la production ni une éventuelle base
+  de recette depuis ici : si des documents `streak/state` y existaient (anciens `lives ≤ 3`), ils repartent à leur valeur et ne montent à 5 que par les dons
+  hebdomadaires — à vérifier avant publication ; aucune écriture n'a été faite hors émulateurs.
+- **Cœurs** : 5 cœurs ; cœur qui se brise = animation CSS `wsHeartBreak` de 0,95 s (grossit ×1,5, tremble −14°/+12°/−8°, tombe en s'effaçant), 0,75 s
+  entre deux cœurs, la flamme ne s'embrase qu'après le dernier. Mouvements réduits : aucune animation.
+- **Aides** (voix « vous » conservée) : lignes Temps de travail / Entraînements du jour / Flammes (aide « jour »), titre « Graphiques et entraînements »,
+  Temps / Entraînements (aide « 7 jours »), sans mention du mode compact. **Non demandé, laissé tel quel** : le « Conseil » de l'aide « jour » dit encore que
+  « les sessions de QCM ne sont pas prises en compte » — devenu faux avec les sessions de travail ; à reformuler si Jean le souhaite.
+- **Nouveautés** : entrée « Flammes 🔥 » en tête (icône dégradé `#f97316 → #ef4444`, nouvelle classe `.flame`), avant « Sessions de travail ».
+  Clé de « vu » inchangée : `v7` (non publiée).
+
+## Harmonisation de l'interface des nouvelles fonctionnalités avec l'autre outil (2026-10-14)
+
+> Demande de Jean : le rendu des sessions de travail, entraînements et flammes ne ressemblait pas assez à l'autre outil du même éditeur. Local seulement, rien déployé.
+> Instantané d'avant : `rollback/tableur.html.avant-harmonisation-2026-10-14`.
+
+- Le code d'interface (CSS, HTML des fenêtres, logique d'ajout/suppression/animations, cartes, légende du graphique, bulle sur le côté, carte « Flammes » avec cœurs qui se fendent)
+  est repris de la version de référence (lue en LECTURE SEULE) et renommé aux noms P1 (`ws-*`, `p1Ws*`, `p1Tr*`, `p1Streak*`). Les cartes sont maintenant créées par le script, comme dans la référence.
+- Données et règles NON changées : `users/{uid}/workSessions` (un document par ajout, suppression douce), `users/{uid}/streak/state` (transaction), règles, sauvegardes.
+- Adaptations P1 : 4 types d'entraînement (QCM, Annale, Colle, Concours blanc), tous en « nombre + temps » (petite fenêtre à la couleur du type) ; « − » retire le dernier ajout du type ;
+  valeur des cartes d'entraînement = TEMPS + pastilles par type ; tutoiement dans les messages ; plafond de 24 h et message de la référence ; une session ≤ 16 h.
+- Écarts assumés par rapport à la référence : chaque nom de type plus long qu'une abréviation → détail du récap sur sa propre ligne réservée à toutes les largeurs ; en thème sombre, comme la référence,
+  survol et appui des pastilles gardent la teinte de survol ; choix actif ambre `#f59e0b` + texte blanc comme la référence (contraste faible, signalé à Jean).
+- Cœur qui se brise : séquence de la référence (bat 0,8 s, se fend, « −1 », « Série sauvée », PUIS la flamme) — remplace mon animation de 0,95 s.
+
+## Retouches du 2026-10-15 : liste à cocher, titres, fenêtre de la journée, changement d'onglet
+
+> Local seulement, rien déployé ni commité. Instantanés d'avant : `rollback/tableur.html.avant-checklist-2026-10-15`, `…avant-retouches-s3-2026-10-15`, `…avant-onglets-2026-10-15`.
+> Tout est dans `public/tableur.html` (modules autonomes en fin de `<body>` : `p1-note-checklist-*`, `p1-titles-css`, `p1-spec-cursor-js`, `p1-friends-tabs-*`, `p1-title-icon-up-*`, `p1-retouches-1510-css`, `p1-todo-delete-js`).
+
+- **Liste à cocher (notes de la journée)** : bouton `data-cmd="check"` après « Liste à puces ». Stockage inchangé : du HTML dans `notes`
+  (`<ul class="planning-note-check"><li class="planning-note-done">`), dans l'enveloppe `data-planning-rich="1"`. Aucun champ ni écriture nouveaux : une coche déclenche
+  l'événement `input` de l'éditeur (case du planning → `setNotesInMemory` + enregistrement différé ; fenêtre → `notesInput`). Filtre `sanitizePlanningNoteHTML` : les classes
+  `planning-note-check` (sur `ul`) et `planning-note-done` (sur `li`) sont gardées, retirées partout ailleurs. Case ≥ 1,3 em (fenêtre) / ≥ 15 px (planning), zone tactile
+  élargie à la marge gauche, ligne la plus proche si deux zones se touchent ; toucher le texte garde l'édition. Verrouillage Premium / hors ligne : mêmes gardes que le texte du planning.
+- **Titres** : tuile teintée + trait en dégradé pour les 5 titres de Statistiques ; tuile de dégradé 42 px (34 px ≤ 768) à icône blanche, sans ombre, pour les 3 titres de page et le mois du planning.
+- **Fenêtre de la journée** : main sur le bouton « Matières » dès l'ouverture (dernière position connue de la souris) ; bouton fermer rouge plein au survol ET à l'appui (la règle `:focus` est gardée).
+- **Clic sur l'icône d'un titre de page** : remonte comme un clic d'onglet (`nav.top + pageYOffset − 70 − 10`, défilement doux) ; en haut de page, rien ne bouge ; le « ? » n'est pas concerné.
+- **Changement d'onglet** : plus de fondu (`p1PageSlideIn` = glissement seul) ; aucune animation sur `#page-items` (mesuré : seule page avec des tâches longues, 50-68 ms avec 100 cours).
+  Les autres pages (Matières, Entraînements, Planning) n'ont aucune tâche longue et gardent le glissement. Le temps de calcul de « Mes cours » lui-même n'est pas traité.
+- **§3 — défauts reproduits puis corrigés** : « jours depuis la dernière révision » (`getDaysSince`, pastille du tableau, priorités) en jours calendaires LOCAUX (`window.p1DaysSinceLocal`) — à 00 h 30 un cours revu
+  la veille affichait 0 j ; notification de trophée fantôme (`:not(.show){visibility:hidden;pointer-events:none}`) — aucune partie du code ne la montre aujourd'hui, elle n'était qu'un élément fixe invisible mais cliquable ;
+  couronne Premium masquée sur ≤ 600 px sous une fenêtre ouverte (liste des fenêtres dans le CSS, gardée pendant `tpx-nudge`) ; suppression d'une tâche animée 0,3 s (restaurée si la liste n'est pas redessinée sous 2,5 s,
+  immédiate en « mouvements réduits », hors ligne ou Premium verrouillé) ; « Mes amis » : trait glissant entre onglets + fondu/montée du panneau ; graphique « Tours » en graduations entières (`ticks.precision: 0`).
+- **§3 — défaut ABSENT, rien modifié** : clés de jour des statistiques hebdomadaires et du jour (déjà en jour local ; les tours sont écrits `AAAA-MM-JJT00:00:00.000Z` = le jour choisi, jour local).
+- **Non traité, signalé** : les dates de déblocage de trophées sont écrites avec `toISOString().split('T')[0]` (jour UTC : entre 00 h et 02 h, heure de Paris, c'est la veille) — purement informatif, pas demandé.
+
+- **Note vide (2026-10-17)** : `notesInput` n'efface plus une liste à puces / à cocher encore vide (sinon les boutons de liste ne faisaient rien sur une note vide) ; une liste vide n'est pas enregistrée (la note normalisée reste `''`). `p1NoteChecklist` reconnaît la liste créée quand le curseur reste sur l'éditeur. Instantané d'avant : `rollback/tableur.html.avant-note-vide-2026-10-17`.
+- **Couronne / bouton d'essai** : masqués sous une fenêtre ouverte aussi en paysage téléphone (`(pointer: coarse) and (max-height: 500px)`) et dès que le corps de page est figé (verrou de défilement) ; la couronne reste pendant `tpx-nudge`.
+
+## Annale / Colle / Concours blanc en QCM, barre de sauvegarde, flammes (2026-10-17/18)
+
+> Local seulement, rien déployé ni commité. Instantanés d'avant : `rollback/tableur.html.avant-barre-2026-10-17`, `…avant-qcm-epreuves-2026-10-17`.
+
+- **Annale / Colle / Concours blanc** (demande de Jean) : un ajout = UNE épreuve, et on saisit son nombre de **QCM** (« 3 annales » n'a pas de sens : 20 + 30 + 50 QCM = 3 annales, 100 QCM). Donnée inchangée : un document `workSessions` par ajout, `count` = nombre de QCM de l'épreuve
+  (Rules inchangées : 1 à 1000). Affichage : nombre d'épreuves + total de QCM + QCM de chaque épreuve (tuile de la fenêtre : « 3 · 100 QCM · 3h30 · 20 · 30 · 50 »), pastilles des cartes (« 3 Annale · 100 QCM »), cellule de la semaine, récapitulatif.
+  Le type **QCM** est inchangé (le nombre est le nombre de QCM). Pastilles de saisie : annale 20-60, colle 10-40, concours blanc 60-150 QCM (le champ accepte tout entier ≤ 999).
+  **Données déjà saisies** : un ancien ajout « 3 annales » serait relu comme « 1 annale de 3 QCM ». Le lot n'a jamais été publié, donc aucune donnée de production n'est concernée ; sur un compte de test local, supprimer et ressaisir.
+  Tuiles de la fenêtre refaites en grille (type · nombre · « − » / total + temps / détail), 84 px fixes ×2 rangées : la hauteur de la fenêtre reste indépendante du contenu.
+- **Barre de sauvegarde** (`window.p1SaveBar`, module `p1-save-bar-*`) : fine barre sous l'en-tête, bleue qui avance pendant l'écriture, verte à la confirmation puis effacée, orange si l'écriture n'est pas confirmée au bout de 6 s, rouge si refusée ; l'ancien rond / coche est caché.
+  Alimentée par `setSaveIndicator` (tours, tâches…) ET par toute écriture `setDoc` / `updateDoc` passant par `_p1CountWrite` (notes du planning, sessions de travail…) ; les transactions n'y sont pas branchées (la synchro silencieuse des flammes ne fait pas clignoter la barre).
+- **Flammes qui ne s'affichent pas** : cause reproduite — si les règles Firestore PUBLIÉES sont celles du dernier commit (sans `streak` ni `workSessions`), la synchro est refusée : la carte reste à « – » et les sessions de travail sont refusées (`ok:false`). Avec les règles du dépôt, tout fonctionne.
+  **Il faut publier `firestore.rules` pour que les flammes et les sessions marchent.** Un refus est désormais signalé en console (`[Flammes] synchro refusée par les règles Firestore…`).
+
+- **Présélections du concours blanc (2026-10-19, demande de Jean)** : mêmes pastilles que l'annale — 20 / 30 / 40 / 50 / 60 QCM (pas de 5) et 1 h / 1 h 30 / 2 h / 3 h / 4 h ; la colle et le type QCM ne changent pas. Le champ accepte toujours n'importe quel entier ≤ 999. Instantané d'avant : `rollback/tableur.html.avant-presets-ccb-2026-10-19`. Local seulement à ce stade.
+
+## Thème choisi dans les Paramètres (2026-10-19)
+
+> Demande de Jean : plus de bouton de thème dans le header ; le thème se choisit dans Paramètres, sous « Listes personnalisables », avec les trois thèmes bien présentés, une courte phrase et le thème en cours indiqué. Présentation alignée sur celle de l'autre tableur du même éditeur (lue en LECTURE SEULE) : grille de 3 cartes avec mini-maquette, coche dans le coin, lignes empilées sur téléphone.
+> Local seulement à ce stade. Instantanés d'avant : `rollback/tableur.html.avant-theme-parametres-2026-10-19`, `…avant-theme-cartes-2026-10-19`.
+
+- **Header** : bouton `#theme-toggle` retiré (HTML, CSS propre au bouton, JS). Rien d'autre ne bouge : mêmes marges du header qu'avant sur PC, iPad (820, 768) et téléphone (390, 360) — mesuré (logo 24/12/8 px du bord gauche, avatar à 32/20/16 px du bord droit : valeurs identiques à avant).
+- **Carte « Thème »** (`data-setting="p1-theme"`, module `p1-theme-card-*`) : insérée dans la liste des cartes des Paramètres juste après « Listes personnalisables ». Trois cartes radio (Clair, Sombre, Pastel) : mini-maquette aux couleurs fixes du thème, nom + icône, phrase, coche sur le thème en cours.
+  Clavier : flèches = précédent / suivant (groupe radio, un seul élément tabulable). Le thème en cours suit aussi les changements venus d'ailleurs (réglage reçu du serveur, autre onglet).
+- **Enregistrement** : inchangé — `setTheme(theme, true)` écrit `users/{uid}/settings/preferences.theme` et `localStorage`. Le point d'entrée est `window.p1SetTheme(theme)`. Le thème reçu du serveur passe maintenant par `setTheme(theme, false)` (re-rend les cellules à couleurs en ligne et les graphiques, sans réécrire sur le serveur).
+- **Défauts déjà présents, non touchés** : à 360 px la page « Matières » déborde de 11 px (le bouton « réinitialiser les filtres » de `.quick-actions`) ; l'avatar est à 8 px de plus du bord droit que le logo du bord gauche sous 992 px ; le sous-titre des cartes de Paramètres a un contraste de 3,4 en thème pastel.
+
+## Police d'écriture, écran vide des récapitulatifs, carte Thème alignée (2026-10-19, suite)
+
+> Port, adapté aux noms de P1, de retouches validées sur l'autre tableur du même éditeur (lu en LECTURE SEULE). Local seulement à ce stade. Instantanés d'avant : `rollback/tableur.html.avant-police-vide-2026-10-19`.
+
+- **O — carte Thème** : conforme au modèle (placement, vignettes avec aperçu, radiogroup, coche « pop », lignes empilées ≤ 560 px, chemin `setTheme(t, true)`, MutationObserver, en-tête sans bouton aux mêmes positions) ; seul écart : la phrase sous le titre, alignée sur « Choisissez l'apparence du tableur. Votre choix est gardé sur votre compte. ».
+  Piège « boucle de placement » : P1 n'est PAS concerné (les cartes sont écrites dans la chaîne du module des Paramètres, aucun observateur ne les replace) — vérifié page chargée avec les cartes Thème et Police.
+- **P — carte Police** (`data-setting="p1-font"`, module `p1-font-card-*`) : sous « Thème ». Classique (Outfit / Space Grotesk, aucun attribut), Journal (Lora), Arrondie (Comfortaa) ; aperçu « Aa » + « 123 » + nom dans sa police, aucune phrase de description ; ≤ 560 px lignes empilées, « 123 » masqué.
+  Fichiers Lora / Comfortaa : 2ᵉ `<link>` Google Fonts (téléchargés seulement si utilisés) ; police de départ posée dans le `<head>` avant l'affichage (`localStorage['p1-font']` → `data-font`) ; variables dans `<style id="p1-font-vars">` ; le logo garde Outfit ; polices écrites en dur des flashcards qui suivent la police choisie.
+  `window.p1ApplyFont(key, save)` → `data-font`, `localStorage['p1-font']`, et si `save` `window._saveUserSettings({ font })` (users/{uid}/settings/preferences, aucune règle Firestore modifiée) ; `applyUserSettings` l'applique sur un autre appareil.
+- **Q — écran vide** des récapitulatifs « Tours du jour » / « Tours de la semaine » : `window.p1EmptyState({ icon, title, text, cta, ctaIcon, page, close })` (texte échappé) ; tuile 58 px en dégradé primaire inclinée -6° sur un halo qui pulse ; bouton « Mes cours » qui ferme la fenêtre puis clique l'onglet 240 ms plus tard ; écouteur en phase de CAPTURE (la fenêtre arrête la propagation des clics). L'ancien écran reste en repli.
+- **Défauts trouvés en chemin et corrigés (360 px)** : la page Matières débordait de 11 px (titre + 4 boutons) AVANT ces changements — boutons de 36 px sous 400 px et retour à la ligne de sécurité (`p1-dashboard-narrow-css`) ; les menus de filtre FERMÉS de la page Entraînements dépassaient de 1 à 2 px (`overflow-x: clip`). Exigence tenue : `scrollWidth <= largeur` sur chaque onglet avec les 3 polices.
+
+- **Nouveautés (2026-10-19, demande de Jean)** : entrée « Police et thème dans les Paramètres 🎨 » (icône `fa-font`, pastille violette) en TÊTE de « Cette semaine », avant « Flammes ». **Sans nouvelle notification** : la clé « vu » reste `whatsNewSeen_v7` (localStorage `whatsNew_seen_v7`) — un compte qui a déjà lu les Nouveautés ne revoit ni la pastille du menu ni le point de l'avatar ; un compte qui ne les avait pas lues voit la pastille comme avant. Pour notifier un jour : passer la clé à v8. Instantané d'avant : `rollback/tableur.html.avant-nouveautes-police-2026-10-19`.
+
+- **Nouveautés, retouche (2026-10-19)** : plus d'émojis dans les TITRES des entrées (le texte des paragraphes est inchangé) ; étiquette « Cette semaine » supprimée (la liste récente commence directement, l'étiquette « P1Planner » du second groupe reste). Instantané d'avant : `rollback/tableur.html.avant-nouveautes-sans-emojis-2026-10-19`.
+
+- **Tiroir « Session Flash » avec la police Arrondie (2026-10-19, retour de Jean)** : « Uniquement les dues » passait sur 2-3 lignes et « Toutes les flashcards » / « Choisir des items » se retrouvaient l'une sous l'autre (Comfortaa est nettement plus large) ; à 360 px c'était déjà le cas avec la police d'origine. Cause : libellés sans `white-space: nowrap` dans un tiroir de 380 px. Correctif (`p1-flash-drawer-fit-css`) : libellés sur une seule ligne, boutons du haut qui passent à la ligne ENTIERS s'ils ne tiennent pas côte à côte, taille légèrement réduite en Arrondie et sous 400 px. Instantané d'avant : `rollback/tableur.html.avant-tiroir-flash-2026-10-19`.
+
+- **Boutons « + » des cartes Temps de travail / Entraînements, survol en thème sombre (2026-10-19, retour de Jean)** : `[data-theme="dark"] .ws-tr-plus` (fond, couleur, bordure au repos) avait la même spécificité que `.ws-tr-plus:hover` et venait APRÈS : le survol perdait son dégradé, son icône blanche et sa bordure effacée (il restait l'agrandissement et la lueur). Même défaut sur `.ws-plus` (carte Temps de travail). Correctif : deux règles `[data-theme="dark"] … :hover` (`p1-plus-hover-dark-css`). Instantané d'avant : `rollback/tableur.html.avant-plus-survol-2026-10-19`.
+
+- **Tour enregistré / modifié / supprimé : animation sur place (2026-10-19, demande de Jean)** : en mode détaillé, le grand check plein écran est remplacé, quand la case du tour est visible, par une animation dans la case (≈ 2,5 s, affichage seulement) : la case jaillit, 2 ondes + 10 rayons, pastille « +1 tour » (« Modifié » pour une modification), confettis (nouveau tour seulement), ligne verte avec contour lumineux et reflet ; suppression = fantôme à l'ancienne couleur + pastille « Tour supprimé » + halo rouge. Module `p1-tour-fx` (`window.p1TourAddedFx / p1TourRemovedFx`, renvoient false si l'animation n'a pas pu jouer) et colle `p1-tour-fx-glue` (`p1PlayTourAdded / p1PlayTourRemoved`). **Branchement P1** : la case n'a sa nouvelle couleur qu'après l'écriture ET le redessin par `onSnapshot` ; la colle attend donc, image par image (16 ms), que la case affiche `c{confiance}` (suppression : qu'elle n'ait plus de classe `c…`), **1,5 s maximum**, après la fermeture de la fenêtre (180 ms). Repli = grand check (une seule fois, jamais les deux) : mode compact, case introuvable ou non affichée (Todo, Révisions J, Planning depuis un autre onglet), case qui n'affiche pas la couleur à temps ; la règle de Jean « le check sort quel que soit le point d'entrée » est conservée. Méthode des J : l'animation reste différée à la fermeture de la fenêtre J (`window._p1PendingTourFx`, lue par `closeJFirstTourModal`). **Changement de comportement assumé** : si l'écriture est refusée, plus aucun check (avant : le check partait à 180 ms même en cas d'échec) ; l'indicateur d'erreur existant reste. Aucune donnée touchée, `p1WriteTourSlot`, `onSnapshot`, Méthode des J et trophées inchangés ; `showTourSuccessAnimation()` inchangée. `prefers-reduced-motion` : pas de calque, seule la teinte de la ligne reste. Les calques sont à z-index 30, sous les bandeaux collants (en-tête 100, en-têtes de section 40/60). Instantané d'avant : `rollback/tableur.html.avant-tour-fx-2026-10-19`.
+
+- **Paramètres > Méthode des J : la case ne revenait pas sur « Équilibré » (2026-10-20, retour de Jean)** : un clic sur « Personnalisé » déplace la case bleue tout de suite mais n'enregistre rien tant que « Enregistrer » n'est pas cliqué. Un clic ensuite sur le rythme DÉJÀ enregistré (ex. « Équilibré ») sortait par un `return` anticipé (« même rythme, rien à écrire ») sans rafraîchir l'affichage : la case restait sur « Personnalisé » alors que le rythme enregistré était « Équilibré ». Correctif : dans ce cas on rappelle `_syncSettingsUI(false)` avant de sortir (aucune écriture de plus, données inchangées). Instantané d'avant : `rollback/tableur.html.avant-preset-j-2026-10-20`.

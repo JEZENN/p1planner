@@ -1772,7 +1772,14 @@ const ADMIN_BACKUP_SUBCOLLECTIONS = [
   "trainingItems", "tasks", "calendarDays", "dailyStats",
   // D2 (audit sauvegardes/pertes, 2026-09-30) : cahier d'erreurs des ENTRAÎNEMENTS
   // (notesEntrainements) manquait ici — jamais sauvegardé ni restaurable jusqu'ici.
-  "notesEntrainements"
+  "notesEntrainements",
+  // 2026-10-11 : sessions de travail et entraînements du jour (users/{uid}/workSessions/{id}), un document
+  // par ajout, suppression douce par deletedAt (voir firestore.rules) -- données saisies à la main par
+  // l'utilisateur, donc à sauvegarder/restaurer comme les tâches.
+  "workSessions",
+  // 2026-10-12 : flammes et vies (users/{uid}/streak/state, document unique). Restauration SPÉCIALE (voir
+  // _restoreStreak) : on ne fait jamais reculer une série plus récente que la sauvegarde.
+  "streak"
 ];
 
 // D2 : `tourLogs`/`reviews`/`attempts` (journaux append-only imbriqués sous chaque cours/
@@ -1960,8 +1967,11 @@ async function _restoreEntriesComplete(uid, name, entries, extraFields) {
     slice.forEach((entry, idx) => {
       const snap = snaps[idx];
       const currentlyMissing = !snap.exists;
-      const currentlyArchived = snap.exists && !!snap.data().archivedAt;
-      const backupIsArchived = !!entry.data.archivedAt;
+      // « Archivé » = archivedAt (matières, cours, tâches…) OU deletedAt (suppression douce des sessions de
+      // travail, workSessions) : une session supprimée depuis la sauvegarde est donc rétablie par « Compléter ».
+      const isGone = (d) => !!(d && (d.archivedAt || d.deletedAt));
+      const currentlyArchived = snap.exists && isGone(snap.data());
+      const backupIsArchived = isGone(entry.data);
       const currentlyEmpty = !!contentField && snap.exists && !currentlyArchived && _isEmptyContent(snap.data()[contentField]);
       const backupHasContent = !!contentField && !_isEmptyContent(entry.data[contentField]);
       const shouldRestore = currentlyMissing || (currentlyArchived && !backupIsArchived) || (currentlyEmpty && backupHasContent);
@@ -1971,6 +1981,24 @@ async function _restoreEntriesComplete(uid, name, entries, extraFields) {
       any = true; restored++;
     });
     if (any) await batch.commit();
+  }
+  return restored;
+}
+
+/* Flammes et vies : la série SAUVEGARDÉE ne remplace l'actuelle que si elle est PLUS RÉCENTE (`last` plus grand) ou si
+   l'actuelle est absente -- une restauration (compléter OU remplacer) ne doit jamais faire reculer une série. */
+async function _restoreStreak(uid, entries) {
+  const db = db_();
+  let restored = 0;
+  for (const entry of entries) {
+    if (!entry || entry.id !== "state" || !entry.data || typeof entry.data.last !== "string") continue;
+    const ref = db.doc(`users/${uid}/streak/state`);
+    const snap = await ref.get();
+    const cur = snap.exists ? snap.data() : null;
+    if (!cur || typeof cur.last !== "string" || entry.data.last > cur.last) {
+      await ref.set(entry.data);
+      restored++;
+    }
   }
   return restored;
 }
@@ -2056,7 +2084,8 @@ exports.adminRestoreBackup = onCall({ region: REGION }, async (request) => {
     if (!entries.length) continue;
     const extra = name === "courses" ? { restoredAt: restoredAtStamp } : undefined;
     let n;
-    if (mode === "replace") { await writeBatchedDocs(targetUid, name, entries, extra); n = entries.length; }
+    if (name === "streak") { n = await _restoreStreak(targetUid, entries); }
+    else if (mode === "replace") { await writeBatchedDocs(targetUid, name, entries, extra); n = entries.length; }
     else { n = await _restoreEntriesComplete(targetUid, name, entries, extra); }
     perCollectionCounts[name] = n;
     restoredDocs += n;

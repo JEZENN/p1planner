@@ -488,6 +488,42 @@ try {
     assert(!off.cls.includes("copied") && off.label === "Copier le lien", "retour normal : " + JSON.stringify(off));
   });
 
+  await S("C2", "Compte Premium : jamais deux « Copié ! » en même temps (lien puis code, code puis lien, clics rapprochés) ; copie possible à nouveau après 1,4 s", async () => {
+    const p = await mkParrain();
+    const { page } = await newPage();
+    await loginViaForm(page, p);
+    await openPremium(page);
+    await page.evaluate(() => { window.__copied = []; navigator.clipboard.writeText = (t) => { window.__copied.push(t); return Promise.resolve(); }; });
+    const state = () => page.evaluate(() => ["btnCopyReferralLink", "btnCopyReferralCode"].map((id) => document.getElementById(id).classList.contains("copied")));
+    const link = "https://p1planner.fr/auth.html?ref=" + p.code;
+    // lien puis code, presque simultanés (la capture de Jean : deux boutons verts à la fois)
+    await page.evaluate(() => { document.getElementById("btnCopyReferralLink").click(); document.getElementById("btnCopyReferralCode").click(); });
+    await sleep(300);
+    let st = await state();
+    assert(st[0] === true && st[1] === false, "lien puis code : états " + JSON.stringify(st) + " (attendu : seul le lien affiche « Copié ! »)");
+    let copied = await page.evaluate(() => window.__copied);
+    assert(copied.length === 1 && copied[0] === link, "presse-papiers après lien+code : " + JSON.stringify(copied));
+    // code pendant que le lien est encore vert
+    await page.click("#btnCopyReferralCode"); await sleep(200);
+    st = await state();
+    assert(st[1] === false, "le code a pu passer en « Copié ! » pendant que le lien l'était : " + JSON.stringify(st));
+    await sleep(1500);
+    st = await state();
+    assert(st[0] === false && st[1] === false, "retour à l'état normal attendu après 1,4 s : " + JSON.stringify(st));
+    // l'ordre inverse, puis la copie redevient possible
+    await page.evaluate(() => { document.getElementById("btnCopyReferralCode").click(); document.getElementById("btnCopyReferralLink").click(); });
+    await sleep(300);
+    st = await state();
+    assert(st[1] === true && st[0] === false, "code puis lien : états " + JSON.stringify(st));
+    copied = await page.evaluate(() => window.__copied);
+    assert(copied[copied.length - 1] === p.code, "presse-papiers après code+lien : " + JSON.stringify(copied));
+    await sleep(1600);
+    await page.click("#btnCopyReferralLink"); await sleep(250);
+    st = await state();
+    assert(st[0] === true && st[1] === false, "après le délai, la copie du lien doit refonctionner : " + JSON.stringify(st));
+    assert(page.__errors.length === 0, "erreurs JS : " + JSON.stringify(page.__errors));
+  });
+
   // ── admin.html ────────────────────────────────────────────────────────────────────────
   await S("A1", "admin : onglet Parrainage (récapitulatif + table triable) et colonne « Parrainé par » (Utilisateurs)", async () => {
     const admin = await mkUser();

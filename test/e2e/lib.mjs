@@ -56,13 +56,15 @@ export async function mkUser({ courses = 1, restoredAt = null } = {}) {
 
 /* Ouvre une page (contexte isolé), vérifie le garde-fou « rien vers la
    production », se connecte et attend que les cours soient chargés. */
-export async function openPage(browser, user, { wait = true } = {}) {
+export async function openPage(browser, user, { wait = true, init = null, tz = null } = {}) {
   const ctx = await browser.createBrowserContext();
   const page = await ctx.newPage();
   page.__logs = []; page.__errors = [];
   page.on("console", (m) => page.__logs.push(m.text()));
   page.on("pageerror", (e) => page.__errors.push(String(e.message || e)));
   await page.setViewport({ width: 1280, height: 900 });
+  if (tz) await page.emulateTimezone(tz);            // fuseau simule (ex. Europe/Paris)
+  if (init) await page.evaluateOnNewDocument(init);   // script injecte avant le chargement (ex. horloge simulee)
   await page.goto(BASE + "/tableur.html", { waitUntil: "load" });
   // Garde-fou : la page pointe l'émulateur, et un fetch vers la production est bloqué.
   const guard = await page.evaluate(async () => {
