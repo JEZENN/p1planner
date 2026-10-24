@@ -1095,11 +1095,11 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
   }
   function fmtDate(value) {
     var d = toJsDate(value);
-    return d ? d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) : "—";
+    return d ? d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Paris" }) : "—";   // échéance : toujours à l'heure de Paris, quel que soit le fuseau du visiteur
   }
   function fmtDateShort(value) {
     var d = toJsDate(value);
-    return d ? d.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" }) : "—";
+    return d ? d.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "Europe/Paris" }) : "—";
   }
   // Jours restants — purement indicatif côté client, jamais la source de
   // vérité (comme le reste des durées affichées sur cette page).

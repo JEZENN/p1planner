@@ -75,15 +75,16 @@ try {
 
     await page.evaluate(() => { window._deleteTraining(9001); window.trainConfirmDelete(); });
 
-    // Juste après : la ligne est ENCORE présente, avec la classe de fondu.
+    // Juste après : la ligne est ENCORE présente (21/10 : c'est elle qui s'anime — classe tpx-pfx-out, rouge puis effacée — au lieu de l'ancien fondu).
     const justAfter = await page.evaluate(() => {
       const row = document.querySelector('tr[data-train-id="9001"]');
-      return { present: !!row, fading: !!row && row.classList.contains("p1-row-fade-out") };
+      return { present: !!row };
     });
     assert(justAfter.present, "la ligne 9001 a disparu instantanément (aucune animation)");
-    assert(justAfter.fading, "la classe .p1-row-fade-out n'est pas posée sur la ligne d'entraînement supprimée");
+    let anim = false; for (let i = 0; i < 25 && !anim; i++) { anim = await page.evaluate(() => { const r = document.querySelector('tr[data-train-id="9001"]'); return !!r && r.classList.contains("tpx-pfx-out"); }); if (!anim) await sleep(100); }
+    assert(anim, "la classe d'animation de suppression (.tpx-pfx-out) n'est pas posée sur la ligne d'entraînement supprimée");
 
-    await sleep(400);
+    for (let i = 0; i < 40 && await page.evaluate(() => !!document.querySelector('tr[data-train-id="9001"]')); i++) await sleep(100);
     const after = await page.evaluate(() => ({
       present: !!document.querySelector('tr[data-train-id="9001"]'),
       count: document.querySelectorAll("#train-table-body tr").length,
@@ -141,6 +142,8 @@ try {
     // Le RÉ-AFFICHAGE du gestionnaire est volontairement différé (~220ms) : juste après le clic,
     // rien d'anormal ne doit encore s'être passé de façon abrupte.
     await sleep(500);
+    // 21/10 : la ligne supprimée s'anime (rouge, tremblement, repli ≈ 1 s) avant de quitter la liste : on attend sa disparition (3 s max).
+    for (let i = 0; i < 30 && await page.evaluate(() => [...document.querySelectorAll("#tpx-modal-overlay .tpx-mgr-row")].some(r => r.textContent.includes("Cours Test Anim"))); i++) await sleep(100);
     const after = await page.evaluate(() => {
       const overlay = document.getElementById("tpx-modal-overlay");
       const title = overlay ? overlay.querySelector(".unified-modal-heading")?.textContent : null;

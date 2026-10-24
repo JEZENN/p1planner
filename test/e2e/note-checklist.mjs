@@ -361,6 +361,70 @@ try {
       assert(await page.evaluate(() => document.getElementById("pdd-overlay").classList.contains("active")), "relâché hors du bouton : la fenêtre s'est fermée");
     });
   }
+
+  /* ═════ BR : texte écrit après la sortie de la liste = jamais barré (21/10/2026) ═════ */
+  const decoOfText = (page, ed, txt) => page.evaluate((sel, t) => {
+    const root = document.querySelector(sel); const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT); let n, hit = null;
+    while ((n = w.nextNode())) if (n.nodeValue.indexOf(t) >= 0) { hit = n; break; }
+    if (!hit) return { found: false };
+    const el = hit.parentElement, cs = getComputedStyle(el);
+    return { found: true, line: cs.textDecorationLine, inLi: !!el.closest("li"), strike: !!el.closest("strike, s, del"), inUl: !!el.closest("ul") };
+  }, ed, txt);
+  const BR_CASES = [];
+  for (const theme of ["light", "dark", "pastel"]) for (const where of ["fenetre", "planning"]) for (const last of ["non cochee", "cochee"]) BR_CASES.push({ theme, where, last, vp: null, id: `${theme}-${where}-${last === "cochee" ? "cochee" : "libre"}` });
+  for (const where of ["fenetre", "planning"]) for (const last of ["non cochee", "cochee"]) BR_CASES.push({ theme: "light", where, last, vp: PHONE, id: `tel-${where}-${last === "cochee" ? "cochee" : "libre"}` });
+  for (const c of BR_CASES) {
+    await S("BR1-" + c.id, `Entrée, Entrée, texte après la liste (${c.where === "fenetre" ? "fenêtre de la journée" : "case du planning"}, dernière ligne ${c.last}, ${c.id.startsWith("tel") ? "téléphone" : "PC"}, ${c.theme}) : le texte n'est PAS barré (écran ni HTML)`, async () => {
+      const { u, page } = await planUser({ notes: NOTE(["Cardio", "Pneumo"], c.last === "cochee" ? [1] : []), viewport: c.vp || undefined, theme: c.theme });
+      const ED = c.where === "fenetre" ? "#pdd-editor" : CELL;
+      if (c.where === "fenetre") await openDay(page);
+      else if (c.vp) {   // téléphone : la case est « au repos » (non éditable) jusqu'à un toucher sur le texte
+        const p = await page.evaluate((sel) => { const l = document.querySelectorAll(sel + " li")[1], r = l.getBoundingClientRect(); return { x: r.left + 18, y: r.top + r.height / 2 }; }, CELL);
+        await page.touchscreen.tap(p.x, p.y); await sleep(600);
+      }
+      // curseur en fin de la dernière ligne
+      await page.evaluate((sel) => { const ed = document.querySelector(sel); ed.focus(); const l = ed.querySelectorAll("li"); const last = l[l.length - 1]; const r = document.createRange(); r.selectNodeContents(last); r.collapse(false); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }, ED);
+      await page.keyboard.press("Enter"); await sleep(150);
+      const mid = await liState(page, ED); assert(mid.length === 3 && !mid[2].done, "après Entrée : " + JSON.stringify(mid));
+      await page.keyboard.press("Enter"); await sleep(250);
+      await page.keyboard.type("Texte libre"); await sleep(300);
+      const d = await decoOfText(page, ED, "Texte libre");
+      assert(d.found && !d.inUl && !d.inLi, "le texte est resté dans la liste : " + JSON.stringify(d));
+      assert(d.line === "none" && !d.strike, "texte barré à l'écran : " + JSON.stringify(d));
+      const n = await waitServer(u.uid, (s) => /Texte libre/.test(s));
+      assert(/Texte libre/.test(n) && !/<(strike|s|del)[ >]/.test(n) && !/line-through/.test(n), "HTML enregistré : " + n);
+      assert(page.__errors.length === 0, "erreurs JS : " + JSON.stringify(page.__errors));
+    });
+  }
+
+  await S("BR2", "cocher : ligne barrée en gris avec trait animé ; décocher : plus de trait ; non cochée jamais barrée ; Entrée sur une ligne cochée : nouvelle ligne décochée non barrée ; état conservé au rechargement", async () => {
+    const { u, page } = await planUser({ notes: NOTE(["Cardio", "Pneumo"]) });
+    await openDay(page);
+    const dec = () => page.evaluate(() => [...document.querySelectorAll("#pdd-editor ul.planning-note-check > li")].map((li) => { const cs = getComputedStyle(li); return { done: li.classList.contains("planning-note-done"), line: cs.textDecorationLine, color: cs.color, anim: cs.animationName }; }));
+    let s = await dec(); assert(s.every((x) => x.line === "none"), "lignes non cochées barrées : " + JSON.stringify(s));
+    const c = await circle(page, "#pdd-editor", 0);
+    await page.mouse.click(c.x, c.y);
+    const anim = await page.evaluate(() => { const li = document.querySelector("#pdd-editor ul.planning-note-check > li"); const cs = getComputedStyle(li); return cs.animationName; });
+    assert(anim === "p1NoteStrikeIn", "pas d'animation du trait : " + anim);
+    await sleep(700);
+    s = await dec(); assert(s[0].done && s[0].line.indexOf("line-through") >= 0 && s[0].color === "rgb(107, 114, 128)" && !s[1].done && s[1].line === "none", "après la coche : " + JSON.stringify(s));
+    await waitServer(u.uid, (n) => /planning-note-done/.test(n));
+    // Entrée sur la ligne cochée → nouvelle ligne décochée et non barrée
+    await page.evaluate(() => { const ed = document.getElementById("pdd-editor"); ed.focus(); const li = ed.querySelectorAll("li")[0]; const r = document.createRange(); r.selectNodeContents(li); r.collapse(false); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); });
+    await page.keyboard.press("Enter"); await sleep(300);
+    s = await dec(); assert(s.length === 3 && s[0].done && !s[1].done && s[1].line === "none", "Entrée sur ligne cochée : " + JSON.stringify(s));
+    await page.keyboard.press("Backspace"); await sleep(200);
+    // rechargement : état conservé
+    await sleep(1500);
+    await page.mouse.click(c.x, c.y); await sleep(500);   // décoche
+    s = await dec(); assert(!s[0].done && s[0].line === "none", "après la décoche : " + JSON.stringify(s));
+    await page.mouse.click(c.x, c.y); await sleep(500);   // recoche
+    await waitServer(u.uid, (n) => /planning-note-done/.test(n));
+    await page.reload({ waitUntil: "load" }); await page.waitForFunction(() => window.currentUser && window._ednPlanningBridge, { timeout: 40000 }); await sleep(1500);
+    await killOnboarding(page); await openDay(page);
+    s = await dec(); assert(s[0].done && s[0].line.indexOf("line-through") >= 0 && !s[1].done && s[1].line === "none", "après rechargement : " + JSON.stringify(s));
+    assert(page.__errors.length === 0, "erreurs JS : " + JSON.stringify(page.__errors));
+  });
 } finally {
   await browser.close(); proxy.close(); server.close();
 }

@@ -206,10 +206,10 @@ try {
   });
 
   /* ═════════ FX5 : repli = grand check, une seule fois ═════════ */
-  await S("FX5a", "validation depuis « Révisions J » alors que le tableau n'est pas affiché (autre onglet) : le grand check joue UNE fois, aucun calque", async () => {
+  await S("FX5a", "validation depuis un point d'entrée autre que « Révisions J » (ex. Todo) alors que le tableau n'est pas affiché (autre onglet) : le grand check joue UNE fois, aucun calque", async () => {
     const { u, page } = await open(PC, { seed: seedTours("c1", [3]) });
     await page.evaluate(() => document.querySelector('[data-page="dashboard"]').click()); await sleep(900);
-    await page.evaluate(() => window.openTourModalFromJRevision("s1", "c1")); await sleep(700);
+    await page.evaluate(() => { const el = document.createElement("span"); el.dataset.specialty = "s1"; el.dataset.fc = "c1"; el.dataset.tour = "1"; window.openConfidenceModal(el); }); await sleep(700);
     await confBtn(page, 4, false); await sleep(150);
     await startRec(page);
     await clickAt(page, await elCenter(page, "#btn-save-tour"), false);
@@ -219,6 +219,32 @@ try {
     assert(R.layersMax === 0 && !R.pop, "calque d'animation joué alors que la case n'est pas affichée");
     assert(await waitFor(async () => (await srv(u.uid, "c1"))[1] === 4), "serveur non à jour");
   });
+  /* ═════════ FX8 : validation depuis les révisions J → la nouvelle animation joue sur la case, dans « Mes cours » (24/10/2026) ═════════ */
+  for (const [id, vp, courses, cid, label] of [["pc", PC, 3, "c1", "PC"], ["tel", M(390, 844), 3, "c1", "téléphone 390"], ["page2", PC, 60, "c55", "PC, cours sur la page 2 du tableau"]]) {
+    await S("FX8-" + id, `validation depuis « Révisions J » (${label}) : fenêtre J fermée, « Mes cours » ouvert sur la page du cours, animation sur la case (pop, 2 ondes, 10 rayons, « +1 tour », confettis), aucun grand check, serveur à jour`, async () => {
+      const touch = !!vp.isMobile;
+      const { u, page } = await open(vp, { courses, seed: seedTours(cid, [3]) });
+      await page.evaluate(() => document.querySelector('[data-page="dashboard"]').click()); await sleep(900);
+      await page.evaluate(() => window.openDayJModal && window.openDayJModal("2026-01-01")); await sleep(600);
+      const jOpen = await page.evaluate(() => { const m = document.getElementById("day-j-modal"); return !!m && m.classList.contains("active"); });
+      await page.evaluate((c) => window.openTourModalFromJRevision("s1", c), cid); await sleep(800);
+      await confBtn(page, 4, touch); await sleep(150);
+      await startRec(page);
+      SHOT = `tour-fx-depuis-j-${id}`;
+      await press(page, "#btn-save-tour", touch);
+      await shot(page, 2800);
+      await sleep(6200);
+      const R = await stopRec(page);
+      const st = await page.evaluate(() => ({ items: !!document.querySelector("#page-items.active"), jModal: !!document.querySelector("#day-j-modal.active") }));
+      assert(st.items, "« Mes cours » n'est pas ouvert");
+      assert(!st.jModal, "la fenêtre des J est restée ouverte (elle était ouverte au départ : " + jOpen + ")");
+      assert(R.pop && R.plus === "+1 tour" && R.waves === 2 && R.rays === 10 && R.confetti >= 20, `animation absente : ${JSON.stringify({ pop: R.pop, plus: R.plus, w: R.waves, r: R.rays, c: R.confetti })}`);
+      assert(R.checks === 0, "grand check joué " + R.checks + " fois");
+      assert(await waitFor(async () => (await srv(u.uid, cid))[1] === 4), "serveur non à jour");
+      assert(page.__errors.length === 0, "erreurs JS : " + page.__errors.join(" | "));
+    });
+  }
+
   await S("FX5b", "mode compact (fenêtre ouverte depuis « Révisions J ») : le grand check joue UNE fois, aucun calque", async () => {
     const { u, page } = await open(PC, { seed: seedTours("c1", [3]), mode: "compact" });
     await page.evaluate(() => window.openTourModalFromJRevision("s1", "c1")); await sleep(700);
