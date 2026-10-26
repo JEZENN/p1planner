@@ -177,7 +177,7 @@ try {
 
     await page.evaluate(() => window.TPXOnboarding.start(0));
     await sleep(300);
-    // Écran d'accueil -> "Statistiques" -> "Matières" -> page dédiée "Banque de matières"
+    // Écran d'accueil -> "Tableau de bord" -> "Matières" -> page dédiée "Banque de matières"
     // (retour de Jean 02/10 : plus un bloc tassé au bas de la page "Matières", mais sa propre
     // page, comme 'items-settings'/'entrainements-settings').
     await page.evaluate(() => document.getElementById("tpx-onb-next").click());

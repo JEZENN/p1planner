@@ -240,7 +240,7 @@ try {
       return { h: secs.slice(0, 3).map((x) => x.querySelector("h4").textContent), txt: secs[1].querySelector("p").textContent.replace(/\s+/g, " ").trim(), cls: ic.className, bg: getComputedStyle(ic).backgroundImage, badge: document.getElementById("whats-new-badge").classList.contains("show") };
     });
     assert(/^Police et thème/.test(r.h[0]) && r.h[1] === "Flammes" && /^Sessions de travail/.test(r.h[2]), "ordre : " + JSON.stringify(r.h));
-    assert(r.txt === "Chaque jour de connexion d'affilée te rapporte une flamme (carte « Flammes » des Statistiques). Absent un jour ou plusieurs ? À ton retour, une seule vie ❤ est utilisée et tes flammes sont gardées. Une vie offerte chaque semaine, 5 au maximum.", "texte : " + r.txt);
+    assert(r.txt === "Chaque jour de connexion d'affilée te rapporte une flamme (carte « Flammes » du Tableau de bord). Absent un jour ou plusieurs ? À ton retour, une seule vie ❤ est utilisée et tes flammes sont gardées. Une vie offerte chaque semaine, 5 au maximum.", "texte : " + r.txt);
     assert(/flame/.test(r.cls) && /249, 115, 22/.test(r.bg) && /239, 68, 68/.test(r.bg), "icône : " + JSON.stringify(r));
     assert(r.badge, "pastille absente");
     await page.evaluate(() => window.openWhatsNewModal && window.openWhatsNewModal()); await sleep(600);

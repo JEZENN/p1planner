@@ -184,6 +184,27 @@ main{padding-block:clamp(1.75rem,4vw,3rem) 5rem}
 }
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 @media (prefers-reduced-motion: reduce){ .skeleton{animation:none;background:var(--surface)} }
+/* Chargement : silhouette de la vraie page (mêmes cartes, mêmes classes → même mise en page, mêmes points de rupture, même thème sombre) */
+.skel-page{pointer-events:none;user-select:none;-webkit-user-select:none}
+.skel-page .skeleton{height:auto;display:block;border-radius:8px}
+.skel-page .skel-bar{height:14px}
+.skel-page .skel-bar.lg{height:18px}
+.skel-page .skel-bar.sm{height:10px}
+.skel-page .avatar.skeleton{width:52px;height:52px;border-radius:16px}
+.skel-page .account-meta{display:flex;flex-direction:column;gap:.7rem}
+.skel-page .account-meta .skel-bar{height:16px}
+.skel-page .account-meta .skel-bar.lg{height:20px}
+.skel-page .status-hero-left .skel-bar{height:20px}
+.skel-page .status-hero-left{background:var(--surface-2);color:var(--text)}
+.skel-page .status-hero-icon.skeleton{width:42px;height:42px;border-radius:12px}
+.skel-page .status-hero-tag.skeleton{width:150px;height:28px;border-radius:var(--radius-pill);padding:0}
+.skel-page .status-metric .skel-bar.sm{width:70px;height:16px}
+.skel-page .status-metric .skel-bar.lg{width:110px;height:24px}
+.skel-page .skel-card{padding:1.5rem;display:flex;flex-direction:column;gap:.9rem;min-height:150px}
+.skel-line{display:block;height:14px;width:min(260px,100%);border-radius:8px}   /* contenu provisoire d'un texte (remplacé par le JS) */
+/* barres lisibles sur les cartes en clair COMME en sombre (la teinte « surface » se confondait avec le fond des cartes) */
+.skel-page .skeleton,.skel-line{background:linear-gradient(100deg,rgba(128,128,150,.16) 30%,rgba(128,128,150,.30) 50%,rgba(128,128,150,.16) 70%);background-size:200% 100%;animation:shimmer 1.6s ease-in-out infinite}
+@media (prefers-reduced-motion: reduce){ .skel-page .skeleton,.skel-line{animation:none} }
 
 /* ============================================================
    ALERTES
@@ -573,8 +594,40 @@ main{padding-block:clamp(1.75rem,4vw,3rem) 5rem}
     <div class="alert" id="globalAlert" role="alert" aria-live="assertive"></div>
 
     <!-- ---------- ÉTAT : chargement ---------- -->
-    <div id="stateLoading" class="section-block">
-      <div class="skeleton" aria-hidden="true"></div>
+    <div id="stateLoading" class="section-block skel-page" aria-busy="true">
+      <div aria-hidden="true">
+        <div class="card account-row section-block">
+          <div class="avatar skeleton"></div>
+          <div class="account-meta">
+            <span class="skeleton skel-bar lg" style="width:170px"></span>
+            <span class="skeleton skel-bar" style="width:230px"></span>
+            <span class="skeleton skel-bar" style="width:150px"></span>
+          </div>
+        </div>
+        <section class="section-block">
+          <div class="card status-hero">
+            <div class="status-hero-left">
+              <div class="status-hero-icon skeleton"></div>
+              <span class="status-hero-tag skeleton"></span>
+              <span class="skeleton skel-bar" style="width:min(250px,100%)"></span>
+              <span class="skeleton skel-bar" style="width:min(190px,80%)"></span>
+            </div>
+            <div class="status-hero-right">
+              <div class="status-metric"><span class="skeleton skel-bar sm"></span><span class="skeleton skel-bar lg"></span></div>
+              <div class="status-metric"><span class="skeleton skel-bar sm"></span><span class="skeleton skel-bar lg"></span></div>
+              <div class="status-metric"><span class="skeleton skel-bar sm"></span><span class="skeleton skel-bar lg"></span></div>
+            </div>
+          </div>
+        </section>
+        <section class="section-block">
+          <span class="skeleton skel-bar lg" style="width:200px;margin-bottom:.9rem"></span>
+          <div class="card skel-card">
+            <span class="skeleton skel-bar" style="width:55%"></span>
+            <span class="skeleton skel-bar" style="width:80%"></span>
+            <span class="skeleton skel-bar" style="width:40%"></span>
+          </div>
+        </section>
+      </div>
       <p class="visually-hidden" role="status">Chargement de ton compte…</p>
     </div>
 
@@ -613,7 +666,7 @@ main{padding-block:clamp(1.75rem,4vw,3rem) 5rem}
               <svg class="icon" viewBox="0 0 24 24" style="width:22px;height:22px;stroke:currentColor"><path d="M3 8l4 3 5-7 5 7 4-3-2 11H5L3 8Z"/></svg>
             </div>
             <span class="status-hero-tag" id="statusHeroTag">—</span>
-            <p class="status-hero-desc" id="statusDesc">Chargement de ton statut…</p>
+            <p class="status-hero-desc" id="statusDesc"><span class="skeleton skel-line" aria-hidden="true"></span></p>
           </div>
           <div class="status-hero-right" id="statusDates"></div>
         </div>
@@ -788,7 +841,7 @@ main{padding-block:clamp(1.75rem,4vw,3rem) 5rem}
             <label class="referral-code-label" for="referralLinkInput">Ton lien de parrainage</label>
             <p class="referral-code-display">Ton code : <span class="referral-code-value" id="referralCodeBox">…</span></p>
             <div class="referral-code-row">
-              <input type="text" id="referralLinkInput" class="referral-code-input" readonly value="Chargement…" aria-label="Lien de parrainage">
+              <input type="text" id="referralLinkInput" class="referral-code-input" readonly value="" aria-label="Lien de parrainage">
               <button type="button" class="referral-copy-btn primary" id="btnCopyReferralLink" disabled>
                 <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg><span class="referral-copy-btn-label">Copier le lien</span>
               </button>

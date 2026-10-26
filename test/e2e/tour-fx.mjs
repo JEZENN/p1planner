@@ -26,6 +26,7 @@ const clean = async (page) => {
 /* Page « Mes cours » en mode détaillé. seed(uid) : écrit les tours avant l'ouverture. */
 async function open(vp, { theme = "light", courses = 3, seed = null, j = false, reduce = false, mode = "classic" } = {}) {
   const u = await mkUser({ courses });
+  await adb.doc(`users/${u.uid}/settings/preferences`).set({ ednOnboardingVersion: 3 }, { merge: true });   // présentation de bienvenue déjà faite (sinon elle s'ouvre APRÈS le squelette et reverrouille le défilement)
   if (seed) await seed(u.uid);
   const ctx = await openPage(browser, u); OPEN.push(ctx.ctx); const page = ctx.page; page.setDefaultNavigationTimeout(120000); await page.bringToFront();
   if (reduce) await page.emulateMediaFeatures([{ name: "prefers-reduced-motion", value: "reduce" }]);
@@ -198,6 +199,7 @@ try {
     await sleep(4200);
     const R = await stopRec(page);
     const pos = await page.evaluate(() => { const r = document.querySelector('.tour-badge[data-fc="c40"][data-tour="1"]').getBoundingClientRect(); return { cy: r.top + r.height / 2, vh: innerHeight }; });
+    if (Math.abs(pos.cy - pos.vh / 2) > 120) console.log("    [debug] " + JSON.stringify(await page.evaluate(() => ({ y: scrollY, cls: document.documentElement.className, bodyOv: getComputedStyle(document.body).overflow, owners: window.__ednScrollLockOwners ? [...window.__ednScrollLockOwners] : null, pageActive: (document.querySelector(".app-page.active") || {}).id, modalActive: document.getElementById("confidence-modal").className }))));
     assert(Math.abs(pos.cy - pos.vh / 2) <= 120, `case non centrée : y ${Math.round(pos.cy)} sur ${pos.vh}`);
     assert(R.pop && R.plus === "+1 tour" && R.confetti >= 20, `animation absente : ${JSON.stringify({ pop: R.pop, plus: R.plus, c: R.confetti })}`);
     assert(R.checks === 0, "grand check joué");

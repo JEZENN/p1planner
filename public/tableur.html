@@ -16909,6 +16909,87 @@ window.TPXNotesPending = {
 }
 
 </style>
+<style id="p1-skel-css">
+/* 2026-10-25 : chargement en squelette (en-tête tout de suite, contenu grisé animé jusqu'aux données) */
+#p1-skel { display: none; }
+html.p1-skel #loader, html.p1-noloader #loader { display: none !important; }   /* p1-noloader : jamais retirée (l'ancien écran ne réapparaît pas à la fin du squelette) */
+html.p1-skel #main-content, html.p1-skel #presentation-section { display: none !important; }
+html.p1-skel #p1-skel { display: block; padding: 1.5rem; transition: opacity 0.2s ease; }
+html.p1-skel.p1-skel-out #p1-skel { opacity: 0; }
+html.p1-skel-in #main-content { animation: p1SkelIn 0.35s ease both; }
+@keyframes p1SkelIn { from { opacity: 0; } to { opacity: 1; } }
+.p1-sk { display: block; border-radius: 8px; background: linear-gradient(90deg, var(--gray-200) 25%, var(--gray-100) 37%, var(--gray-200) 63%); background-size: 400% 100%; animation: p1SkBg 1.4s ease infinite; }
+@keyframes p1SkBg { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+html.p1-skel #welcome-message:empty { display: block; position: relative; }
+html.p1-skel #welcome-message:empty::before { content: '\00a0'; }   /* une ligne de texte de haut, comme le vrai message */
+html.p1-skel #welcome-message:empty::after { content: ''; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 230px; max-width: 70%; height: 18px; border-radius: 8px;
+    background: linear-gradient(90deg, var(--gray-200) 25%, var(--gray-100) 37%, var(--gray-200) 63%); background-size: 400% 100%; animation: p1SkBg 1.4s ease infinite; }
+html.p1-skel .user-auth:not(.logged-in) .auth-btn { visibility: hidden; }
+html.p1-skel .user-auth .user-avatar { color: transparent !important; background: linear-gradient(90deg, var(--gray-200) 25%, var(--gray-100) 37%, var(--gray-200) 63%) !important; background-size: 400% 100% !important; animation: p1SkBg 1.4s ease infinite; box-shadow: none !important; }
+html.p1-skel .user-auth .avatar-notif-dot, html.p1-skel .user-auth .avatar-whatsnew-dot { display: none !important; }
+html.p1-skel .user-auth:not(.logged-in)::after { content: ''; position: absolute; right: 0; top: 50%; width: 40px; height: 40px; margin-top: -20px; border-radius: 50%;
+    background: linear-gradient(90deg, var(--gray-200) 25%, var(--gray-100) 37%, var(--gray-200) 63%); background-size: 400% 100%; animation: p1SkBg 1.4s ease infinite; }
+.p1-sk-nav { display: flex; align-items: stretch; gap: 0.85rem; margin-bottom: 1.5rem; }   /* = .edn-nav-row */
+.p1-sk-navbar { flex: 1; min-width: 0; min-height: 65px; border-radius: 24px; background: var(--white); border: 1px solid var(--gray-200); box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05); display: flex; align-items: center; justify-content: space-around; padding: 0 10px; gap: 8px; }
+.p1-sk-navbar .p1-sk { height: 44px; flex: 1; max-width: 220px; border-radius: 999px; }
+.p1-sk-navbar .p1-sk:not(.on) { height: 18px; max-width: 120px; }   /* .on = onglet actif (pastille) */
+/* deux cases À PART, comme les vrais boutons : « Révisions J » (seulement si la Méthode des J est activée, voir p1-skel-noj) et « Programme de la journée » */
+.p1-sk-j, .p1-sk-todo { flex: none; border-radius: 24px; }
+.p1-sk-j { width: 151px; } .p1-sk-todo { width: 121px; }
+html.p1-skel-noj .p1-sk-j { display: none; }
+@media (max-width: 1366px) {
+    .p1-sk-nav { gap: 0.65rem; } .p1-sk-navbar { min-height: 62px; }
+    .p1-sk-j, .p1-sk-todo { width: 104px; border-radius: 20px; }
+}
+@media (max-width: 768px) {
+    .p1-sk-nav { gap: 0.55rem; } .p1-sk-navbar { min-height: 76px; }
+    .p1-sk-todo { width: 92px; }
+    html:not(.p1-skel-noj) .p1-sk-j, html:not(.p1-skel-noj) .p1-sk-todo { width: 58px; }   /* J activée : les deux se resserrent */
+}
+@media (max-width: 599px) { .p1-sk-navbar { min-height: 68px; } .p1-sk-todo { width: 72px; } }
+@media (max-width: 420px) { .p1-sk-nav { gap: 0.4rem; } .p1-sk-todo { width: 64px; border-radius: 18px; } .p1-sk-j { border-radius: 18px; } }
+.p1-sk-tools { display: flex; gap: 16px; margin-bottom: 1.5rem; }
+.p1-sk-tools .p1-sk { height: 40px; border-radius: 10px; }
+@media (max-width: 1024px) { .p1-sk-tools { flex-wrap: wrap; gap: 9.6px; } .p1-sk-tools .p1-sk { height: 46px; } .p1-sk-tools .p1-sk.p1-sk-search { flex: 1 1 100%; } .p1-sk-tools .p1-sk.p1-sk-select { flex: 1 1 0; width: auto; } }
+.p1-sk-search { flex: 1; } .p1-sk-select { width: 180px; flex: none; }
+.p1-sk-section { background: var(--white); border: 1px solid var(--gray-200); border-radius: 20px; overflow: hidden; }
+.p1-sk-head { display: flex; align-items: center; gap: 14px; padding: 32px 24px; border-bottom: 1px solid var(--gray-200); }   /* mesuré : titre de section réel ≈ 25 px plus haut */
+.p1-sk-ico { width: 42px; height: 42px; border-radius: 12px; flex: none; }
+.p1-sk-ico.sm { width: 32px; height: 32px; border-radius: 9px; }
+.p1-sk-title { width: 190px; height: 20px; }
+.p1-sk-sp { flex: 1; }
+.p1-sk-btn { width: 134px; height: 34px; border-radius: 9px; flex: none; } .p1-sk-btn.sm { width: 52px; }
+.p1-sk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.25rem; padding: 1.5rem; }   /* = .specialties-grid */
+.p1-sk-card { background: var(--white); border: 1px solid var(--gray-200); border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 16px; min-height: 176px; }
+.p1-sk-row { display: flex; align-items: center; gap: 12px; }
+.p1-sk-line { height: 14px; } .p1-sk-line.l { height: 18px; }
+.p1-sk-w20 { width: 20%; } .p1-sk-w25 { width: 25%; } .p1-sk-w30 { width: 30%; } .p1-sk-w40 { width: 40%; } .p1-sk-w55 { width: 55%; } .p1-sk-w60 { width: 60%; }
+.p1-sk-chip { width: 64px; height: 26px; border-radius: 999px; }
+.p1-sk-bar { height: 7px; border-radius: 999px; margin-top: auto; }
+@media (max-width: 768px) {
+    html.p1-skel #p1-skel { padding: 12px 4px; }
+    .p1-sk-tools .p1-sk { height: 40px; }
+    .p1-sk-navbar .p1-sk { max-width: 52px; height: 40px; border-radius: 12px; } .p1-sk-navbar .p1-sk:not(.on) { height: 22px; max-width: 26px; }
+    .p1-sk-head { padding: 16px; } .p1-sk-btn { width: 44px; } .p1-sk-title { width: 140px; }
+    .p1-sk-grid { grid-template-columns: 1fr; padding: 8px; gap: 14px; } .p1-sk-grid .p1-sk-card:nth-child(n+4) { display: none; }
+}
+/* 2026-10-25 : chargements locaux (notes, cahier d'erreurs, entraînements, flashcards, listes) — window.p1SkelHTML */
+.p1-skl { display: flex; flex-direction: column; gap: 12px; padding: 6px 2px; pointer-events: none; user-select: none; -webkit-user-select: none; width: 100%; box-sizing: border-box; }
+.p1-skl-line { height: 13px; border-radius: 7px; }
+.p1-skl-editor .p1-skl-line { height: 14px; }
+.p1-skl-editor .p1-skl-gap { height: 6px; }
+.p1-skl-row { display: flex; align-items: center; gap: 12px; }
+.p1-skl-col { flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.p1-skl-av { width: 36px; height: 36px; border-radius: 50%; flex: none; }
+.p1-skl-box { width: 20px; height: 20px; border-radius: 6px; flex: none; }
+.p1-skl-pill { width: 56px; height: 22px; border-radius: 999px; flex: none; }
+.p1-skl-flash .p1-skl-row { padding: 10px 12px; border: 1px solid var(--gray-200); border-radius: 12px; }
+.p1-skl-list .p1-skl-row { padding: 6px 4px; }
+@media (prefers-reduced-motion: reduce) { .p1-sk, html.p1-skel #welcome-message:empty::after, html.p1-skel .user-auth:not(.logged-in)::after { animation: none; } html.p1-skel-in #main-content { animation: none; } }
+</style>
+<script id="p1-skel-early">document.documentElement.classList.add('p1-skel', 'p1-noloader');
+/* case « Révisions J » du squelette : seulement si la Méthode des J est activée (même clé que l'application, lue sans attendre la connexion) */
+try { var _p1j = false; for (var _i = 0; _i < localStorage.length; _i++) { var _k = localStorage.key(_i); if (_k && _k.indexOf('jMethodEnabled__') === 0 && localStorage.getItem(_k) === '1') _p1j = true; } if (!_p1j) document.documentElement.classList.add('p1-skel-noj'); } catch (e) { document.documentElement.classList.add('p1-skel-noj'); }   /* 2026-10-25 : squelette à chaque ouverture (plus jamais l'ancien écran) */</script>
 </head>
 
 
@@ -17256,10 +17337,64 @@ window.TPXNotesPending = {
 </section>
 
 
+<div id="p1-skel" aria-hidden="true"><div class="container"><div class="p1-sk-nav"><div class="p1-sk-navbar"><span class="p1-sk"></span><span class="p1-sk on"></span><span class="p1-sk"></span><span class="p1-sk"></span><span class="p1-sk"></span></div><span class="p1-sk p1-sk-j"></span><span class="p1-sk p1-sk-todo"></span></div><div class="p1-sk-tools"><span class="p1-sk p1-sk-search"></span><span class="p1-sk p1-sk-select"></span><span class="p1-sk p1-sk-select"></span></div><div class="p1-sk-section"><div class="p1-sk-head"><span class="p1-sk p1-sk-ico"></span><span class="p1-sk p1-sk-title"></span><span class="p1-sk-sp"></span><span class="p1-sk p1-sk-btn"></span><span class="p1-sk p1-sk-btn sm"></span></div><div class="p1-sk-grid"><div class="p1-sk-card"><div class="p1-sk-row"><span class="p1-sk p1-sk-ico sm"></span><span class="p1-sk p1-sk-line l p1-sk-w55"></span></div><div class="p1-sk-row"><span class="p1-sk p1-sk-line p1-sk-w25"></span><span class="p1-sk p1-sk-line p1-sk-w20"></span></div><div class="p1-sk-row"><span class="p1-sk p1-sk-chip"></span><span class="p1-sk p1-sk-chip"></span></div><span class="p1-sk p1-sk-bar"></span></div><div class="p1-sk-card"><div class="p1-sk-row"><span class="p1-sk p1-sk-ico sm"></span><span class="p1-sk p1-sk-line l p1-sk-w55"></span></div><div class="p1-sk-row"><span class="p1-sk p1-sk-line p1-sk-w25"></span><span class="p1-sk p1-sk-line p1-sk-w20"></span></div><div class="p1-sk-row"><span class="p1-sk p1-sk-chip"></span><span class="p1-sk p1-sk-chip"></span></div><span class="p1-sk p1-sk-bar"></span></div><div class="p1-sk-card"><div class="p1-sk-row"><span class="p1-sk p1-sk-ico sm"></span><span class="p1-sk p1-sk-line l p1-sk-w55"></span></div><div class="p1-sk-row"><span class="p1-sk p1-sk-line p1-sk-w25"></span><span class="p1-sk p1-sk-line p1-sk-w20"></span></div><div class="p1-sk-row"><span class="p1-sk p1-sk-chip"></span><span class="p1-sk p1-sk-chip"></span></div><span class="p1-sk p1-sk-bar"></span></div><div class="p1-sk-card"><div class="p1-sk-row"><span class="p1-sk p1-sk-ico sm"></span><span class="p1-sk p1-sk-line l p1-sk-w55"></span></div><div class="p1-sk-row"><span class="p1-sk p1-sk-line p1-sk-w25"></span><span class="p1-sk p1-sk-line p1-sk-w20"></span></div><div class="p1-sk-row"><span class="p1-sk p1-sk-chip"></span><span class="p1-sk p1-sk-chip"></span></div><span class="p1-sk p1-sk-bar"></span></div><div class="p1-sk-card"><div class="p1-sk-row"><span class="p1-sk p1-sk-ico sm"></span><span class="p1-sk p1-sk-line l p1-sk-w55"></span></div><div class="p1-sk-row"><span class="p1-sk p1-sk-line p1-sk-w25"></span><span class="p1-sk p1-sk-line p1-sk-w20"></span></div><div class="p1-sk-row"><span class="p1-sk p1-sk-chip"></span><span class="p1-sk p1-sk-chip"></span></div><span class="p1-sk p1-sk-bar"></span></div><div class="p1-sk-card"><div class="p1-sk-row"><span class="p1-sk p1-sk-ico sm"></span><span class="p1-sk p1-sk-line l p1-sk-w55"></span></div><div class="p1-sk-row"><span class="p1-sk p1-sk-line p1-sk-w25"></span><span class="p1-sk p1-sk-line p1-sk-w20"></span></div><div class="p1-sk-row"><span class="p1-sk p1-sk-chip"></span><span class="p1-sk p1-sk-chip"></span></div><span class="p1-sk p1-sk-bar"></span></div><div class="p1-sk-card"><div class="p1-sk-row"><span class="p1-sk p1-sk-ico sm"></span><span class="p1-sk p1-sk-line l p1-sk-w55"></span></div><div class="p1-sk-row"><span class="p1-sk p1-sk-line p1-sk-w25"></span><span class="p1-sk p1-sk-line p1-sk-w20"></span></div><div class="p1-sk-row"><span class="p1-sk p1-sk-chip"></span><span class="p1-sk p1-sk-chip"></span></div><span class="p1-sk p1-sk-bar"></span></div><div class="p1-sk-card"><div class="p1-sk-row"><span class="p1-sk p1-sk-ico sm"></span><span class="p1-sk p1-sk-line l p1-sk-w55"></span></div><div class="p1-sk-row"><span class="p1-sk p1-sk-line p1-sk-w25"></span><span class="p1-sk p1-sk-line p1-sk-w20"></span></div><div class="p1-sk-row"><span class="p1-sk p1-sk-chip"></span><span class="p1-sk p1-sk-chip"></span></div><span class="p1-sk p1-sk-bar"></span></div></div></div></div></div>
+<script id="p1-skel-js">
+/* 2026-10-25 : fin du squelette de chargement — utilisateur chargé (statut appliqué) ET données arrivées ; déconnecté →
+   tout de suite ; filet 15 s. Rien d'autre n'est modifié : le chargement et les sauvegardes restent ceux d'avant. */
+(function () {
+    'use strict';
+    var html = document.documentElement, st = { user: false, data: false }, done = false;
+    /* contenu de nouveau affiché : tout ce qui s'est mesuré pendant qu'il était masqué se recale (pastille de la barre de
+       navigation, graphiques…) */
+    function relayout() {
+        try { if (typeof window._syncNavPill === 'function') window._syncNavPill(true); } catch (e) {}
+        try { window.dispatchEvent(new Event('resize')); } catch (e) {}
+    }
+    function drop() { var sk = document.getElementById('p1-skel'); if (sk && sk.parentNode) sk.parentNode.removeChild(sk); }
+    function finish() {
+        if (done) return; done = true;
+        if (!html.classList.contains('p1-skel')) { drop(); return; }
+        html.classList.add('p1-skel-out');
+        setTimeout(function () {
+            html.classList.remove('p1-skel', 'p1-skel-out'); html.classList.add('p1-skel-in'); drop();
+            relayout(); requestAnimationFrame(relayout); setTimeout(relayout, 120);
+            setTimeout(function () { html.classList.remove('p1-skel-in'); }, 400);
+        }, 200);
+    }
+    window.p1SkelReady = function (what) {
+        try {
+            if (what === 'out') {
+                if (!done) { done = true; html.classList.remove('p1-skel'); drop(); }
+                return;
+            }
+            st[what] = true;
+            if (st.user && st.data && !done) requestAnimationFrame(function () { setTimeout(finish, 60); });   /* le rendu des données est fait dans la même tâche */
+        } catch (e) { finish(); }
+    };
+    setTimeout(function () { if (!done) finish(); }, 15000);
+})();
+/* 2026-10-25 : contenu provisoire « squelette » pour les chargements locaux (remplacé ensuite par le vrai contenu) */
+window.p1SkelHTML = function (kind) {
+    var sk = function (cls, w) { return '<span class="p1-sk ' + cls + '"' + (w ? ' style="width:' + w + '"' : '') + '></span>'; };
+    var row = function (inner) { return '<div class="p1-skl-row">' + inner + '</div>'; };
+    var out = '';
+    if (kind === 'editor') {
+        ['92%', '84%', '88%', '46%', 'gap', '90%', '72%', '80%', '38%'].forEach(function (w) { out += w === 'gap' ? '<span class="p1-skl-gap"></span>' : sk('p1-skl-line', w); });
+    } else if (kind === 'list') {
+        ['58%', '44%', '52%'].forEach(function (w) { out += row(sk('p1-skl-av') + '<div class="p1-skl-col">' + sk('p1-skl-line', w) + sk('p1-skl-line', '30%') + '</div>'); });
+    } else if (kind === 'flash') {
+        ['62%', '48%', '70%', '54%'].forEach(function (w) { out += row(sk('p1-skl-box') + '<div class="p1-skl-col">' + sk('p1-skl-line', w) + '</div>' + sk('p1-skl-pill')); });
+    } else {   /* 'oic' */
+        ['86%', '70%', '78%', '60%'].forEach(function (w) { out += sk('p1-skl-line', w); });
+    }
+    return '<div class="p1-skl p1-skl-' + kind + '" contenteditable="false" aria-busy="true" aria-label="Chargement">' + out + '</div>';
+};
+</script>
+
 <section class="main-content" id="main-content">
     <div class="container">
 <nav class="app-nav">
-    <button class="app-nav-btn" data-page="stats"><i class="fas fa-chart-pie"></i><span>Statistiques</span></button>
+    <button class="app-nav-btn" data-page="stats"><i class="fas fa-chart-pie"></i><span>Tableau de bord</span></button>
     <button class="app-nav-btn active" data-page="dashboard"><i class="fas fa-hospital"></i><span>Mes matières</span></button>
     <button class="app-nav-btn" data-page="items"><i class="fas fa-list-check"></i><span>Mes cours</span></button>
     <button class="app-nav-btn" data-page="entrainements"><i class="fas fa-dumbbell"></i><span>Entraînements</span></button>
@@ -17272,7 +17407,7 @@ window.TPXNotesPending = {
 	
     <!-- Titre Section Quotidienne -->
     <div class="stats-section-title daily">
-        <i class="fas fa-calendar-day"></i> Stats du Jour
+        <i class="fas fa-calendar-day"></i> Ma journée de travail
 		<span class="help-icon" onclick="openHelpModal('stats-daily')">?</span>
 
     </div>
@@ -17332,7 +17467,7 @@ window.TPXNotesPending = {
 
 		<!-- Titre Section Hebdomadaire -->
 <div class="stats-section-title weekly">
-    <i class="fas fa-calendar-week"></i> Stats des 7 derniers jours
+    <i class="fas fa-calendar-week"></i> Ma semaine de travail
 	<span class="help-icon" onclick="openHelpModal('stats-weekly')">?</span>
 
 </div>
@@ -17392,7 +17527,7 @@ window.TPXNotesPending = {
 
         <!-- Titre Section Générale -->
     <div class="stats-section-title general">
-        <i class="fas fa-chart-pie"></i> Stats générales
+        <i class="fas fa-chart-pie"></i> Mon année en bref
 		                <span class="help-icon" onclick="openHelpModal('stats-general')">?</span>
 
     </div>
@@ -21314,8 +21449,8 @@ body.tours-compact #sort-specialty-dropdown .custom-select-option[data-value="ti
             <div class="modal-section" style="margin-bottom:0;">
                 <label class="modal-label">Page(s) concernée(s) <span style="color:var(--gray-400);font-weight:400;font-size:0.8rem;">(optionnel)</span></label>
                 <div class="feedback-page-grid">
-                    <button class="feedback-page-btn" data-page="Statistiques">
-                        <i class="fas fa-chart-pie"></i> Stats
+                    <button class="feedback-page-btn" data-page="Tableau de bord" title="Tableau de bord">
+                        <i class="fas fa-chart-pie"></i> Tableau
                     </button>
                     <button class="feedback-page-btn" data-page="Matières">
                         <i class="fas fa-hospital"></i> Matières
@@ -24653,6 +24788,7 @@ async function updateUserUI(user) {
         // tpxApplyPremiumState() a déjà été appelé plus haut (étape 2) : verrou,
         // couronne et pastille d'essai sont donc à jour, sans aucun appel réseau.
         
+        if (window.p1SkelReady) window.p1SkelReady('user');
         setTimeout(hideLoader, 500);
         
     } else {
@@ -24697,6 +24833,7 @@ window._legacyMigrationConfirmedUid = null;
 
 
         if (cloudSaveTimeout) { clearTimeout(cloudSaveTimeout); cloudSaveTimeout = null; }
+        if (window.p1SkelReady) window.p1SkelReady('out');
         hideLoader();
     }
 }
@@ -25653,7 +25790,7 @@ function loadUserData(userId) {
 				if (docSnap.exists()) {
 					const newData = docSnap.data();
 					
-					    firebaseDataLoaded = true;
+					    firebaseDataLoaded = true; if (window.p1SkelReady) window.p1SkelReady('data');
 							setSaveIndicator('hidden');
 	
 					
@@ -25962,7 +26099,7 @@ if (_legacyMigrationAttemptedUid !== userId) {
                     } catch (e) {}
                 }
 				
-				    firebaseDataLoaded = true;
+				    firebaseDataLoaded = true; if (window.p1SkelReady) window.p1SkelReady('data');
 						setSaveIndicator('hidden');
                 
                 
@@ -26015,7 +26152,7 @@ if (_legacyMigrationAttemptedUid !== userId) {
             if (window._p1TrainResync) window._p1TrainResync(); // 2026-09-21 : ne pas perdre les entraînements déjà chargés
             renderAll(); 
 			
-			    firebaseDataLoaded = true;
+			    firebaseDataLoaded = true; if (window.p1SkelReady) window.p1SkelReady('data');
     setSaveIndicator('hidden');
 	
 	
@@ -35450,7 +35587,7 @@ setTimeout(() => {
             try {
                 userData = JSON.parse(cachedData);
                 window.userData = userData; // sync global
-                firebaseDataLoaded = true;
+                firebaseDataLoaded = true; if (window.p1SkelReady) window.p1SkelReady('data');
                 setSaveIndicator('hidden');
                 renderAll();
             } catch (e) {
@@ -39543,8 +39680,8 @@ body.tc-kb-open-phone .flash-expand-btn {
                 <div class="whats-new-section-text">
                     <h4>Flammes</h4>
                     <p>
-                        Chaque jour de connexion d'affilée te rapporte une flamme (carte « Flammes » des
-                        Statistiques). Absent un jour ou plusieurs ? À ton retour, une seule vie ❤ est
+                        Chaque jour de connexion d'affilée te rapporte une flamme (carte « Flammes » du
+                        Tableau de bord). Absent un jour ou plusieurs ? À ton retour, une seule vie ❤ est
                         utilisée et tes flammes sont gardées. Une vie offerte chaque semaine, 5 au maximum.
                     </p>
                 </div>
@@ -39559,7 +39696,7 @@ body.tc-kb-open-phone .flash-expand-btn {
                     <p>
                         Pour avoir une idée plus précise du temps réellement travaillé chaque jour, tu peux
                         désormais ajouter, en plus de tes tours, tes sessions de travail (QCM, annales,
-                        fiches…) et tes entraînements depuis les Statistiques : un suivi plus complet et
+                        fiches…) et tes entraînements depuis le Tableau de bord : un suivi plus complet et
                         plus fiable de ton travail.
                     </p>
                 </div>
@@ -39652,9 +39789,9 @@ body.tc-kb-open-phone .flash-expand-btn {
                     <i class="fas fa-chart-line"></i>
                 </div>
                 <div class="whats-new-section-text">
-                    <h4>Statistiques et trophées</h4>
+                    <h4>Tableau de bord et trophées</h4>
                     <p>
-                        Suis ta progression dans <strong>Statistiques</strong>, et débloque des
+                        Suis ta progression dans le <strong>Tableau de bord</strong>, et débloque des
                         <strong>trophées</strong> au fil de tes révisions.
                     </p>
                 </div>
@@ -39808,7 +39945,7 @@ body.tc-kb-open-phone .flash-expand-btn {
 const helpContent = {
     'stats-daily': {
         icon: 'fa-calendar-day',
-        title: 'Statistiques Quotidiennes',
+        title: 'Ma journée de travail',
         content: `
             <div class="help-description">
                 <p>Votre <strong>tableau de bord quotidien</strong> affiche vos statistiques du jour en temps réel.</p>
@@ -39842,7 +39979,7 @@ const helpContent = {
     },
     'stats-weekly': {
         icon: 'fa-calendar-week',
-        title: 'Statistiques hebdomadaires',
+        title: 'Ma semaine de travail',
         content: `
             <div class="help-description">
                 <p>Visualisez <strong>l'évolution de votre travail sur les 7 derniers jours</strong> sur des graphiques.</p>
@@ -39874,7 +40011,7 @@ const helpContent = {
     },
     'stats-general': {
         icon: 'fa-chart-pie',
-        title: 'Statistiques Générales',
+        title: 'Mon année en bref',
         content: `
             <div class="help-description">
                 <p>Votre <strong>vue d'ensemble</strong> : toutes vos révisions cumulées.</p>
@@ -41243,7 +41380,7 @@ function openNotesModal(num, specialtyId, fc, itemName) {
     window._setScrollbarComp(sw);
 
     var editor = document.getElementById('notesEditorArea');
-    editor.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2.5rem;opacity:0.35;pointer-events:none;"><i class="fas fa-spinner fa-spin" style="font-size:1.8rem;margin-bottom:0.6rem;"></i><span style="font-size:0.82rem;">Chargement des notes…</span></div>';
+    editor.innerHTML = (window.p1SkelHTML ? window.p1SkelHTML('editor') : '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2.5rem;opacity:0.35;pointer-events:none;"><i class="fas fa-spinner fa-spin" style="font-size:1.8rem;margin-bottom:0.6rem;"></i><span style="font-size:0.82rem;">Chargement des notes…</span></div>');
     editor._notesLoadReady = false;
     editor._importing = false; // ✅ Réinitialiser le flag d'import à chaque ouverture
     // 🔒 Verrouiller l'édition tant que la version à afficher (Firestore/pending)
@@ -41255,7 +41392,7 @@ function openNotesModal(num, specialtyId, fc, itemName) {
     // Afficher un spinner dans la liste OIC pendant le chargement
     var _oicListEl = document.getElementById('oicList');
     if (_oicListEl) {
-        _oicListEl.innerHTML = '<div class="oic-empty" style="padding:1.5rem 0;"><i class="fas fa-spinner fa-spin" style="font-size:1.5rem;opacity:0.4;display:block;margin-bottom:0.5rem;"></i><span style="font-size:0.8rem;opacity:0.5;">Chargement…</span></div>';
+        _oicListEl.innerHTML = (window.p1SkelHTML ? window.p1SkelHTML('oic') : '<div class="oic-empty" style="padding:1.5rem 0;"><i class="fas fa-spinner fa-spin" style="font-size:1.5rem;opacity:0.4;display:block;margin-bottom:0.5rem;"></i><span style="font-size:0.8rem;opacity:0.5;">Chargement…</span></div>');
     }
 
     var savedKey = _notesKey;
@@ -45349,7 +45486,7 @@ window._openTrainNotes = function(id) {
 
   // ── Vider l'éditeur + indicateur chargement ──
   var editor = document.getElementById('trainNotesEditor');
-  editor.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;opacity:0.4;pointer-events:none;"><i class="fas fa-spinner fa-spin" style="font-size:1.8rem;margin-bottom:0.6rem;"></i><span style="font-size:0.82rem;">Chargement des notes…</span></div>';
+  editor.innerHTML = (window.p1SkelHTML ? window.p1SkelHTML('editor') : '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;opacity:0.4;pointer-events:none;"><i class="fas fa-spinner fa-spin" style="font-size:1.8rem;margin-bottom:0.6rem;"></i><span style="font-size:0.82rem;">Chargement des notes…</span></div>');
   trainNotesSetAutosaveDot('loading');
   ['tnBtnBold','tnBtnItalic','tnBtnUnderline','tnBtnStrike'].forEach(function(btnId){
     var b = document.getElementById(btnId); if(b) b.classList.remove('active');
@@ -46156,7 +46293,7 @@ var _trainUserWatcher = setInterval(function() {
 
     // Vider l'editeur + indicateur chargement
     var editor = document.getElementById('speNotesEditor');
-    editor.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;opacity:0.4;pointer-events:none;"><i class="fas fa-spinner fa-spin" style="font-size:1.8rem;margin-bottom:0.6rem;"></i><span style="font-size:0.82rem;">Chargement du cahier d\'erreurs...</span></div>';
+    editor.innerHTML = (window.p1SkelHTML ? window.p1SkelHTML('editor') : '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;opacity:0.4;pointer-events:none;"><i class="fas fa-spinner fa-spin" style="font-size:1.8rem;margin-bottom:0.6rem;"></i><span style="font-size:0.82rem;">Chargement du cahier d\'erreurs...</span></div>');
     speErrSetAutosaveDot('loading');
     ['seBtnBold','seBtnItalic','seBtnUnderline','seBtnStrike'].forEach(function(btnId) {
       var b = document.getElementById(btnId); if (b) b.classList.remove('active');
@@ -47325,7 +47462,7 @@ async function renderFriendsList(data) {
     }
 
     // Fetch les infos de chaque ami
-    container.innerHTML = '<div class="friends-empty"><i class="fas fa-spinner fa-spin"></i>Chargement…</div>';
+    container.innerHTML = (window.p1SkelHTML ? window.p1SkelHTML('list') : '<div class="friends-empty"><i class="fas fa-spinner fa-spin"></i>Chargement…</div>');
     const infos = await fetchUsersInfo(friends);
     container.innerHTML = '';
     friends.forEach(uid => {
@@ -47355,7 +47492,7 @@ async function renderRequestsPanels(data) {
         if (received.length === 0) {
             recContainer.innerHTML = '<div class="friends-empty"><i class="fas fa-inbox"></i>Aucune demande reçue</div>';
         } else {
-            recContainer.innerHTML = '<div class="friends-empty"><i class="fas fa-spinner fa-spin"></i>Chargement…</div>';
+            recContainer.innerHTML = (window.p1SkelHTML ? window.p1SkelHTML('list') : '<div class="friends-empty"><i class="fas fa-spinner fa-spin"></i>Chargement…</div>');
             const infos = await fetchUsersInfo(received);
             recContainer.innerHTML = '';
             received.forEach(uid => {
@@ -47375,7 +47512,7 @@ async function renderRequestsPanels(data) {
         if (sent.length === 0) {
             sentContainer.innerHTML = '<div class="friends-empty"><i class="fas fa-paper-plane"></i>Aucune demande envoyée</div>';
         } else {
-            sentContainer.innerHTML = '<div class="friends-empty"><i class="fas fa-spinner fa-spin"></i>Chargement…</div>';
+            sentContainer.innerHTML = (window.p1SkelHTML ? window.p1SkelHTML('list') : '<div class="friends-empty"><i class="fas fa-spinner fa-spin"></i>Chargement…</div>');
             const infos = await fetchUsersInfo(sent);
             sentContainer.innerHTML = '';
             sent.forEach(uid => {
@@ -48384,7 +48521,7 @@ async function loadShareFriendsList() {
     const user = window.currentUser;
     if (!user) return;
 
-    list.innerHTML = '<div class="notes-share-empty"><i class="fas fa-spinner fa-spin"></i></div>';
+    list.innerHTML = (window.p1SkelHTML ? window.p1SkelHTML('list') : '<div class="notes-share-empty"><i class="fas fa-spinner fa-spin"></i></div>');
 
     try {
         const snap = await getDoc(doc(db, 'users', user.uid));
@@ -48710,7 +48847,7 @@ async function loadSharedNotesForItem() {
     listEl.innerHTML = '';
     if (emptyEl) {
         emptyEl.style.display = 'flex';
-        emptyEl.innerHTML = '<i class="fas fa-spinner fa-spin" style="font-size:1.5rem;opacity:0.4;margin-bottom:0.5rem;"></i><p>Chargement des notes reçues…</p>';
+        emptyEl.innerHTML = (window.p1SkelHTML ? window.p1SkelHTML('list') : '<i class="fas fa-spinner fa-spin" style="font-size:1.5rem;opacity:0.4;margin-bottom:0.5rem;"></i><p>Chargement des notes reçues…</p>');
     }
 
     try {
@@ -55647,7 +55784,7 @@ window._applyItemPriority = function(priority, specialtyId, fc) {
     var dueBadge = document.getElementById('notesFlashDueBadge');
     if (!speId) { host.innerHTML = '<div class="oic-empty"><i class="fas fa-bolt"></i>Aucun cours sélectionné.</div>'; if (dueBadge) dueBadge.style.display = 'none'; return; }
     if (!isOnline()) { host.innerHTML = '<div class="flash-offline-note"><i class="fas fa-wifi"></i>Fonctionnalité disponible en ligne uniquement.</div>'; if (dueBadge) dueBadge.style.display = 'none'; return; }
-    host.innerHTML = '<div class="oic-empty"><i class="fas fa-spinner fa-spin"></i>Chargement…</div>';
+    host.innerHTML = (window.p1SkelHTML ? window.p1SkelHTML('flash') : '<div class="oic-empty"><i class="fas fa-spinner fa-spin"></i>Chargement…</div>');
     var _myItemId = itemId || null;
     loadFlashCards(speId).then(function (all) {
       // 🔒 Protection contre une réponse tardive après changement d'item
@@ -56440,7 +56577,7 @@ window._flashEditOverlayClick = _flashEditOverlayClick;
   function renderFlashDrawerList() {
     var list = document.getElementById('flashDrawerList'); if (!list) return;
     if (!isOnline()) { list.innerHTML='<div class="flash-offline-note"><i class="fas fa-wifi"></i>Disponible en ligne uniquement.</div>'; updateFlashDrawerCount(); return; }
-    list.innerHTML='<div class="flash-empty"><i class="fas fa-spinner fa-spin"></i>Chargement…</div>';
+    list.innerHTML=(window.p1SkelHTML ? window.p1SkelHTML('flash') : '<div class="flash-empty"><i class="fas fa-spinner fa-spin"></i>Chargement…</div>');
     _flashDrawerSelectAllOn = false;
     _flashDrawerDueOnlyOn = false;
     loadAllFlashCards().then(function(all){
@@ -67852,7 +67989,7 @@ function updateSettingsUi() {
         var PAGES = [
             {
                 id: 'stats',
-                title: 'Statistiques',
+                title: 'Tableau de bord',
                 icon: 'fa-chart-line',
                 since: 1,
                 heading: 'Votre progression, en un coup d\'œil',
@@ -69770,6 +69907,13 @@ html[data-font="round"] .flash-drawer-mode-btn { font-size: 0.64rem; padding: 0.
 </script>
 
 <!-- ===== Barre de sauvegarde : fine barre sous l'en-tête (remplace le rond / la coche) (17/10/2026) ===== -->
+<!-- ===== Fenêtres d'aide : le titre (« Ma semaine de travail »…) tient sur les petits téléphones ===== -->
+<style id="p1-help-title-css">
+@media (max-width: 400px) {
+    .help-modal-header { padding: 16px; }   /* 20/24 px → 16 px : plus de place pour le titre, fenêtre un peu moins haute */
+    .help-modal-title h3 { font-size: clamp(0.95rem, 4.6vw, 1.15rem); }
+}
+</style>
 <!-- ===== Envoi vers la To-do : la punaise remplace la coche verte sans « trou » ===== -->
 <style id="p1-pin-in-css">
 /* Envoi vers la To-do — la punaise remplace la coche verte sans « trou » (plus de fondu à vide) */
