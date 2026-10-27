@@ -236,10 +236,10 @@ try {
     const { page } = await openStats(u);
     await sleep(2500);
     const r = await page.evaluate(() => {
-      const secs = [...document.querySelectorAll(".whats-new-modal-body .whats-new-section")], ic = secs[1].querySelector(".whats-new-section-icon");
-      return { h: secs.slice(0, 3).map((x) => x.querySelector("h4").textContent), txt: secs[1].querySelector("p").textContent.replace(/\s+/g, " ").trim(), cls: ic.className, bg: getComputedStyle(ic).backgroundImage, badge: document.getElementById("whats-new-badge").classList.contains("show") };
+      const secs = [...document.querySelectorAll(".whats-new-modal-body .whats-new-section")], ic = secs[2].querySelector(".whats-new-section-icon");   // 0 = « Méthode Pomodoro » (27/10), 1 = « Police et thème », 2 = « Flammes »
+      return { h: secs.slice(0, 4).map((x) => x.querySelector("h4").textContent), txt: secs[2].querySelector("p").textContent.replace(/\s+/g, " ").trim(), cls: ic.className, bg: getComputedStyle(ic).backgroundImage, badge: document.getElementById("whats-new-badge").classList.contains("show") };
     });
-    assert(/^Police et thème/.test(r.h[0]) && r.h[1] === "Flammes" && /^Sessions de travail/.test(r.h[2]), "ordre : " + JSON.stringify(r.h));
+    assert(r.h[0] === "Méthode Pomodoro" && /^Police et thème/.test(r.h[1]) && r.h[2] === "Flammes" && /^Sessions de travail/.test(r.h[3]), "ordre : " + JSON.stringify(r.h));
     assert(r.txt === "Chaque jour de connexion d'affilée te rapporte une flamme (carte « Flammes » du Tableau de bord). Absent un jour ou plusieurs ? À ton retour, une seule vie ❤ est utilisée et tes flammes sont gardées. Une vie offerte chaque semaine, 5 au maximum.", "texte : " + r.txt);
     assert(/flame/.test(r.cls) && /249, 115, 22/.test(r.bg) && /239, 68, 68/.test(r.bg), "icône : " + JSON.stringify(r));
     assert(r.badge, "pastille absente");

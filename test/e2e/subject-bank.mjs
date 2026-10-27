@@ -180,12 +180,12 @@ try {
     // Écran d'accueil -> "Tableau de bord" -> "Matières" -> page dédiée "Banque de matières"
     // (retour de Jean 02/10 : plus un bloc tassé au bas de la page "Matières", mais sa propre
     // page, comme 'items-settings'/'entrainements-settings').
-    await page.evaluate(() => document.getElementById("tpx-onb-next").click());
-    await sleep(250);
-    await page.evaluate(() => document.getElementById("tpx-onb-next").click());
-    await sleep(250);
-    await page.evaluate(() => document.getElementById("tpx-onb-next").click());
-    await sleep(300);
+    // Le nombre d'écrans d'accueil avant « Matières » a varié (27/10) : on avance jusqu'à la page dédiée (8 clics au plus).
+    for (let i = 0; i < 8; i++) {
+      if (await page.evaluate(() => !!document.getElementById("p1-onb-subject-bank-checkbox"))) break;
+      await page.evaluate(() => document.getElementById("tpx-onb-next").click());
+      await sleep(300);
+    }
 
     const found = await page.evaluate(() => !!document.getElementById("p1-onb-subject-bank-checkbox"));
     assert(found, "case « Ajouter ces matières » absente de la page dédiée de l'assistant de présentation");

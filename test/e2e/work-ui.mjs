@@ -306,7 +306,7 @@ await S("H-D2", "compte déjà en compact sur téléphone 390 : pas de ligne Tou
 });
 
 /* ═══════════════════ Nouveautés ═══════════════════ */
-await S("N1", "Nouveautés : un compte qui avait lu la v6 revoit la pastille ; « Police et thème » en tête, puis « Flammes », puis « Sessions de travail » ; plus de pastille après lecture", async () => {
+await S("N1", "Nouveautés : un compte qui avait lu la v6 revoit la pastille ; « Méthode Pomodoro », « Police et thème », puis « Flammes », puis « Sessions de travail » ; plus de pastille après lecture", async () => {
   const u = await mkUser();
   await adb.doc(`users/${u.uid}/settings/preferences`).set({ whatsNewSeen_v6: true }, { merge: true });
   const { page } = await openPage(browser, u);
@@ -314,8 +314,8 @@ await S("N1", "Nouveautés : un compte qui avait lu la v6 revoit la pastille ; �
   await page.waitForFunction(() => window.currentUser, { timeout: 15000 });
   await sleep(2500);
   assert(await page.evaluate(() => document.getElementById("whats-new-badge").classList.contains("show")), "pastille Nouveautés absente alors que la v7 n'est pas lue");
-  const h = await page.evaluate(() => [...document.querySelectorAll(".whats-new-modal-body .whats-new-section h4")].slice(0, 3).map((x) => x.textContent));
-  assert(/Police et thème/.test(h[0]) && /Flammes/.test(h[1]) && /Sessions de travail et entraînements/.test(h[2]), "ordre : " + JSON.stringify(h));
+  const h = await page.evaluate(() => [...document.querySelectorAll(".whats-new-modal-body .whats-new-section h4")].slice(0, 4).map((x) => x.textContent));
+  assert(/Méthode Pomodoro/.test(h[0]) && /Police et thème/.test(h[1]) && /Flammes/.test(h[2]) && /Sessions de travail et entraînements/.test(h[3]), "ordre : " + JSON.stringify(h));
   await page.evaluate(() => window.openWhatsNewModal && window.openWhatsNewModal()); await sleep(600);
   await page.evaluate(() => window.closeWhatsNewModal && window.closeWhatsNewModal()); await sleep(1500);
   assert(!(await page.evaluate(() => document.getElementById("whats-new-badge").classList.contains("show"))), "pastille encore affichée après lecture");
