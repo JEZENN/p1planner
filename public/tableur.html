@@ -4341,11 +4341,20 @@ html[data-theme="dark"]::-webkit-scrollbar-thumb:hover { background: linear-grad
 }
 [data-theme="dark"] .p1-catalog-existing-card { background: rgba(148, 163, 184, 0.08); border-color: var(--gray-300, #4b5563); }
 .p1-catalog-section-title {
-    display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; font-weight: 700;
-    color: var(--gray-600); text-transform: uppercase; letter-spacing: .02em; margin-bottom: 0.7rem;
+    display: flex; align-items: center; gap: 0.6rem; font-family: var(--font-display); font-size: 1rem; font-weight: 700;
+    color: var(--gray-800); text-transform: none; letter-spacing: normal; margin-bottom: 0.7rem;
 }
-.p1-catalog-add-card .p1-catalog-section-title { color: var(--primary); }
+[data-theme="dark"] .p1-catalog-section-title { color: #f1f5f9; }
+.p1-catalog-add-card .p1-catalog-section-title { color: var(--gray-800); }
+[data-theme="dark"] .p1-catalog-add-card .p1-catalog-section-title { color: #f1f5f9; }
+/* icône du titre dans une petite case pastel, comme les titres de la méthode Pomodoro */
+.p1-catalog-section-title > i {
+    width: 32px; height: 32px; border-radius: 10px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;
+    font-size: 0.88rem; color: var(--primary); background: rgba(59, 130, 246, 0.12); background: color-mix(in srgb, var(--primary) 13%, transparent);
+}
+[data-theme="dark"] .p1-catalog-section-title > i { background: rgba(96, 165, 250, 0.16); background: color-mix(in srgb, var(--primary) 18%, transparent); }
 .p1-catalog-existing-title { justify-content: space-between; margin-top: 0.2rem; }
+.p1-catalog-existing-title .p1-catalog-count-badge { margin-left: auto; }   /* le texte « Existants » reste collé à l'icône, le compteur à droite */
 .p1-catalog-count-badge { font-size: 0.75rem; font-weight: 700; color: var(--gray-500); text-transform: none; letter-spacing: normal; }
 .p1-catalog-count-badge span:first-child { color: var(--primary); }
 .p1-catalog-field { margin-bottom: 0.65rem; }
@@ -71156,7 +71165,8 @@ html body .todo-pin-enter { opacity: 1; transition: none; animation: p1PinIn 0.2
     }
     function signal(nextPhase) {
         if (S.cfg.sound) play(S.cfg.tone, S.cfg.vol, nextPhase === 'focus' ? 'focus' : 'break');
-        try { if (navigator.vibrate) navigator.vibrate([180, 90, 180]); } catch (e) {}
+        /* vibration (indépendante du son) : assez longue pour se sentir dans une poche ; plus longue à la fin d'une concentration qu'à la fin d'une pause */
+        try { if (navigator.vibrate) navigator.vibrate(nextPhase === 'focus' ? [400, 150, 400] : [600, 200, 600, 200, 600]); } catch (e) {}
         var msg = nextPhase === 'idle' ? 'Séance terminée : ' + S.cfg.goal + ' ' + plural(S.cfg.goal, 'concentration', 'concentrations') + ', bravo !'
             : nextPhase === 'focus' ? 'Fin de la pause : place à la concentration ' + curNo() + (S.cfg.goal ? ' sur ' + S.cfg.goal : '') + '.'
             : nextPhase === 'long' ? 'Concentration terminée : pause longue de ' + S.cfg.long + ' min.' : 'Concentration terminée : pause de ' + S.cfg.brk + ' min.';

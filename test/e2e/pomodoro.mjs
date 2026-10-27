@@ -409,6 +409,28 @@ try {
     assert(Math.abs(r.pomo.gap - r.tr.gap) <= 2, `PC : écart Pomodoro ${r.pomo.gap.toFixed(1)} px vs ${r.tr.gap.toFixed(1)} px`);
     assert(!r.pomo.over && !r.pageOver, "débordement sur PC");
   });
+
+  /* ═════════ PM13 : vibration à la fin d'une période (téléphone) ═════════ */
+  await S("PM13", "téléphone : la vibration est déclenchée à chaque fin de période (concentration : longue ; pause : plus courte), même son coupé, jamais au chargement ni au « Passer »", async () => {
+    const { page } = await open(FORMATS[3]);
+    await page.evaluate(() => { window.__vib = []; navigator.vibrate = function (p) { window.__vib.push([].concat(p)); return true; }; });
+    await openModal(page);
+    await page.evaluate(() => { const s = window.p1Pomodoro.state(); Object.assign(s.cfg, { sound: false, goal: 4, auto: true }); localStorage.setItem("p1_pomo_v1", JSON.stringify(s)); document.dispatchEvent(new Event("visibilitychange")); });
+    await sleep(700);
+    assert((await page.evaluate(() => window.__vib.length)) === 0, "vibration au chargement / à l'ouverture");
+    await page.evaluate(() => document.getElementById("p1PomoMain").click()); await sleep(600);
+    assert((await page.evaluate(() => window.__vib.length)) === 0, "vibration au simple démarrage");
+    await setState(page, "s.endsAt = now - 800;"); await sleep(1200);   // fin de concentration (son coupé)
+    const sum = (a) => a.reduce((x, y) => x + y, 0);
+    const v1 = await page.evaluate(() => window.__vib.slice());
+    assert(v1.length === 1 && sum(v1[0]) >= 1500, "fin de concentration : " + JSON.stringify(v1));
+    await setState(page, "s.endsAt = now - 800;"); await sleep(1200);   // fin de pause
+    const v2 = await page.evaluate(() => window.__vib.slice());
+    assert(v2.length === 2 && sum(v2[1]) >= 800 && sum(v2[1]) < sum(v2[0]), "fin de pause : " + JSON.stringify(v2));
+    await page.evaluate(() => document.getElementById("p1PomoSkip").click()); await sleep(600);
+    assert((await page.evaluate(() => window.__vib.length)) === 2, "vibration au « Passer »");
+    assert(page.__errors.length === 0, "erreurs JS : " + page.__errors.join(" | "));
+  });
 } finally {
   const code = report();
   await browser.close(); await server.close?.(); await proxy.close?.();
