@@ -44846,6 +44846,13 @@ window.renderTrainTable = function() {
   var emptyEl = document.getElementById('train-empty');
   var countEl = document.getElementById('train-count-badge');
   if (!tbody) return;
+  /* pastilles en plein rangement (note validée à l'instant) : l'écho Firestore de l'enregistrement redessine le tableau presque aussitôt ;
+     on relève leur largeur du moment pour reprendre l'animation sur la pastille recréée, au lieu de la couper */
+  var _settleKeep = [];
+  tbody.querySelectorAll('tr[data-train-id]').forEach(function (r) {
+    var sb = r.querySelector('.p1-score-badge');
+    if (sb && sb._p1SettleEnd && sb._p1SettleEnd > Date.now() + 40) _settleKeep.push({ id: r.dataset.trainId, w: sb.getBoundingClientRect().width, ms: sb._p1SettleEnd - Date.now() });
+  });
 
   var list = (window.userData.trainings || []).filter(function(t) {
     // 🔒 Mode « Ma bibliothèque » : filtre d'AFFICHAGE uniquement. Les
@@ -45096,6 +45103,10 @@ window.renderTrainTable = function() {
     } catch(err) {
       console.error('Train render row error:', err, t);
     }
+  });
+  _settleKeep.forEach(function (k) {
+    var nb = tbody.querySelector('tr[data-train-id="' + k.id + '"] .p1-score-badge');
+    if (nb) window._p1ScoreBadgeSettle(nb, k.w, k.ms);
   });
   if (_scoreEdit && _scoreEdit.keep) {
     var _seB = tbody.querySelector('tr[data-train-id="' + _scoreEdit.id + '"] .p1-score-badge');
@@ -45543,6 +45554,25 @@ window._p1TrainScoreBadge = function (t) {
   b.setAttribute('onclick', 'window._p1EditTrainScore(' + t.id + ',this)');
   return b;
 };
+/* Rangement en douceur de la pastille du tableau après une validation : elle repart de la largeur du champ (w0) et se referme jusqu'à sa largeur de repos (w1), même courbe que le bouton Note de l'en-tête du cahier */
+window._p1ScoreBadgeSettle = function (b, w0, ms) {
+  ms = ms > 0 ? ms : 420;   /* ms : durée restante quand une animation en cours est reprise après un redessin du tableau */
+  if (!b || !(w0 > 0)) return;
+  if (b._p1SettleT) { clearTimeout(b._p1SettleT); b._p1SettleT = null; }
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;   /* aucune animation */
+  var w1 = b.offsetWidth;   /* largeur de repos (largeur de mise en page : insensible au zoom du survol) */
+  if (Math.abs(w0 - w1) < 2) return;
+  b.style.transition = 'none'; b.style.minWidth = '0'; b.style.overflow = 'hidden'; b.style.width = w0 + 'px';
+  b.style.boxShadow = '0 0 0 3px rgba(59,130,246,.15)';   /* halo bleu léger, comme le champ de saisie */
+  void b.offsetWidth;   /* reflow : l'état de départ est appliqué sans transition */
+  b.style.transition = 'width ' + ms + 'ms cubic-bezier(.4,0,.2,1), box-shadow ' + ms + 'ms';
+  b.style.width = w1 + 'px'; b.style.boxShadow = '0 0 0 0 rgba(59,130,246,0)';
+  b._p1SettleEnd = Date.now() + ms;
+  b._p1SettleT = setTimeout(function () {
+    b._p1SettleT = null; b._p1SettleEnd = 0;
+    ['transition', 'min-width', 'overflow', 'width', 'box-shadow'].forEach(function (p) { b.style.removeProperty(p); });
+  }, ms + 40);
+};
 window._p1EditTrainScore = function (id, btn, keep, opts) {
   var reopen = !!keep;   /* keep = { v, s, e } : champ recréé après un redessin du tableau (texte et curseur identiques) */
   var head = !!(opts && opts.onClose);   /* mode « en-tête du cahier d'erreurs » : le champ n'est PAS recréé par le rendu du tableau ; onClose() remet le bouton à jour */
@@ -45581,7 +45611,15 @@ window._p1EditTrainScore = function (id, btn, keep, opts) {
   function cur() { var a = (window.userData && window.userData.trainings) || []; for (var i = 0; i < a.length; i++) if (a[i].id === id) return a[i]; return t; }
   function restore() {
     if (head) { var w0 = wrap.offsetWidth; /* largeur de mise en page : insensible au déploiement (scale) si on valide très vite */ if (wrap.parentNode) wrap.parentNode.replaceChild(btn, wrap); opts.onClose(cur(), w0); return; }   /* le bouton revient à sa place, à jour ; w0 = largeur du champ, point de départ du rangement en douceur */
-    if (wrap.parentNode) wrap.parentNode.replaceChild(window._p1TrainScoreBadge(cur()), wrap);
+    var w0 = wrap.offsetWidth;   /* largeur du champ, avant de le retirer */
+    if (wrap.parentNode) { var nb = window._p1TrainScoreBadge(cur()); wrap.parentNode.replaceChild(nb, wrap); window._p1ScoreBadgeSettle(nb, w0); }
+  }
+  /* le tableau est redessiné : on mesure le champ AVANT le rendu, puis la pastille de la ligne APRÈS (si le rendu est retenu — suppression en cours — le champ est simplement remplacé) */
+  function renderAndSettle() {
+    var w0 = wrap.offsetWidth;
+    renderTrainTable();
+    if (head || wrap.isConnected) { restore(); return; }
+    window._p1ScoreBadgeSettle(document.querySelector('#train-table-body tr[data-train-id="' + id + '"] .p1-score-badge'), w0);
   }
   function finish(save) {
     if (done || inp._gone) return;
@@ -45590,7 +45628,7 @@ window._p1EditTrainScore = function (id, btn, keep, opts) {
     var raw = inp.value.trim().replace(',', '.').replace(/\.$/, '');   /* « 14, » = 14 */
     if (raw === '') {
       closeState();
-      if (typeof t.score === 'number') { delete t.score; saveTrainings(); renderTrainTable(); if (head) restore(); } else restore();
+      if (typeof t.score === 'number') { delete t.score; saveTrainings(); renderAndSettle(); } else restore();
       return;
     }
     var v = Number(raw);
@@ -45600,7 +45638,7 @@ window._p1EditTrainScore = function (id, btn, keep, opts) {
     }
     closeState();
     v = Math.round(v * 100) / 100;
-    if (t.score !== v) { t.score = v; saveTrainings(); renderTrainTable(); if (head) restore(); } else restore();   /* en-tête : le tableau (derrière le cahier) est aussi redessiné */
+    if (t.score !== v) { t.score = v; saveTrainings(); renderAndSettle(); } else restore();   /* en-tête : le tableau (derrière le cahier) est aussi redessiné */
   }
   if (head) window._p1TnScoreEdit = {
     input: inp,
@@ -45667,6 +45705,9 @@ window._p1TnScoreSettle = function (w0) {
 window.trainNotesOpenScore = function (event) {
   if (event) event.stopPropagation();
   var id = trainNotesCurrentId, btn = document.getElementById('trainNotesScoreBtn');
+  /* menu Statut ouvert : il se ferme (le stopPropagation ci-dessus empêche son écouteur « clic ailleurs » de le faire) */
+  var pop = document.getElementById('trainNotesStatutPopupEl'); if (pop) pop.classList.remove('show');
+  var sb = document.getElementById('trainNotesStatutBtn'); if (sb) sb.classList.remove('popup-open');
   if (id === null || id === undefined || !btn) return;
   window._p1EditTrainScore(id, btn, null, { onClose: function (t, w0) { window._p1TnScoreRefresh(t); window._p1TnScoreSettle(w0); } });
 };

@@ -561,6 +561,79 @@ try {
     assert(page.__errors.length === 0, "erreurs JS : " + page.__errors.join(" | "));
   });
 
+
+  /* ═════════ Tableau : la pastille se range en douceur après une validation ═════════ */
+  const TSAMPLER = (id) => { window.__tw = []; const t0 = performance.now(); window.__tiv = setInterval(() => { const row = document.querySelector('#train-table-body tr[data-train-id="' + id + '"]'); if (!row) return; const e = row.querySelector(".p1-score-edit") || row.querySelector(".p1-score-badge"); if (!e) return; window.__tw.push([Math.round(performance.now() - t0), e.classList.contains("p1-score-edit") ? "f" : "b", e.offsetWidth, Math.round(e.getBoundingClientRect().width * 10) / 10]); }, 25); };
+  const badgeStyle = (page, id) => page.evaluate((i) => { const b = document.querySelector('#train-table-body tr[data-train-id="' + i + '"] .p1-score-badge'); return { style: b.getAttribute("style"), cls: b.className }; }, id);
+  const TCASES = [
+    ["Entrée", 8001, null, "14,5", "enter"], ["clic ailleurs", 8002, null, "9", "away"], ["Échap", 8003, 12, "3", "esc"], ["note effacée", 8004, 16, "", "erase"],
+  ];
+  for (const [how, id, start, typed, mode] of TCASES) {
+    await S("TH10-" + mode, "tableau : pastille rangée en douceur après " + how + " — largeur du champ → largeur de repos, sans remonter, sans style en ligne à la fin", async () => {
+      const { u, page } = await open({ scores: start != null ? { [id]: start } : {} });
+      await clickBadge(page, id);
+      if (typed) await page.keyboard.type(typed); else await typeIn(page, id, "");
+      await sleep(450);   /* déploiement du champ terminé */
+      await page.mouse.move(5, 5);   /* la souris ne survole pas la pastille */
+      await page.evaluate(TSAMPLER, id); await sleep(120);
+      if (mode === "away") await page.mouse.click(5, 300);
+      else await page.keyboard.press(mode === "esc" ? "Escape" : "Enter");
+      await sleep(1000);
+      const w = await page.evaluate(() => { clearInterval(window.__tiv); return window.__tw; });
+      const f = w.filter((x) => x[1] === "f"), b = w.filter((x) => x[1] === "b");
+      assert(f.length >= 2 && b.length >= 8, "échantillons : " + JSON.stringify(w.slice(0, 6)));
+      const w0 = Math.max(...f.map((x) => x[2])), rest = b[b.length - 1][2];
+      assert(w0 >= 45, "largeur du champ : " + w0);
+      let up = 0; for (let i = 1; i < b.length; i++) if (b[i][2] > b[i - 1][2]) up++;
+      assert(up === 0, "la largeur remonte pendant le rangement : " + JSON.stringify(b.map((x) => x[2])));
+      if (w0 - rest >= 6) {
+        assert(b[0][2] >= w0 - 4, "la pastille ne repart pas de la largeur du champ (" + w0 + ") : " + JSON.stringify(b.slice(0, 5).map((x) => x[2])));
+        assert(b.filter((x) => x[2] > rest + 1 && x[2] < w0 - 1).length >= 2, "pas de largeurs intermédiaires : " + JSON.stringify(b.map((x) => x[2])));
+      }
+      const s = await badgeStyle(page, id);
+      assert(!s.style, "style en ligne resté : " + JSON.stringify(s));
+      const exp = { enter: 14.5, away: 9, esc: start, erase: "ABSENT" }[mode];
+      assert((await mem(page, id)) === exp, "valeur en mémoire : " + (await mem(page, id)));
+      if (mode === "enter") assert((await waitDoc(u, id, (d) => d.score === 14.5)).score === 14.5, "base");
+      if (mode === "erase") assert(!("score" in (await waitDoc(u, id, (d) => !("score" in d)))), "base : le champ score est toujours là");
+      assert(page.__errors.length === 0, "erreurs JS : " + page.__errors.join(" | "));
+    });
+  }
+  await S("TH10-rm", "tableau : « réduire les animations » → aucune animation de rangement, aucun style en ligne ; nouvelle saisie pendant le rangement : sans trace", async () => {
+    const { page } = await open();
+    await clickBadge(page, 8001); await page.keyboard.type("7"); await sleep(450); await page.mouse.move(5, 5);
+    await page.keyboard.press("Enter"); await sleep(150);
+    const mid = await badgeStyle(page, 8001);
+    assert(/width/.test(mid.style || ""), "le rangement n'a pas démarré : " + JSON.stringify(mid));
+    await page.click(badge(8001)); await page.waitForSelector(field(8001), { timeout: 5000 });   /* nouvelle saisie en plein rangement : la pastille est remplacée */
+    await page.keyboard.press("Escape"); await sleep(900);
+    assert(!(await badgeStyle(page, 8001)).style, "traces après une saisie en plein rangement");
+    await page.emulateMediaFeatures([{ name: "prefers-reduced-motion", value: "reduce" }]);
+    await clickBadge(page, 8002); await page.keyboard.type("5"); await sleep(450); await page.mouse.move(5, 5);
+    await page.evaluate(TSAMPLER, 8002); await sleep(100); await page.keyboard.press("Enter"); await sleep(900);
+    const w = await page.evaluate(() => { clearInterval(window.__tiv); return window.__tw; });
+    const b = w.filter((x) => x[1] === "b");
+    assert(b.length && new Set(b.map((x) => x[2])).size === 1, "animation malgré « réduire les animations » : " + JSON.stringify(b.map((x) => x[2])));
+    assert(!(await badgeStyle(page, 8002)).style, "style en ligne en mouvement réduit");
+  });
+
+  await S("TH11", "cahier : menu « Statut » ouvert, un clic sur « Note » le ferme (menu et bouton Statut) puis ouvre la saisie", async () => {
+    const { page } = await open();
+    await openCahier(page, 8001);
+    await page.click("#trainNotesStatutBtn"); await sleep(500);
+    const o = await page.evaluate(() => ({ show: document.getElementById("trainNotesStatutPopupEl").classList.contains("show"), po: document.getElementById("trainNotesStatutBtn").classList.contains("popup-open") }));
+    assert(o.show && o.po, "le menu Statut ne s'est pas ouvert : " + JSON.stringify(o));
+    await page.click(SB); await page.waitForSelector(HF, { timeout: 5000 });
+    const c = await page.evaluate(() => ({ show: document.getElementById("trainNotesStatutPopupEl").classList.contains("show"), po: document.getElementById("trainNotesStatutBtn").classList.contains("popup-open"), focus: document.activeElement === document.querySelector("#trainNotesModalInner .p1-score-input") }));
+    assert(!c.show && !c.po && c.focus, "après le clic sur Note : " + JSON.stringify(c));
+    await page.keyboard.press("Escape"); await sleep(500);
+    /* le menu Statut fonctionne toujours ensuite */
+    await page.click("#trainNotesStatutBtn"); await sleep(500);
+    assert(await page.evaluate(() => document.getElementById("trainNotesStatutPopupEl").classList.contains("show")), "le menu Statut ne se rouvre pas");
+    await page.click("#trainNotesTitle2"); await sleep(400);
+    assert(page.__errors.length === 0, "erreurs JS : " + page.__errors.join(" | "));
+  });
+
   for (const theme of ["dark", "pastel"]) {
     await S("TH7-" + theme, "cahier (" + theme + ") : bouton lisible — sans note : gris" + (theme === "dark" ? " translucide" : "") + " ; avec note : couleur du palier, texte avec un contraste ≥ 4,5 (10 paliers)", async () => {
       const { page } = await open({ theme });
