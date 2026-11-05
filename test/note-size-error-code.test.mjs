@@ -17,7 +17,7 @@ before(async function () {
   this.timeout(30000);
   testEnv = await initializeTestEnvironment({
     projectId: "p1planner-note-size-test",
-    // ⚠️ Port décalé (2026-09-30, voir test/e2e/env-e2e.mjs) : 8080 occupé par TypixClin.
+    // ⚠️ Port décalé : 8080 occupé par TypixClin.
     firestore: { rules: readFileSync(join(__dirname, "..", "firestore.rules"), "utf8"), host: "127.0.0.1", port: 8280 }
   });
 });

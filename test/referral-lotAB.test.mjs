@@ -1,5 +1,5 @@
 /* ============================================================
-   PARRAINAGE — LOT A/B (2026-09-26) : Cloud Functions réelles via .run()
+   PARRAINAGE — LOT A/B : Cloud Functions réelles via .run()
    contre l'émulateur Firestore, Stripe simulé.
    A5 journalisation Stripe, A6 cas d'abonnement, A7 fin de bonus d'un
    ex-abonné, A8 referralInit transactionnel, A9 nom du filleul,

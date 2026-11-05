@@ -1,4 +1,4 @@
-/* Batterie E2E « vraies pages » du PARRAINAGE (2026-09-26).
+/* Batterie E2E « vraies pages » du PARRAINAGE.
    Vraies pages (auth.html, comptepremium.html) servies par e2e-server.mjs, branchées sur les émulateurs
    Auth/Firestore ; les fonctions callable sont le VRAI code de functions/index.js exécuté par le pont
    fn-bridge.mjs (jamais une réponse écrite à la main). Arguments = préfixes de scénarios ; PUBLIC_DIR=<copie>
@@ -496,7 +496,7 @@ try {
     await page.evaluate(() => { window.__copied = []; navigator.clipboard.writeText = (t) => { window.__copied.push(t); return Promise.resolve(); }; });
     const state = () => page.evaluate(() => ["btnCopyReferralLink", "btnCopyReferralCode"].map((id) => document.getElementById(id).classList.contains("copied")));
     const link = "https://p1planner.fr/auth.html?ref=" + p.code;
-    // lien puis code, presque simultanés (la capture de Jean : deux boutons verts à la fois)
+    // lien puis code, presque simultanés
     await page.evaluate(() => { document.getElementById("btnCopyReferralLink").click(); document.getElementById("btnCopyReferralCode").click(); });
     await sleep(300);
     let st = await state();

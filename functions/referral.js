@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   referral.js — Système de parrainage P1Planner (2026-09-25)
+   referral.js — Système de parrainage P1Planner
    ───────────────────────────────────────────────────────────────────────
    Port du système de parrainage le produit frère (functions/referral.js,
    validé/testé/corrigé côté le produit frère le 2026-09-24), adapté au schéma
@@ -207,7 +207,7 @@ function sanitizeReferralName(raw) {
   return cleaned || null;
 }
 
-/* AUDIT PARRAINAGE (2026-09-27) — anti « boîte mail unique » : une même boîte
+/* AUDIT PARRAINAGE — anti « boîte mail unique » : une même boîte
    (alias +tag, points Gmail, googlemail.com) permet de créer autant de comptes
    vérifiés qu'on veut. On compare donc une CLÉ d'e-mail normalisée (SHA-256,
    jamais l'adresse en clair) : un filleul dont la clé égale celle du parrain,

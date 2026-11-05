@@ -7,7 +7,7 @@
 import net from "node:net";
 import http from "node:http";
 
-// ⚠️ Ports décalés (2026-09-30, voir env-e2e.mjs) : évite toute collision avec TypixClin (8085/8080/8086).
+// ⚠️ Ports décalés : évite toute collision avec TypixClin (8085/8080/8086).
 const LISTEN = Number(process.env.FS_PORT || 8185);
 const TARGET = Number(process.env.TARGET_PORT || 8280);
 const CTL = Number(process.env.CTL_PORT || 8186);

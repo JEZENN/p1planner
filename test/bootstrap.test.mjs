@@ -6,8 +6,6 @@
    émulateurs via les variables d'environnement ci-dessous —
    AUCUNE donnée réelle du projet Firebase P1Planner n'est touchée.
    ============================================================ */
-// ⚠️ Ports décalés (2026-09-30, voir test/e2e/env-e2e.mjs) : évite toute collision avec les
-// émulateurs TypixClin de Jean tournant en parallèle sur 8080/9099.
 process.env.FIREBASE_AUTH_EMULATOR_HOST = "127.0.0.1:9198";
 process.env.FIRESTORE_EMULATOR_HOST = "127.0.0.1:8280";
 

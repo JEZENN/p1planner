@@ -27,6 +27,7 @@ async function user(vp) {
 const openSettings = async (page) => {
   await page.evaluate(() => window.openSettingsModal());
   await page.waitForSelector('.settings-card[data-setting="p1-theme"]', { timeout: 10000 }); await sleep(900);
+  await page.evaluate(() => window.p1OpenSettingsSection("p1-theme")); await sleep(600);   /* Paramètres en deux colonnes : la rubrique « Thème et police » doit être ouverte */
 };
 const serverTheme = async (uid) => { const d = (await adb.doc(`users/${uid}/settings/preferences`).get()).data(); return d ? d.theme : null; };
 const waitServerTheme = async (uid, t, ms = 12000) => { const t0 = Date.now(); let v; while (Date.now() - t0 < ms) { v = await serverTheme(uid); if (v === t) return v; await sleep(300); } return v; };

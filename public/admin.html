@@ -184,7 +184,7 @@ table.data-table tr:hover td{background:var(--surface-2)}
 .fb-reply-form textarea{flex:1;background:var(--surface-2);border:1px solid var(--border-strong);border-radius:var(--radius-sm);padding:.55rem .75rem;font-size:.82rem;color:var(--text);resize:vertical;min-height:44px}
 .fb-reply-form textarea:focus{outline:none;border-color:var(--primary)}
 
-/* Menu mobile (2026-09-27) : la sidebar devient un tiroir qui glisse par-dessus le
+/* Menu mobile : la sidebar devient un tiroir qui glisse par-dessus le
    contenu, ouvert/fermé par un bouton hamburger — sans lui, la sidebar restait
    entièrement hors écran et le menu était inaccessible sur téléphone. */
 #mobile-menu-btn{display:none}
@@ -370,7 +370,7 @@ table.data-table tr:hover td{background:var(--surface-2)}
       </div>
     </section>
 
-    <!-- ═══ PARRAINAGE (2026-09-25) ═══ -->
+    <!-- ═══ PARRAINAGE ═══ -->
     <section id="section-referrals" class="section">
       <div class="page-header">
         <h1 class="page-title">Parrainage</h1>
@@ -633,7 +633,7 @@ window.showSection = function (id, el) {
   window.__toggleMobileNav(false); // referme le tiroir mobile après un choix (sans effet si déjà fermé/bureau)
 };
 
-/* Menu mobile (2026-09-27) : la sidebar est cachée hors écran ≤900px sans bouton pour
+/* Menu mobile : la sidebar est cachée hors écran ≤900px sans bouton pour
    la rouvrir — inaccessible sur téléphone. Un tiroir + bouton hamburger la remplacent. */
 window.__toggleMobileNav = function (force) {
   const panel = $("admin-panel");
@@ -782,7 +782,7 @@ window.__filterSubs = function () {
 };
 
 /* ═══════════════════════════════════════════════════════════════════
-   PARRAINAGE (2026-09-25) — construit à partir de `allUsers` (déjà
+   PARRAINAGE — construit à partir de `allUsers` (déjà
    chargé par loadUsers() ci-dessus, entitlements compris) : aucune
    lecture Firestore dédiée. Un parrain = un utilisateur dont
    l'entitlement porte referralActiveCount > 0.
@@ -943,13 +943,7 @@ window.__replyFeedback = async function (feedbackId) {
   }
 };
 
-/* ═══════════════════════════════════════════════════════════════════
-   SAUVEGARDES (audit sauvegardes/pertes, 2026-09-30, demande explicite de Jean —
-   onglet retiré le 27/09, remis ici pour que adminCreateBackup/adminRestoreBackup
-   (functions/index.js) soient réellement utilisables de bout en bout). Réutilise
-   `allUsers` déjà chargé par loadUsers() ci-dessus — aucune lecture supplémentaire
-   pour la recherche d'utilisateur.
-   ═══════════════════════════════════════════════════════════════════ */
+/* Réutilise `allUsers` déjà chargé par loadUsers() ci-dessus — aucune lecture supplémentaire pour la recherche d'utilisateur. ═══════════════════════════════════════════════════════════════════ */
 let _backupsSelectedUid = null;
 let _backupsRestoreTarget = null; // { backupId, createdAtLabel }
 

@@ -1,4 +1,4 @@
-/* Note sur 20 des entraînements (29/10/2026) : colonne « Note /20 » entre « Statut » et « Actions », saisie directe dans la case (sans fenêtre), pastille rouge → vert.
+/* Note sur 20 des entraînements : colonne « Note /20 » entre « Statut » et « Actions », saisie directe dans la case (sans fenêtre), pastille rouge → vert.
    Champ OPTIONNEL « score » (0 à 20, 2 décimales) de chaque document users/{uid}/trainingItems/{id} ; pas de note = pas de champ (jamais null).
    Vraie page + émulateurs. Lancer : node test/e2e/train-score.mjs [préfixes]   (PUBLIC_DIR=<copie « avant » pour la contre-épreuve ; SCORESHOTS=1 pour les captures) */
 import "./env-e2e.mjs";

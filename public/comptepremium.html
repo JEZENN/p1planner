@@ -144,13 +144,7 @@ h1,h2,h3{font-family:var(--font-display);font-weight:600;line-height:1.15;letter
 .top-bar-logout:hover{color:var(--text);background:rgba(255,255,255,.06)}
 .top-bar-logout .icon{width:16px;height:16px}
 
-/* Bug réel remonté par l'utilisateur (capture à l'appui) : sur mobile
-   étroit, le bouton "Mon tableur" et "Déconnexion" ne tenaient pas sur
-   une ligne à côté du logo — le texte du bouton "Mon tableur" se repliait
-   sur deux lignes (aucun white-space:nowrap sur .btn), rendant tout le
-   bandeau tassé et visuellement cassé contre le logo. Corrigé : le
-   libellé "Déconnexion" passe en icône seule (voir .top-bar-logout-label),
-   et les boutons restants ne replient plus jamais leur texte. */
+/* Corrigé : le libellé "Déconnexion" passe en icône seule (voir .top-bar-logout-label), et les boutons restants ne replient plus jamais leur texte. */
 @media (max-width: 480px){
   .brand{font-size:.98rem;gap:.5rem}
   .brand-mark{width:28px;height:28px}
@@ -221,7 +215,7 @@ main{padding-block:clamp(1.75rem,4vw,3rem) 5rem}
 .alert .icon{margin-top:1px;flex-shrink:0}
 
 /* ============================================================
-   PARRAINAGE (2026-09-26) — barre de progression, tuile cliquable,
+   PARRAINAGE — barre de progression, tuile cliquable,
    liste des filleuls, notification dédiée (jamais #globalAlert).
    ============================================================ */
 /* ============================================================
@@ -420,10 +414,7 @@ main{padding-block:clamp(1.75rem,4vw,3rem) 5rem}
    SÉLECTEUR DE FORMULE
    ============================================================ */
 .plan-toggle{display:inline-flex;position:relative;padding:4px;border-radius:var(--radius-pill);background:var(--surface-2);border:1px solid var(--border-strong);gap:4px;margin-bottom:1.4rem}
-/* Pastille glissante mesurée en JS (les deux boutons n'ont pas la même
-   largeur) — même traitement que sur auth.html/index.html, demande
-   explicite de l'utilisateur. Remplace un `background` posé directement
-   sur le bouton actif, qui ne pouvait que "sauter" d'un bouton à l'autre. */
+/* Remplace un `background` posé directement sur le bouton actif, qui ne pouvait que "sauter" d'un bouton à l'autre. */
 .plan-toggle-indicator{
   position:absolute;top:4px;bottom:4px;border-radius:var(--radius-pill);background:var(--gradient-brand);
   transition:left .3s cubic-bezier(.65,0,.35,1),width .3s cubic-bezier(.65,0,.35,1);z-index:0;
@@ -722,7 +713,7 @@ main{padding-block:clamp(1.75rem,4vw,3rem) 5rem}
                   <span class="btn-label">Enregistrer la date</span><span class="spinner" aria-hidden="true"></span>
                 </button>
               </div>
-              <!-- Sortie de .exam-date-row (demande explicite) : ce texte
+              <!-- Sortie de .exam-date-row : ce texte
                    sous le champ de date faisait pencher l'alignement
                    flex:flex-end vers son propre bas, décalant le bouton
                    "Enregistrer" trop bas par rapport à la case de date
@@ -757,15 +748,7 @@ main{padding-block:clamp(1.75rem,4vw,3rem) 5rem}
           </div>
 
           <div id="recurrentPlanBlock" style="display:none">
-            <!-- Abonnement mensuel déjà résilié (cancelAtPeriodEnd) : un
-                 nouveau Checkout est refusé côté serveur tant que l'ancien
-                 abonnement Stripe existe encore (hasBlockingStripeSubscription
-                 sans ignoreCanceling pour "monthly", functions/index.js) — au
-                 lieu de laisser cliquer "Continuer" et retomber sur l'erreur
-                 générique "Tu as déjà un abonnement en cours.", on explique
-                 directement la vraie marche à suivre : réactiver l'abonnement
-                 existant depuis le portail Stripe (Gérer mon abonnement),
-                 sans en recréer un second. Demande explicite utilisateur. -->
+            <!-- Abonnement mensuel déjà résilié (cancelAtPeriodEnd) : un nouveau Checkout est refusé côté serveur tant que l'ancien abonnement Stripe existe encore (hasBlockingStripeSubscription sans ignoreCanceling pour "monthly", functions/index.js) — au lieu de laisser cliquer "Continuer" et retomber sur l'erreur générique "Tu as déjà un abonnement en cours.", on explique directement la vraie marche à suivre : réactiver l'abonnement existant depuis le portail Stripe (Gérer mon abonnement), sans en recréer un second. -->
             <div class="reactivate-notice" id="recurrentReactivateNotice" style="display:none">
               <svg class="icon" viewBox="0 0 24 24" style="width:20px;height:20px;stroke:currentColor"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 3v5h5"/></svg>
               <p>Ton abonnement mensuel est résilié mais reste actif jusqu'à son terme — il n'y a rien à racheter. Pour annuler cette résiliation et reprendre le renouvellement automatique, utilise <strong>« Gérer mon abonnement »</strong> ci-dessous.</p>
@@ -781,12 +764,6 @@ main{padding-block:clamp(1.75rem,4vw,3rem) 5rem}
           <ul class="info-list">
             <li><svg class="icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Le prix et la durée sont toujours recalculés et confirmés par nos serveurs.</li>
             <li><svg class="icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Les deux formules ne sont pas cumulables : tu peux changer à tout moment, mais tu n'as jamais un paiement unique et un abonnement mensuel actifs en même temps.</li>
-            <!-- Demande explicite : lever l'ambiguïté quand un essai gratuit
-                 est encore en cours (le badge "X jours restants" pourrait
-                 laisser croire à tort que l'achat n'active l'accès qu'à la
-                 fin de l'essai — le serveur démarre en réalité toujours
-                 premiumUntil à partir de MAINTENANT, voir
-                 handleOneTimePurchase() dans functions/index.js). -->
             <li><svg class="icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Un paiement unique démarre immédiatement à la confirmation du paiement, aujourd'hui — même pendant un essai gratuit encore en cours, il ne se met jamais en attente de sa fin.</li>
             <li><svg class="icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>À l'expiration, ton accès repasse en lecture seule — aucune donnée n'est jamais supprimée.</li>
           </ul>
@@ -1169,7 +1146,7 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
     $("accountEmail").textContent = normalized.email || "";
     $("accountSince").textContent = "Membre depuis le " + fmtDate(normalized.createdAt);
     // Bug réel corrigé : .slice(0,2) prenait les 2 premiers CARACTÈRES du
-    // nom complet ("Jean Zennaro" → "Je") au lieu des initiales prénom+nom
+    // nom complet au lieu des initiales prénom+nom
     // ("JZ") — même logique que getInitials() déjà correcte ailleurs
     // (tableur.html) : premier caractère du premier ET du dernier mot.
     var _nameForInitials = (normalized.displayName || "").trim();
@@ -1241,8 +1218,7 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
       var stillInFreeTrial = isMonthly && trialEndDate && trialEndDate.getTime() > Date.now();
 
       if (isMonthly && p.cancelAtPeriodEnd) {
-        // Cas : abonnement mensuel résilié (demande explicite, capture
-        // TypixClin à l'appui) — reste actif jusqu'à la fin de la période
+        // Cas : abonnement mensuel résilié — reste actif jusqu'à la fin de la période
         // déjà couverte (essai ou facturation), sans laisser croire à une
         // fin de service imminente façon essai gratuit qui s'épuise.
         setTone("warning");
@@ -1252,15 +1228,6 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
         addMetric("Accès jusqu'au", fmtDate(p.accessEnd));
         addMetric("Jours restants", daysLeftHtml(p.accessEnd));
         manageSection.style.display = "";
-        // Demande explicite : un abonnement résilié ne doit PAS empêcher de
-        // prendre un paiement unique tout de suite (déjà autorisé côté
-        // serveur, voir checkPurchaseConflict() dans premiumPlans.js — seul
-        // l'affichage bloquait). Un nouveau paiement unique confirmé
-        // remplace directement l'accès en cours ; l'abonnement résilié,
-        // déjà voué à s'arrêter, ne fait ensuite plus rien à son terme.
-        // examDateBlock (date de concours) doit réapparaître avec le reste
-        // de la formule paiement unique — oubli initial, corrigé sur retour
-        // utilisateur (le champ de date avait disparu du tout).
         examDateBlock.style.display = "";
         planSection.style.display = "";
         // L'onglet "Abonnement mensuel" ne doit pas proposer un nouveau
@@ -1293,10 +1260,6 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
         addMetric("Statut", isMonthly ? "Abonnement mensuel" : (isReferralGift ? "Accès offert (parrainage)" : "Premium actif"));
         addMetric("Accès jusqu'au", fmtDate(p.accessEnd));
         addMetric("Jours restants", daysLeftHtml(p.accessEnd));
-        // Demande explicite : plus de changement de formule proposé tant
-        // qu'un accès Premium est déjà actif (paiement unique ou mensuel) —
-        // la formule en cours va simplement à son terme ou se gère via
-        // "Gérer mon abonnement" (résiliation), jamais via un nouveau choix.
         if (isMonthly) { manageSection.style.display = ""; }
       }
     } else {
@@ -1525,11 +1488,7 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
      vérité pour maxMonths — jamais une valeur calculée uniquement côté
      client qui serait ensuite fait confiance pour le paiement).
      ============================================================ */
-  /* Confirmation affichée DANS le cadre "Ta date de concours" (demande
-     explicite : la notif apparaissait tout en haut de page via
-     showAlert(), invisible sans remonter). Les erreurs restent sur
-     showAlert() — elles doivent rester visibles même si l'utilisateur a
-     déjà quitté la page des yeux entre-temps (chargement réseau, etc.). */
+  /* Confirmation affichée DANS le cadre "Ta date de concours" Les erreurs restent sur showAlert() — elles doivent rester visibles même si l'utilisateur a déjà quitté la page des yeux entre-temps (chargement réseau, etc.). */
   var examDateConfirmEl = $("examDateConfirm"), examDateConfirmText = $("examDateConfirmText");
   function showExamDateConfirm(message) {
     examDateConfirmText.textContent = message;
@@ -1577,7 +1536,7 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
      overflow:hidden). Puis `scrollbar-gutter:auto` (2e essai) réintroduisait
      un décalage horizontal. 3e essai : compenser la largeur de la barre de
      défilement via padding-right sur `body` — fonctionnait à l'époque, mais
-     a régressé (4e bug, remonté par l'utilisateur) : `body` a par ailleurs
+     a régressé : `body` a par ailleurs
      `overflow-x:hidden` en permanence (voir CSS, section HEADER) — combiné
      à `scrollbar-gutter:stable` sur `<html>`, la largeur RÉELLE de `body`
      (mesurée via getBoundingClientRect sur `#topBar`, qui la reflète en
@@ -1771,18 +1730,9 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
     showState("signedOut");
     showAlert("error", "Configuration Firebase manquante — ce projet P1Planner n'est pas encore relié à un vrai projet Firebase (voir docs/ARCHITECTURE.md).");
   } else {
-    // Bug réel remonté par l'utilisateur (déstabilisant, pas juste
-    // cosmétique) : au retour de Stripe Checkout (?success=true), la page
-    // se recharge entièrement sur une nouvelle URL — certains navigateurs
-    // (Safari notamment, en sortie d'un aller-retour cross-site vers
-    // checkout.stripe.com) mettent un instant de plus à restaurer la
-    // session Firebase persistée, et le tout premier onAuthStateChanged
-    // peut alors arriver avec `user: null` avant de se corriger. Sans
-    // filet, l'utilisateur qui vient de payer atterrit directement sur
-    // "Connecte-toi", ce qui laisse croire à tort que le paiement a
-    // disparu. Un seul re-essai après un court délai suffit à absorber
-    // cette course ; si la session est réellement perdue, on retombe sur
-    // l'écran de connexion, mais avec un message rassurant plutôt que
+    // Sans filet, l'utilisateur qui vient de payer atterrit directement sur "Connecte-toi", ce qui laisse croire à
+    // tort que le paiement a disparu. Un seul re-essai après un court délai suffit à absorber cette course ; si la
+    // session est réellement perdue, on retombe sur l'écran de connexion, mais avec un message rassurant plutôt que
     // générique (voir plus bas).
     var authRetriedForSuccess = false;
     onAuthStateChanged(auth, function (user) {
@@ -1856,7 +1806,7 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
   }
 
   /* ============================================================
-     PARRAINAGE (2026-09-25, complété 2026-09-26)
+     PARRAINAGE
      Règle d'or : rien ne doit dépendre d'un champ NOUVEAU de la réponse
      serveur (référencée après un déploiement non simultané) — chaque champ
      ajouté (referralSeenCount, newReferrals) est optionnel côté page.
@@ -1943,8 +1893,7 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
     monthsGrantedEl.textContent = referralInfo.monthsGranted;
     barEl.setAttribute("aria-valuenow", String(Math.min(referralInfo.activeCount, 6)));
     // Deux segments distincts (un par palier, 3 filleuls chacun) plutôt qu'une seule barre sur 6 avec un
-    // repère au milieu : plus intuitif, chaque segment se remplit à son tour (retour explicite de Jean,
-    // qui trouvait un simple trait au centre de la barre peu clair).
+    // repère au milieu : plus intuitif, chaque segment se remplit à son tour.
     barFill1.style.width = Math.round(Math.min(referralInfo.activeCount, 3) / 3 * 100) + "%";
     barFill2.style.width = Math.round(Math.max(0, Math.min(referralInfo.activeCount, 6) - 3) / 3 * 100) + "%";
     barEl.classList.toggle("is-maxed", referralInfo.activeCount >= 6);
@@ -2012,8 +1961,6 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
         .then(function () {
           succeeded = true;
           referralInfo.alreadyReferred = true;
-          // Confirmation VISIBLE avant de masquer le bloc (retour explicite : « ça disparaît sans rien dire »
-          // — le bloc restait affiché juste assez longtemps pour qu'on ne sache pas si ça avait marché).
           applyMessage.style.display = "";
           applyMessage.className = "referral-check-status";
           applyMessage.style.color = "var(--success)";

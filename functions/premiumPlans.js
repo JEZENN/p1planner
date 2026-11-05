@@ -138,7 +138,7 @@ function checkPurchaseConflict(entitlement, planType) {
         && entitlement.status === "active"
         && entitlement.cancelAtPeriodEnd !== true;
 
-    // AUDIT PARRAINAGE (2026-09-27) : un accès OFFERT par le parrainage
+    // AUDIT PARRAINAGE : un accès OFFERT par le parrainage
     // (planType 'referral', posé quand le parrain n'avait plus rien) se
     // comporte comme un accès unique encore valide : sans ce garde-fou, un
     // achat pendant les mois offerts serait payé sans aucun bénéfice (le

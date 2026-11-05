@@ -1,4 +1,4 @@
-/* Listes personnalisables (27/10/2026) : les titres « Ajouter » / « Existants » de la fenêtre commune #p1-catalog-modal ont leur icône dans une petite case pastel
+/* Listes personnalisables : les titres « Ajouter » / « Existants » de la fenêtre commune #p1-catalog-modal ont leur icône dans une petite case pastel
    (32 px, coins 10 px), comme les titres de la méthode Pomodoro et des fenêtres « Temps de travail » / « Entraînements du jour ». Purement visuel.
    PC 1366 + téléphone 390 ; clair, sombre, pastel ; les 4 listes (resources, supports, trainTypes, trainPlateformes). Vraie page + émulateurs.
    Lancer : node test/e2e/catalog-titles.mjs [préfixes]   (PUBLIC_DIR=<copie « avant » pour la contre-épreuve ; CATSHOTS=1 pour les captures) */

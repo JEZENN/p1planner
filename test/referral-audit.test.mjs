@@ -1,5 +1,5 @@
 /* ============================================================
-   AUDIT SÉCURITÉ PARRAINAGE ↔ FACTURATION (2026-09-27)
+   AUDIT SÉCURITÉ PARRAINAGE ↔ FACTURATION
    Vrai code de functions/index.js (.run() + fns.__test), émulateur
    Firestore, Stripe simulé. Chaque test correspond à un défaut trouvé
    ou à une garantie à ne jamais perdre.

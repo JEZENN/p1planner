@@ -1,9 +1,4 @@
-/* Formulaire d'inscription (auth.html) -- retour de Jean (08/10) :
-   1. les champs obligatoires doivent l'indiquer (astérisque rouge) ;
-   2. les messages d'erreur doivent disparaître dès que le champ est corrigé (avant : ils restaient
-      affichés après la soumission, même sous un champ devenu valide).
-   Vraie page servie par e2e-server.mjs. Aucune inscription réelle : la validation se fait avant tout
-   appel réseau. */
+/* Vraie page servie par e2e-server.mjs. Aucune inscription réelle : la validation se fait avant tout appel réseau. */
 import "./env-e2e.mjs";
 import { startServer } from "./e2e-server.mjs";
 import { launch, scenario, report, assert, sleep, BASE } from "./lib.mjs";

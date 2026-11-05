@@ -1,5 +1,4 @@
-/* Lot E (audit 02/10, demande explicite de Jean) : banque de matières P1 (14 matières, ordre
-   d'UE -- UE1 Chimie organique ajoutée le 02/10, retour de Jean), proposée sur la page de
+/* Lot E : banque de matières P1, proposée sur la page de
    présentation (déconnecté uniquement) ET dans l'assistant de présentation (page "Matières",
    compte déjà connecté), appliquée une seule fois après la prochaine connexion réussie. Aucun
    cours créé, jamais de matière existante modifiée. Abréviations explicites (U1C, U1B...) pour
@@ -71,7 +70,7 @@ try {
     });
     assert(subjects.filter((s) => !s.archivedAt).length === 15, "nombre total de matières actives : " + subjects.filter((s) => !s.archivedAt).length + " (attendu 15 : 14 de la banque + la matière de test mkUser, jamais plus)");
 
-    // Abréviations EXPLICITES (retour de Jean 02/10) : jamais de collision comme avec la
+    // Abréviations EXPLICITES : jamais de collision comme avec la
     // dérivation automatique shortOf() (ex. "UE2 Biologie cellulaire" et "UE3.1 Biophysique"
     // donnaient toutes deux "UBE" sans ce correctif).
     const chimie = subjects.find((s) => s.id === "bank-ue1-chimie");
@@ -81,7 +80,7 @@ try {
     assert(biocell.short === "U2B", "abréviation de « UE2 - Biologie cellulaire » incorrecte : " + JSON.stringify(biocell.short));
     assert(biophys.short === "U3B", "abréviation de « UE3.1 - Biophysique » incorrecte : " + JSON.stringify(biophys.short));
     assert(biocell.short !== biophys.short, "collision d'abréviation entre deux matières de la banque : " + biocell.short);
-    // UE4 à UE8 : une seule matière par UE -> le préfixe d'UE seul suffit (retour de Jean), pas
+    // UE4 à UE8 : une seule matière par UE -> le préfixe d'UE seul suffit, pas
     // une abréviation à 3 lettres dérivée du nom.
     ["bank-ue4-biostat", "bank-ue5-anatomie", "bank-ue6-pharmaco", "bank-ue7-ssh", "bank-ue8-anglais"].forEach((id, i) => {
       const s = subjects.find((x) => x.id === id);
@@ -89,8 +88,7 @@ try {
       assert(s.short === expected, "abréviation de " + id + " incorrecte : " + JSON.stringify(s.short) + " (attendu " + expected + ")");
     });
 
-    // Icônes par défaut (retour de Jean 02/10 : "mets des icônes par défaut dans le pack
-    // matière") : toutes les 14 matières ont une icône non vide, chacune choisie dans le
+    // Icônes par défaut : toutes les 14 matières ont une icône non vide, chacune choisie dans le
     // tableau ICONS déjà vérifié (TPXPerso) -- jamais la même pour toutes (sinon aucun intérêt).
     BANK_IDS.forEach((id) => {
       const s = subjects.find((x) => x.id === id);
@@ -177,9 +175,7 @@ try {
 
     await page.evaluate(() => window.TPXOnboarding.start(0));
     await sleep(300);
-    // Écran d'accueil -> "Tableau de bord" -> "Matières" -> page dédiée "Banque de matières"
-    // (retour de Jean 02/10 : plus un bloc tassé au bas de la page "Matières", mais sa propre
-    // page, comme 'items-settings'/'entrainements-settings').
+    // Écran d'accueil -> "Tableau de bord" -> "Matières" -> page dédiée "Banque de matières".
     // Le nombre d'écrans d'accueil avant « Matières » a varié (27/10) : on avance jusqu'à la page dédiée (8 clics au plus).
     for (let i = 0; i < 8; i++) {
       if (await page.evaluate(() => !!document.getElementById("p1-onb-subject-bank-checkbox"))) break;
@@ -193,8 +189,7 @@ try {
     await page.evaluate(() => { document.getElementById("p1-onb-subject-bank-checkbox").click(); });
     // Termine l'assistant jusqu'à la validation finale (même bouton #tpx-onb-next tout du long,
     // y compris sur la page de récapitulatif -- voir finish()). Au passage, vérifie la page de
-    // récapitulatif elle-même (retour de Jean 02/10 : "ajoute la ligne pour mettre les matières
-    // par défaut en plus").
+    // récapitulatif elle-même.
     let sawRecap = false;
     for (let i = 0; i < 10; i++) {
       const stillOpen = await page.evaluate(() => !!document.getElementById("tpx-onb-overlay"));
@@ -212,8 +207,6 @@ try {
       if (recap.found === true) {
         sawRecap = true;
         assert(recap.value === "Ajoutées", "la ligne « Banque de matières P1 » du récapitulatif n'indique pas « Ajoutées » (case cochée) : " + JSON.stringify(recap.value));
-        // Retour de Jean (02/10) : "il manque Entraînement nan ?" -- le libellé générique ne
-        // précisait pas de quelle page il s'agissait.
         assert(recap.trainLabel === "Affichage de la page Entraînements", "libellé incomplet pour le réglage de visibilité de la page Entraînements : " + JSON.stringify(recap.trainLabel));
       } else if (recap.found === false) {
         throw new Error("page de récapitulatif atteinte sans la ligne « Banque de matières P1 »");
@@ -244,9 +237,6 @@ try {
     await adb.doc(`users/${u.uid}/subjects/bank-ue5-anatomie`).set({
       name: "Anatomie (renommée)", color: "#eab308", short: "ANA", archivedAt: null, updatedAt: new Date(),
     });
-    // Reproduit EXACTEMENT le bug signalé par Jean (capture d'écran : abréviations "UPE"/"UBE"/
-    // "UAE"/"USE" au lieu de UE4-UE8) : nom déjà correct (tiret présent), mais `short` jamais
-    // enregistré (vide) -- shortOf() le dérivait alors automatiquement du nom, d'où ces codes.
     await adb.doc(`users/${u.uid}/subjects/bank-ue7-ssh`).set({
       name: "UE7 - SSH", color: "#f97316", short: null, archivedAt: null, updatedAt: new Date(),
     });

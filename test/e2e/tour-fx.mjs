@@ -221,7 +221,7 @@ try {
     assert(R.layersMax === 0 && !R.pop, "calque d'animation joué alors que la case n'est pas affichée");
     assert(await waitFor(async () => (await srv(u.uid, "c1"))[1] === 4), "serveur non à jour");
   });
-  /* ═════════ FX8 : validation depuis les révisions J → la nouvelle animation joue sur la case, dans « Mes cours » (24/10/2026) ═════════ */
+  /* ═════════ FX8 : validation depuis les révisions J → la nouvelle animation joue sur la case, dans « Mes cours » ═════════ */
   for (const [id, vp, courses, cid, label] of [["pc", PC, 3, "c1", "PC"], ["tel", M(390, 844), 3, "c1", "téléphone 390"], ["page2", PC, 60, "c55", "PC, cours sur la page 2 du tableau"]]) {
     await S("FX8-" + id, `validation depuis « Révisions J » (${label}) : fenêtre J fermée, « Mes cours » ouvert sur la page du cours, animation sur la case (pop, 2 ondes, 10 rayons, « +1 tour », confettis), aucun grand check, serveur à jour`, async () => {
       const touch = !!vp.isMobile;

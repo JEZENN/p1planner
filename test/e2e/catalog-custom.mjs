@@ -1,5 +1,4 @@
-/* Catalogue personnalisable RESSOURCES + SUPPORTS (2026-09-27, revu après retour de Jean sur
-   la 1ʳᵉ version) — vraie page + vrais émulateurs. Couvre : ressources/supports PAR DÉFAUT
+/* Catalogue personnalisable RESSOURCES + SUPPORTS — vraie page + vrais émulateurs. Couvre : ressources/supports PAR DÉFAUT
    protégés (jamais supprimables, cadenas), ajout borné (palette de couleurs restreinte,
    acronyme dédié pour les supports), renommage/recoloration, persistance Firestore, parade
    anti-autofill navigateur (readonly + attributs "ignore"), échappement XSS, repli d'affichage
@@ -342,7 +341,7 @@ try {
   });
 
   await S("V1", "aucun champ « input type=text » adjacent dans le gestionnaire (parade Chrome/Edge « Enregistrer le mot de passe ? ») + modal borné avec un seul défilement (liste de 7 supports entièrement atteignable)", async () => {
-    await openCatalog(page, "supports"); // catalogue à 7 (4 défauts + Ronéo archivé + S6 + S7), le cas visé par le retour de Jean
+    await openCatalog(page, "supports");
     const structure = await page.evaluate(() => {
       const modal = document.getElementById("p1-catalog-modal");
       return {

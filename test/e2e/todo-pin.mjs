@@ -1,4 +1,4 @@
-/* Envoi vers la To-do : la punaise remplace la coche verte SANS « trou » (24/10/2026). Vraie page + émulateurs.
+/* Envoi vers la To-do : la punaise remplace la coche verte SANS « trou ». Vraie page + émulateurs.
    Dans les 5 endroits (liste des cours, cours à revoir en priorité, entraînements, notes de cours, notes d'entraînement) :
    échantillonnage requestAnimationFrame pendant 1,8 s après le clic : à chaque image, soit le bouton (opacité ≥ 0,9), soit la punaise est visible.
    Lancer : node test/e2e/todo-pin.mjs [préfixes]   (PUBLIC_DIR=<copie « avant » pour la contre-épreuve) */

@@ -1,13 +1,4 @@
-/* "Révisions J" (sidebar Planning) -- 2 retours de Jean dans le même message (03/10) :
-   1. "le menu qui apparait pour chaque jour apparait et disparait sans transition c'est
-      moche mets une animation discrète stp" -- l'ouverture/fermeture des groupes-jour
-      (<details>/<summary> natifs) était instantanée, sans aucune transition possible en CSS
-      pur (display:none appliqué d'un coup par le navigateur). Voir _jToggleDayGroup/
-      .j-day-group-body/.j-day-expanded.
-   2. "j'aime pas les séparations entre les différents jours... tout se confond" -- aucun
-      contour/relief ne délimitait un groupe-jour avant (juste une nuance de fond d'en-tête),
-      "Aujourd'hui" et "Demain" se touchaient visuellement. Voir .j-day-group (bordure +
-      ombre légère + marge entre groupes). Vraie page + vrais émulateurs. */
+/* "Révisions J" "le menu qui apparait pour chaque jour apparait et disparait sans transition c'est moche mets une animation discrète stp" -- l'ouverture/fermeture des groupes-jour (<details>/<summary> natifs) était instantanée, sans aucune transition possible en CSS pur (display:none appliqué d'un coup par le navigateur). Voir _jToggleDayGroup/ .j-day-group-body/.j-day-expanded. 2. "j'aime pas les séparations entre les différents jours... tout se confond" -- aucun contour/relief ne délimitait un groupe-jour avant (juste une nuance de fond d'en-tête), "Aujourd'hui" et "Demain" se touchaient visuellement. Voir .j-day-group (bordure + ombre légère + marge entre groupes). Vraie page + vrais émulateurs. */
 import "./env-e2e.mjs";
 import { startServer } from "./e2e-server.mjs";
 import { startProxy } from "./flaky-proxy.mjs";

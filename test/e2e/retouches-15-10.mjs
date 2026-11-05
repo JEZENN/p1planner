@@ -1,4 +1,4 @@
-/* Retouches du 15/10/2026 (suite) : « jours depuis la dernière révision » en jour calendaire local, clés de jour des
+/* Retouches (suite) : « jours depuis la dernière révision » en jour calendaire local, clés de jour des
    statistiques, notification de trophée fantôme, couronne Premium sous une fenêtre (téléphone), suppression d'une tâche.
    Vraie page + vrais émulateurs ; horloge simulée (Europe/Paris) injectée avant le chargement de la page.
    Lancer : node test/e2e/retouches-15-10.mjs [préfixes]   (PUBLIC_DIR=<copie « avant » pour la contre-épreuve) */

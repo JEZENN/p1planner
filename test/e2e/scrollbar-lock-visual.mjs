@@ -1,13 +1,4 @@
-/* Retour de Jean (03/10, capture à l'appui) : "POURQUOI quand l'animation check apparait la
-   barre de défilement latérale est toujours présente alors que je t'avais justement demandé
-   qu'elle soit abscente ?" -- `document.body.style.overflow = 'hidden'` (posé par
-   _ednApplyScrollLock) n'a AUCUN effet sur la scrollbar réellement visible ici puisque c'est
-   <html> qui défile (overflow-y:auto en CSS), pas <body> : elle restait donc affichée pendant
-   tout le verrou. Corrigé par une classe purement visuelle (.p1-scrollbar-hidden sur <html>,
-   scrollbar-width/::-webkit-scrollbar), JAMAIS overflow/position sur <html> lui-même (casserait
-   position:sticky, voir le commentaire dans _ednApplyScrollLock). Vraie page + vrais émulateurs,
-   verrou exercé directement via window._ednScrollLock/_ednScrollUnlock (mêmes fonctions que la
-   vraie animation de validation d'un tour, voir showTourSuccessAnimation). */
+/* Corrigé par une classe purement visuelle (.p1-scrollbar-hidden sur <html>, scrollbar-width/::-webkit-scrollbar), JAMAIS overflow/position sur <html> lui-même (casserait position:sticky, voir le commentaire dans _ednApplyScrollLock). Vraie page + vrais émulateurs, verrou exercé directement via window._ednScrollLock/_ednScrollUnlock (mêmes fonctions que la vraie animation de validation d'un tour, voir showTourSuccessAnimation). */
 import "./env-e2e.mjs";
 import { startServer } from "./e2e-server.mjs";
 import { startProxy } from "./flaky-proxy.mjs";

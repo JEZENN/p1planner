@@ -62,8 +62,7 @@ const STRIPE_PRICE_MONTHLY = defineSecret("STRIPE_PRICE_MONTHLY");
 // déterminer les triggers, et un initializeApp() au top-level peut s'y
 // bloquer en essayant de joindre les identifiants par défaut (ADC) —
 // voir https://firebase.google.com/docs/functions/tips#avoid_deployment_timeouts_during_initialization
-// Bug réel corrigé (remonté par l'utilisateur : nom jamais enregistré côté
-// Firestore, e-mail de réinitialisation jamais envoyé) : `db_()` et `auth_()`
+// Bug réel corrigé : `db_()` et `auth_()`
 // appelaient chacune `initializeApp()` derrière leur PROPRE variable de cache
 // (`_db`/`_auth`) — la première fonction appelée dans une invocation
 // initialisait l'app avec succès, mais la SECONDE (ex. `updateDisplayName`
@@ -361,7 +360,7 @@ exports.requestEmailChange = onCall(
 );
 
 /* Resynchronise users/{uid}.email sur l'adresse réelle Firebase Auth.
-   Bug réel corrigé (remonté par l'utilisateur) : un changement d'adresse
+   Bug réel corrigé : un changement d'adresse
    confirmé via le lien de requestEmailChange est appliqué par Firebase Auth
    lui-même (le client ouvre le lien, Firebase bascule l'adresse) — rien ne
    repasse alors par notre code, et le client ne peut de toute façon jamais
@@ -728,16 +727,11 @@ exports.createCheckoutSession = onCall(
 
     if (planType === "onetime") {
       const months = parseInt(request.data && request.data.months, 10);
-      // Bug réel remonté par l'utilisateur : la date de concours ne devrait
-      // pas être obligatoire pour acheter un paiement unique — l'utilisateur
-      // doit pouvoir choisir de l'indiquer ou non. Or le serveur bloquait
-      // quand même tout achat tant qu'elle n'était pas enregistrée, alors
-      // que le curseur de durée côté client propose déjà, lui, un défaut de
-      // 12 mois en son absence (voir updateMaxMonths(p.maxMonths || 12)).
-      // Sans date, le serveur applique désormais ce même défaut de 12 mois
-      // au lieu de refuser l'achat — la date reste utile (elle affine/étend
-      // la durée max disponible jusqu'à MAX_MONTHS_CAP), mais n'est plus
-      // obligatoire (label mis à jour en "(optionnel)" côté front).
+      // Or le serveur bloquait quand même tout achat tant qu'elle n'était pas enregistrée, alors que le curseur de durée
+      // côté client propose déjà, lui, un défaut de 12 mois en son absence (voir updateMaxMonths(p.maxMonths || 12)).
+      // Sans date, le serveur applique désormais ce même défaut de 12 mois au lieu de refuser l'achat — la date reste
+      // utile (elle affine/étend la durée max disponible jusqu'à MAX_MONTHS_CAP), mais n'est plus obligatoire (label mis
+      // à jour en "(optionnel)" côté front).
       const maxMonths = (entitlement && entitlement.maxMonths) || 12;
       if (!Number.isInteger(months) || months < 1 || months > maxMonths) {
         throw new HttpsError("invalid-argument", `Durée invalide (1 à ${maxMonths} mois).`);
@@ -1004,7 +998,7 @@ async function handleOneTimePurchase(session) {
       logger.warn(`⚠ Paiement sans bénéfice pour entitlements/${uid} : accès déjà valide au-delà de la durée achetée (session ${session.id}). Vérifier si un remboursement est dû.`);
     }
 
-    // AUDIT PARRAINAGE (2026-09-27) : un essai PROLONGÉ par le parrainage
+    // AUDIT PARRAINAGE : un essai PROLONGÉ par le parrainage
     // (trialEndsAt/writeAccessUntil > fin de la durée achetée) ne doit jamais
     // être RACCOURCI par un achat : writeAccessUntil ne baisse jamais.
     const existingWriteMs = current.writeAccessUntil && current.writeAccessUntil.toMillis ? current.writeAccessUntil.toMillis() : 0;
@@ -1206,7 +1200,7 @@ exports.sweepExpiredTrials = onSchedule(
 );
 
 /* ═══════════════════════════════════════════════════════════════════════
-   PARRAINAGE (2026-09-25) — voir functions/referral.js pour la logique
+   PARRAINAGE — voir functions/referral.js pour la logique
    pure (alphabet, paliers, calcul de crédit) et les règles Firestore
    associées (referralCodes/{code}, referrals/{filleulUid}).
    ───────────────────────────────────────────────────────────────────────
@@ -1407,7 +1401,7 @@ async function applyStripeBonusOrJournal(info) {
 }
 
 /* Recopie le nom du compte d'authentification dans users/{uid}.displayName quand la fiche n'en a pas.
-   Cause (retour de Jean, 08/10 : « je ne vois pas le nom de certains utilisateurs » dans le panneau admin) :
+   Cause :
    auth.html fait createUser PUIS updateProfile ; onUserCreated s'exécute dès la création, donc AVANT que
    le nom existe, et écrit displayName:null. Le nom n'atteignait Firestore que si l'utilisateur le
    rééditait dans les Paramètres (updateDisplayName) -- le panneau admin, la liste d'amis et les noms de
@@ -1773,24 +1767,22 @@ const ADMIN_BACKUP_SUBCOLLECTIONS = [
   // D2 (audit sauvegardes/pertes, 2026-09-30) : cahier d'erreurs des ENTRAÎNEMENTS
   // (notesEntrainements) manquait ici — jamais sauvegardé ni restaurable jusqu'ici.
   "notesEntrainements",
-  // 2026-10-11 : sessions de travail et entraînements du jour (users/{uid}/workSessions/{id}), un document
+  // sessions de travail et entraînements du jour (users/{uid}/workSessions/{id}), un document
   // par ajout, suppression douce par deletedAt (voir firestore.rules) -- données saisies à la main par
   // l'utilisateur, donc à sauvegarder/restaurer comme les tâches.
   "workSessions",
-  // 2026-10-12 : flammes et vies (users/{uid}/streak/state, document unique). Restauration SPÉCIALE (voir
+  // flammes et vies (users/{uid}/streak/state, document unique). Restauration SPÉCIALE (voir
   // _restoreStreak) : on ne fait jamais reculer une série plus récente que la sauvegarde.
   "streak"
 ];
 
-// D2 : `tourLogs`/`reviews`/`attempts` (journaux append-only imbriqués sous chaque cours/
-// flashcard/entraînement — voir firestore.rules) sont volontairement EXCLUS de la sauvegarde.
-// Justification : ce sont des journaux d'audit DÉRIVÉS (jamais modifiés ni supprimés par
-// l'application elle-même, contrairement aux documents primaires ci-dessus qui PEUVENT être
-// archivés/écrasés par erreur) — le risque P0 qu'une sauvegarde couvre (écrasement accidentel
-// d'un état encore utile) ne les concerne pas de la même façon. Les inclure exigerait de lister
-// EXHAUSTIVEMENT chaque cours/flashcard/entraînement pour en lire les sous-collections (N+1
-// lectures, potentiellement des milliers pour un utilisateur très actif) pour un bénéfice de
-// protection marginal. Choix à documenter/reconsidérer avec Jean si le besoin se confirme.
+// D2 : `tourLogs`/`reviews`/`attempts` (journaux append-only imbriqués sous chaque cours/ flashcard/entraînement —
+// voir firestore.rules) sont volontairement EXCLUS de la sauvegarde. Justification : ce sont des journaux d'audit
+// DÉRIVÉS (jamais modifiés ni supprimés par l'application elle-même, contrairement aux documents primaires
+// ci-dessus qui PEUVENT être archivés/écrasés par erreur) — le risque P0 qu'une sauvegarde couvre (écrasement
+// accidentel d'un état encore utile) ne les concerne pas de la même façon. Les inclure exigerait de lister
+// EXHAUSTIVEMENT chaque cours/flashcard/entraînement pour en lire les sous-collections (N+1 lectures,
+// potentiellement des milliers pour un utilisateur très actif) pour un bénéfice de protection marginal.
 
 async function requireAdmin(request) {
   const auth = requireVerifiedUser(request);
@@ -1911,8 +1903,7 @@ async function writeBatchedDocs(uid, subcollection, entries, extraFields) {
   }
 }
 
-// D5 (audit sauvegardes/pertes, 2026-09-30) : mode "compléter" (par défaut, demande explicite de
-// Jean) — ne réécrit QUE ce qui manque réellement dans l'état actuel :
+// D5 (audit sauvegardes/pertes, 2026-09-30) : mode "compléter" — ne réécrit QUE ce qui manque réellement dans l'état actuel :
 //   - document absent de l'état actuel -> recréé tel quel ;
 //   - document archivé depuis la sauvegarde (backup non archivé) -> désarchivé ET son contenu
 //     restauré (un document archivé est gelé depuis son archivage côté application, donc aucun
@@ -2049,13 +2040,9 @@ exports.adminRestoreBackup = onCall({ region: REGION }, async (request) => {
     throw new HttpsError("failed-precondition", "Cette sauvegarde n'a pas de contenu exploitable (vide).");
   }
 
-  // Filet de sécurité anti-écrasement accidentel : l'état ACTUEL est
-  // sauvegardé avant toute restauration, même sans demande explicite —
-  // une restauration reste ainsi toujours réversible depuis cet onglet.
-  // Bug de robustesse corrigé : si ce filet lui-même ne peut pas être écrit
-  // (snapshot beaucoup trop volumineux), on abandonne la restauration
-  // PLUTÔT QUE de la rendre irréversible sans le dire — mieux vaut un admin
-  // qui réessaie que perdre la seule trace de l'état d'avant restauration.
+  // Bug de robustesse corrigé : si ce filet lui-même ne peut pas être écrit (snapshot beaucoup trop volumineux), on
+  // abandonne la restauration PLUTÔT QUE de la rendre irréversible sans le dire — mieux vaut un admin qui réessaie
+  // que perdre la seule trace de l'état d'avant restauration.
   const preRestoreBuilt = await _buildBackupSnapshot(targetUid);
   if (preRestoreBuilt.tooLarge) {
     throw new HttpsError("resource-exhausted", "Restauration annulée : la sauvegarde de sécurité de l'état actuel (avant restauration) est beaucoup trop volumineuse à créer. Aucune donnée n'a été modifiée.");

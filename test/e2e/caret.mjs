@@ -1,4 +1,4 @@
-/* Curseur de saisie (24/10/2026) : (1) zone de texte vide des notes : le curseur est centré sur le texte d'invite ; (2) curseur bleu (--primary) partout.
+/* Curseur de saisie : (1) zone de texte vide des notes : le curseur est centré sur le texte d'invite ; (2) curseur bleu (--primary) partout.
    Vraie page + émulateurs. Mesure AUX PIXELS : on capture le haut de la zone vide et on compare les lignes du curseur (couleur du curseur) à celles
    du texte d'invite (gris). Le curseur clignote : plusieurs captures jusqu'à le voir.
    Lancer : node test/e2e/caret.mjs [préfixes]   (PUBLIC_DIR=<copie « avant » pour la contre-épreuve ; CARET_OUT=<fichier.json> pour enregistrer les mesures) */

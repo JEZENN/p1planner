@@ -1,5 +1,4 @@
-/* Audit perte de données (2026-09-30, demande explicite de Jean, voir le prompt "protection des
-   données" collé en session). Couvre ici D6 (une restauration admin ne gagnait que sur courses,
+/* Audit perte de données. Couvre ici D6 (une restauration admin ne gagnait que sur courses,
    pas les autres collections, pour un onglet resté ouvert), D7 (cache Firestore mémoire, jamais
    persistant), D9 (compteur d'écritures non confirmées incomplet), D10 (deletedDefaultIds ne
    vivait que dans un blob localStorage jamais purgé), D11 (showCustomAlert n'acceptait qu'un

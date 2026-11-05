@@ -1,4 +1,4 @@
-/* « Statistiques » → « Tableau de bord » ; « Stats du jour / des 7 derniers jours / générales » → « Ma journée de travail / Ma semaine de travail / Mon année en bref » (25/10/2026).
+/* « Statistiques » → « Tableau de bord » ; « Stats du jour / des 7 derniers jours / générales » → « Ma journée de travail / Ma semaine de travail / Mon année en bref ».
    Vraie page + émulateurs. Vérifie le nouveau nom partout (onglet, titres, fenêtres d'aide, formulaire d'avis) ET que rien ne déborde ni ne prend plus de place
    (barre d'onglets, titres sur une ligne), de 320 à 1920 px, avec et sans la Méthode des J.
    Lancer : node test/e2e/tableau-de-bord.mjs [préfixes]   (PUBLIC_DIR=<copie « avant » pour la contre-épreuve) */

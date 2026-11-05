@@ -1,31 +1,4 @@
-/* P1Planner — 3 retouches reprises de TypixClin (03/10/2026 au soir), demande explicite de Jean.
-   Vraie page + vrais émulateurs.
-
-   A. Téléphone : dans les listes personnalisables (#p1-catalog-modal), la ligne touchée doit
-      rester visible quand le clavier virtuel ouvre (réduit la zone visible). Bug reproduit sur
-      P1 (cause DIFFÉRENTE d'EDN : #p1-catalog-modal n'a pas la classe .settings-modal-overlay,
-      donc ni le mécanisme global tcp-kb-pin ni le bloc tablette OVERLAY_CLASSES ne s'y
-      appliquent -- aucune gestion n'existait, contrairement à EDN où un mécanisme s'appliquait
-      mais suivait mal un textarea). Correctif LOCAL et dédié
-      (_p1CatalogKeepFieldVisible/_p1CatalogScheduleKeepVisible), porté/adapté de
-      keepFieldVisible (TypixClin). Contre-preuve réelle faite en diagnostic manuel (code
-      temporairement neutralisé -> champ invisible/intouchable après "ouverture du clavier" ->
-      restauré) avant d'écrire ce test.
-   B. La légende « Supports disponibles » (#legendModal) était écrite EN DUR (4 entrées figées) --
-      reconstruite depuis AVAILABLE_SUPPORTS (_p1RenderSupportLegend, porté de
-      renderSupportLegend TypixClin).
-   C. Les boutons .legend-button/.timer-button/.planning-legend-btn deviennent bleus (icône
-      blanche) tant que leur fenêtre est ouverte (bloc p1-pop-open, porté de tpx-pop-open
-      TypixClin).
-
-   ⚠️ Piège réel rencontré en écrivant ces tests (à retenir pour tout futur test e2e de ce
-   fichier) : `page.setViewport({..., isMobile, hasTouch})` déclenche un VRAI rechargement de la
-   page dans cet environnement Puppeteer/Chrome dès que `isMobile`/`hasTouch` CHANGENT de valeur
-   (confirmé : window.currentUser devient momentanément null puis se réauthentifie seul,
-   _p1CatalogsLoaded retombe à false ~2s) -- y compris en repassant du mobile au bureau. En
-   revanche, changer SEULEMENT la hauteur (même isMobile/hasTouch qu'avant) ne recharge rien :
-   c'est exactement ce qu'utilise la simulation du clavier virtuel ci-dessous. Toute transition
-   bureau<->mobile doit donc attendre explicitement la re-stabilisation (voir toMobile/toDesktop). */
+/* Vraie page + vrais émulateurs. A. Téléphone : dans les listes personnalisables (#p1-catalog-modal), la ligne touchée doit rester visible quand le clavier virtuel ouvre (réduit la zone visible). Bug reproduit sur P1 (cause DIFFÉRENTE d'EDN : #p1-catalog-modal n'a pas la classe .settings-modal-overlay, donc ni le mécanisme global tcp-kb-pin ni le bloc tablette OVERLAY_CLASSES ne s'y appliquent -- aucune gestion n'existait, contrairement à EDN où un mécanisme s'appliquait mais suivait mal un textarea). Correctif LOCAL et dédié (_p1CatalogKeepFieldVisible/_p1CatalogScheduleKeepVisible), porté/adapté de keepFieldVisible (TypixClin). Contre-preuve réelle faite en diagnostic manuel (code temporairement neutralisé -> champ invisible/intouchable après "ouverture du clavier" -> restauré) avant d'écrire ce test. B. La légende « Supports disponibles » (#legendModal) était écrite EN DUR (4 entrées figées) -- reconstruite depuis AVAILABLE_SUPPORTS (_p1RenderSupportLegend, porté de renderSupportLegend TypixClin). C. Les boutons .legend-button/.timer-button/.planning-legend-btn deviennent bleus (icône blanche) tant que leur fenêtre est ouverte (bloc p1-pop-open, porté de tpx-pop-open TypixClin). ⚠️ Piège réel rencontré en écrivant ces tests (à retenir pour tout futur test e2e de ce fichier) : `page.setViewport({..., isMobile, hasTouch})` déclenche un VRAI rechargement de la page dans cet environnement Puppeteer/Chrome dès que `isMobile`/`hasTouch` CHANGENT de valeur (confirmé : window.currentUser devient momentanément null puis se réauthentifie seul, _p1CatalogsLoaded retombe à false ~2s) -- y compris en repassant du mobile au bureau. En revanche, changer SEULEMENT la hauteur (même isMobile/hasTouch qu'avant) ne recharge rien : c'est exactement ce qu'utilise la simulation du clavier virtuel ci-dessous. Toute transition bureau<->mobile doit donc attendre explicitement la re-stabilisation (voir toMobile/toDesktop). */
 import "./env-e2e.mjs";
 import { startServer } from "./e2e-server.mjs";
 import { startProxy } from "./flaky-proxy.mjs";

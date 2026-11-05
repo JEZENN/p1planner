@@ -1,6 +1,5 @@
 /* ============================================================
-   Recopie du nom d'authentification dans users/{uid}.displayName (retour de Jean, 08/10 :
-   « je ne vois pas le nom de certains utilisateurs » dans le panneau admin).
+   Recopie du nom d'authentification dans users/{uid}.displayName.
    Cause : auth.html fait createUser PUIS updateProfile ; onUserCreated s'exécute avant que le nom
    existe et écrit displayName:null ; seul updateDisplayName (Paramètres) l'écrivait ensuite.
    Vrai code de functions/index.js via .run() contre l'émulateur Firestore + Auth (Stripe simulé).

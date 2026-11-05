@@ -1,8 +1,6 @@
 /* Outils E2E « vraie page » P1Planner : navigateur sans interface (Edge/Chrome)
    + émulateurs Auth/Firestore. Aucun identifiant TypixClin. L'état serveur est
    relu INDÉPENDAMMENT de la page (firebase-admin, règles contournées). */
-// ⚠️ Ports décalés (2026-09-30, voir env-e2e.mjs) : évite toute collision avec les émulateurs
-// TypixClin de Jean tournant en parallèle sur 8080/9099/8085/8086/8901.
 process.env.FIREBASE_AUTH_EMULATOR_HOST = process.env.FIREBASE_AUTH_EMULATOR_HOST || "127.0.0.1:9198";
 process.env.FIRESTORE_EMULATOR_HOST = process.env.FIRESTORE_EMULATOR_HOST || "127.0.0.1:8280";
 import fs from "node:fs";

@@ -1,4 +1,4 @@
-/* Méthode Pomodoro (27/10/2026) : case dans « Ma journée de travail », grande fenêtre, frise, « Passer », maintien sur les − / +, fins de période, plein écran,
+/* Méthode Pomodoro : case dans « Ma journée de travail », grande fenêtre, frise, « Passer », maintien sur les − / +, fins de période, plein écran,
    robustesse (2 onglets, rechargement), données du compte inchangées, aide, Nouveautés (sans notification), icônes des titres des fenêtres « Temps de travail » / « Entraînements du jour ».
    Vraie page + émulateurs. Le minuteur est LOCAL (localStorage « p1_pomo_v1 »).
    Lancer : node test/e2e/pomodoro.mjs [préfixes]   (PUBLIC_DIR=<copie « avant » pour la contre-épreuve ; POMOSHOTS=1 pour les captures) */

@@ -205,8 +205,6 @@ try {
     assert(await page.evaluate(() => window._flashChipInk("pas-une-couleur") === null), "couleur non hexadécimale : rendu d'origine attendu (null)");
   });
 
-  // ═══════════════════ T. Paramètres : animation des sélecteurs à deux choix ═══════════════════
-  // Retour de Jean (11/10) : « mets une animation de transition entre les boutons switch, pour l'instant y'en a pas ».
   for (const theme of ["light", "dark"]) {
     await S("T1-" + theme, `Paramètres (${theme}) : 5 sélecteurs = deux moitiés égales, fond blanc sous le choix actif, qui GLISSE (0,28 s) au vrai clic ; rien d'animé à l'ouverture`, async () => {
       const u = await mkUser({ courses: 1 });
@@ -227,6 +225,9 @@ try {
         assert(openAnims === 0, `[${label}] ${openAnims} fond(s) blanc(s) glissent à l'ouverture`);
         for (const id of ids) {
           const sel = "#" + id;
+          /* Paramètres en deux colonnes : la rubrique qui contient ce sélecteur est ouverte avant de le mesurer */
+          await page.evaluate((s) => { const c = document.querySelector(s).closest(".settings-card"); if (c && window.p1OpenSettingsSection) window.p1OpenSettingsSection(c.getAttribute("data-setting")); }, sel);
+          await sleep(600);
           const geo = () => page.evaluate((s) => {
             const el = document.querySelector(s); const isTpx = el.classList.contains("tpx-seg");
             const opts = [...el.querySelectorAll(isTpx ? ".tpx-seg-opt" : ".seg-opt")]; const act = opts.find((o) => o.classList.contains("active"));

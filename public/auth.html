@@ -132,15 +132,7 @@ h1,h2,h3{font-family:var(--font-display);font-weight:600;line-height:1.15;letter
 }
 .auth-brand{
   position:relative;overflow:hidden;padding:clamp(2rem,5vw,3.5rem);display:flex;flex-direction:column;
-  /* `justify-content:center` centrait ce panneau (contenu plus court)
-     DANS LA HAUTEUR DE LA LIGNE DE GRILLE ENTIÈRE — hauteur elle-même
-     dictée par le panneau formulaire (carte désormais figée sur la
-     hauteur du panneau Inscription, le plus grand des 4, depuis le
-     correctif anti-décalage de cette session). Sur un écran large où
-     cette hauteur dépasse largement le contenu du panneau de marque, le
-     centrage le faisait démarrer bien plus bas que le formulaire à droite
-     — signalé deux fois avec capture à l'appui. Aligné en haut à la place,
-     comme le panneau formulaire visuellement. */
+  /* `justify-content:center` centrait ce panneau (contenu plus court) DANS LA HAUTEUR DE LA LIGNE DE GRILLE ENTIÈRE — hauteur elle-même dictée par le panneau formulaire (carte désormais figée sur la hauteur du panneau Inscription, le plus grand des 4, depuis le correctif anti-décalage de cette session). Aligné en haut à la place, comme le panneau formulaire visuellement. */
   justify-content:flex-start;padding-top:clamp(3rem,7vh,5.5rem);gap:1.75rem;
 }
 .auth-brand::before{
@@ -421,11 +413,7 @@ h1,h2,h3{font-family:var(--font-display);font-weight:600;line-height:1.15;letter
       </div>
 
       <div class="alert" id="globalAlert" role="alert" aria-live="assertive"></div>
-      <!-- Rangée "renvoyer l'email" : affichée avec l'alerte info de
-           showVerifyNotice() (voir JS) — demande explicite : plus de panneau
-           séparé "renvoyer l'email / se déconnecter" qui remplaçait toute la
-           carte connexion/inscription, jugé déroutant. On reste sur la page
-           de connexion normale, avec cette notification en plus. -->
+      <!-- On reste sur la page de connexion normale, avec cette notification en plus. -->
       <div class="verify-resend-row" id="verifyResendRow">
         <button type="button" class="btn btn-ghost btn-sm" id="btnResendVerify">
           <span class="btn-label">Renvoyer l'email de vérification</span><span class="spinner" aria-hidden="true"></span>
@@ -751,11 +739,7 @@ function sendPasswordResetEmailViaBrevo(email) {
     if (firstField) { window.setTimeout(function () { firstField.focus(); }, 50); }
   }
 
-  /* Notification "vérifie ta boîte mail" — demande explicite : plus un
-     panneau séparé qui remplaçait toute la carte (jugé déroutant), mais une
-     alerte info + un bouton de renvoi affichés SUR la page de connexion
-     normale. Doit toujours être appelée APRÈS showPanel("login") : celui-ci
-     appelle hideAlert()/hideVerifyNotice() en interne. */
+  /* Doit toujours être appelée APRÈS showPanel("login") : celui-ci appelle hideAlert()/hideVerifyNotice() en interne. */
   function showVerifyNotice(email) {
     showAlert("info", "Un email de vérification a été envoyé à " + email + ". Vérifie ta boîte mail (et tes spams), clique sur le lien reçu, puis connecte-toi ici.");
     verifyResendRow.classList.add("is-visible");
@@ -811,11 +795,7 @@ function sendPasswordResetEmailViaBrevo(email) {
     errorEl.classList.toggle("is-visible", !!show);
   }
 
-  /* ---------- Confirmation de mot de passe : retour en direct ----------
-     Demande explicite : rien n'indiquait que les deux mots de passe
-     correspondaient (seule une erreur apparaissait s'ils ne correspondaient
-     PAS, et seulement après la soumission du formulaire). Vérifié à chaque
-     frappe sur les deux champs, dès que la confirmation n'est pas vide. */
+  /* Vérifié à chaque frappe sur les deux champs, dès que la confirmation n'est pas vide. */
   (function () {
     var pwd = $("signupPassword"), confirmPwd = $("signupPasswordConfirm");
     var errorEl = $("signupPasswordConfirmError"), successEl = $("signupPasswordConfirmSuccess");
@@ -835,12 +815,7 @@ function sendPasswordResetEmailViaBrevo(email) {
     confirmPwd.addEventListener("input", checkMatch);
   })();
 
-  /* ---------- Inscription : les erreurs disparaissent dès que le champ devient valide ----------
-     Retour de Jean (08/10) : après une soumission en échec, les messages restaient affichés même une
-     fois les champs corrigés (ex. « Merci d'indiquer ton nom » sous un nom déjà saisi). Chaque champ
-     est revérifié à la frappe, UNIQUEMENT s'il est déjà marqué invalide (pas d'erreur prématurée
-     pendant la première saisie) ; les règles sont celles de la soumission (voir formSignup). La
-     confirmation du mot de passe a déjà son retour en direct (checkMatch ci-dessus). */
+  /* « Merci d'indiquer ton nom » sous un nom déjà saisi). Chaque champ est revérifié à la frappe, UNIQUEMENT s'il est déjà marqué invalide (pas d'erreur prématurée pendant la première saisie) ; les règles sont celles de la soumission (voir formSignup). La confirmation du mot de passe a déjà son retour en direct (checkMatch ci-dessus). */
   (function () {
     var rules = [
       ["signupFirstName", "signupFirstNameError", function (v) { return v.trim().length >= 2; }],
@@ -863,14 +838,10 @@ function sendPasswordResetEmailViaBrevo(email) {
   })();
 
   /* ---------- Parrainage : vérification du code saisi ----------
-     PARRAINAGE (2026-09-26) — trois verdicts, jamais deux :
+     PARRAINAGE — trois verdicts, jamais deux :
        true  = le serveur confirme que le code existe ;
        false = confirmé INCONNU par le serveur, ou longueur ≠ 6 ;
-       null  = contrôle injoignable (réseau/serveur) : NEUTRE, ne bloque pas
-               (décision de Jean : une panne de Functions ne doit jamais
-               empêcher de s'inscrire ni afficher un faux « code inexistant » ;
-               le code part quand même à referralInit, qui ignore de toute
-               façon un code invalide sans jamais faire échouer l'inscription).
+       null  = contrôle injoignable (réseau/serveur) : NEUTRE, ne bloque pas.
      checkReferralCode() est la SOURCE DE VÉRITÉ : elle renvoie toujours le
      verdict du code qu'elle a réellement interrogé. Le compteur de séquence
      (seq) ne sert qu'à l'AFFICHAGE pendant la frappe, jamais à transformer une
@@ -1016,7 +987,7 @@ function sendPasswordResetEmailViaBrevo(email) {
           pendingUnverifiedUser = cred.user;
           showPanel("login");
           showVerifyNotice(cred.user.email);
-          // Filet automatique (demande explicite) : si le premier email de
+          // Filet automatique : si le premier email de
           // vérification (envoyé à l'inscription, voir
           // sendVerificationEmailOnCreate) n'est jamais arrivé — ex. quota
           // Brevo dépassé pendant un pic d'inscriptions —, chaque tentative
@@ -1041,7 +1012,7 @@ function sendPasswordResetEmailViaBrevo(email) {
         // silencieuse (sans parrain, ou filleul déjà comptabilisé, ne fait
         // rien) : ne doit JAMAIS bloquer ni retarder perceptiblement la
         // connexion en cas d'échec — best-effort strict.
-        // A3 (2026-09-26) : la connexion ne dépend JAMAIS du parrainage — appel non
+        // A3 : la connexion ne dépend JAMAIS du parrainage — appel non
         // attendu (le SDK a un délai par défaut d'environ 70 s), redirection après
         // un court délai fixe pour laisser partir la requête. Idempotent : le
         // prochain login retente si elle n'a pas abouti.
@@ -1050,9 +1021,6 @@ function sendPasswordResetEmailViaBrevo(email) {
             console.warn("referralMarkActive a échoué (connexion non bloquée) :", err);
           });
         }
-        // Le bouton reste en chargement JUSQU'À la redirection (pas de setLoading(false) ici) : le
-        // remettre à l'état normal 1,5 s avant que la page ne change laissait croire à un échec
-        // (retour explicite : « le bouton redevient normal, on dirait que ça n'a pas marché »).
         window.setTimeout(function () { window.location.href = getRedirectTarget(); }, 1500);
       })
       .catch(function (err) {

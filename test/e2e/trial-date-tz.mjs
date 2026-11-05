@@ -1,4 +1,4 @@
-/* Date de fin d'essai / d'accès affichée sur comptepremium.html : toujours à l'heure de Paris, quel que soit le fuseau du visiteur (24/10/2026).
+/* Date de fin d'essai / d'accès affichée sur comptepremium.html : toujours à l'heure de Paris, quel que soit le fuseau du visiteur.
    Vraie page + émulateurs ; le navigateur est réglé sur Indian/Reunion (UTC+4) puis Pacific/Auckland (UTC+12 / +13).
    Lancer : node test/e2e/trial-date-tz.mjs   (PUBLIC_DIR=<copie « avant » pour la contre-épreuve) */
 import "./env-e2e.mjs";

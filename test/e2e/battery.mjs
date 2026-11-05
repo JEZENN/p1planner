@@ -171,7 +171,7 @@ try {
       const box = document.querySelector(".resource-box");
       if (!box) return "aucune case ressource trouvée dans le DOM";
       box.click();
-      // Ressources personnalisables (2026-09-27) : la couleur/le libellé viennent du catalogue
+      // Ressources personnalisables : la couleur/le libellé viennent du catalogue
       // (AVAILABLE_RESOURCES), la case n'a donc plus de classe CSS fixe par ressource (.annale) —
       // identification par data-resource-id. Le tableau est redessiné : relire le nouvel élément
       // (l'ancien est détaché).

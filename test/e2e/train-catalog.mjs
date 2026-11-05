@@ -1,4 +1,4 @@
-/* Types/plateformes d'entraînement PERSONNALISABLES (2026-09-28, demande explicite) — vraie
+/* Types/plateformes d'entraînement PERSONNALISABLES — vraie
    page + vrais émulateurs. Même mécanique exacte que ressources/supports (voir
    catalog-custom.mjs) : défauts protégés, archivage à la suppression, palette restreinte,
    plafond total. Couvre ici surtout ce qui est SPÉCIFIQUE aux entraînements : boutons du

@@ -1,4 +1,4 @@
-/* Captures d'écran des retouches du 15/10/2026 (liste à cocher, titres, bouton fermer, « Mes amis ») — PC + téléphone, clair / sombre / pastel.
+/* Captures d'écran des retouches (liste à cocher, titres, bouton fermer, « Mes amis ») — PC + téléphone, clair / sombre / pastel.
    Lancer : node test/e2e/captures-15-10.mjs   → docs/captures-15-10/*.png (vraie page, émulateurs, données de test uniquement). */
 import "./env-e2e.mjs";
 import fs from "node:fs";

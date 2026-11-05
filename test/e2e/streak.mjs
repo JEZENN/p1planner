@@ -1,4 +1,4 @@
-/* Flammes et vies — vraie page + vrais émulateurs (2026-10-12, interface alignée le 14/10).
+/* Flammes et vies — vraie page + vrais émulateurs.
    Lancer : node test/e2e/streak.mjs [préfixes]   (PUBLIC_DIR=<copie « avant » pour la contre-épreuve) */
 import "./env-e2e.mjs";
 import { startServer } from "./e2e-server.mjs";
@@ -192,7 +192,7 @@ try {
     await sleep(1800);
     const r = await page.evaluate(() => {
       const a = document.getElementById("p1TrCard").getBoundingClientRect(), b = document.getElementById("p1StreakCard").getBoundingClientRect();
-      return { sameRow: Math.abs(a.top - b.top) < 1, after: b.left > a.right - 1, sameH: Math.abs(a.height - b.height) < 1.5, label: document.querySelector("#p1StreakCard .daily-stat-label").textContent, aria: document.getElementById("p1StreakCard").getAttribute("aria-label"), sub: document.getElementById("p1StreakSub").textContent.replace(/\s+/g, " ").trim() };
+      return { ra: [a.left, a.right, a.top], rb: [b.left, b.right, b.top], sameRow: Math.abs(a.top - b.top) < 1, after: b.left > a.right - 1, sameH: Math.abs(a.height - b.height) < 1.5, label: document.querySelector("#p1StreakCard .daily-stat-label").textContent, aria: document.getElementById("p1StreakCard").getAttribute("aria-label"), sub: document.getElementById("p1StreakSub").textContent.replace(/\s+/g, " ").trim() };
     });
     assert(r.sameRow && r.after && r.label === "Flammes" && r.sub === "de connexion d’affilée · record 6", "carte : " + JSON.stringify(r));
     assert(r.aria === "Flammes : 5 jours de connexion d’affilée, record 6, 2 vies sur 5", "aria-label : " + r.aria);

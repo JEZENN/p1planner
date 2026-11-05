@@ -1,4 +1,4 @@
-/* Mode sur-mesure : boutons des fenêtres en sombre, suppression de matière « en cours », matière présélectionnée (22/10/2026).
+/* Mode sur-mesure : boutons des fenêtres en sombre, suppression de matière « en cours », matière présélectionnée.
    Vraie page + vrais émulateurs ; l'état serveur est relu avec l'admin SDK.
    Lancer : node test/e2e/perso-retouches-22-10.mjs [préfixes]   (PUBLIC_DIR=<copie « avant » pour la contre-épreuve) */
 import "./env-e2e.mjs";

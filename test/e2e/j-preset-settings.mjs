@@ -19,6 +19,8 @@ async function user() {
 }
 const openSettings = async (page, preset, offsets) => {
   await page.evaluate((p, o) => { window.setJMethodPrefs(true, p, o); window.openSettingsModal(); }, preset, offsets || undefined);
+  await page.waitForSelector("#settings-modal-overlay.active", { timeout: 8000 }); await sleep(900);
+  await page.evaluate(() => window.p1OpenSettingsSection("j-method")); await sleep(500);   /* Paramètres en deux colonnes : rubrique « Méthode des J » */
   await page.waitForSelector("#j-preset-row .j-preset-btn", { visible: true, timeout: 15000 }); await sleep(900);
 };
 const click = async (page, id) => {

@@ -1,6 +1,4 @@
-/* Animation de suppression discrète (2026-09-29, demande explicite de Jean : "Ajoute une
-   animation discrète lors de la suppression d'un support, d'une ressource, d'une plateforme
-   .... aussi bien pour la liste des items que pour la liste des entraînements"). Vraie page +
+/* Animation de suppression discrète. Vraie page +
    vrais émulateurs. Vérifie que window.p1FadeOutRow est bien appliqué (classe .p1-row-fade-out
    posée avant le retrait réel) dans les 3 endroits concernés : le gestionnaire de catalogue
    (ressources/supports/types/plateformes), le gestionnaire "Mes matières/cours" (mode
@@ -163,12 +161,9 @@ try {
   });
 
   await S("D4", "gestionnaire « Mes matières » : \"Modifier\" rouvre le gestionnaire à la fermeture de la fiche (même onglet, même recherche) au lieu de le fermer purement et simplement", async () => {
-    // Retour de Jean (03/10) : "pourquoi quand j'essaye de modifier une matière dans gérer mes
-    // matières le modal gérer les matières se ferme ?" -- même cause que D3 (buildModal() à
-    // overlay unique), mais sur "Modifier" cette fois, jamais corrigé jusqu'ici (D3 ne couvrait
-    // que "Supprimer"). Corrigé via mgrPendingReturn/_tpxReturnTo (voir buildModal) : rouvre le
-    // gestionnaire à la fermeture de N'IMPORTE QUELLE fiche ouverte depuis lui -- validation,
-    // annulation, croix, voile ou Échap, tous passent par le même close().
+    // Corrigé via mgrPendingReturn/_tpxReturnTo (voir buildModal) : rouvre le gestionnaire à la fermeture de N'IMPORTE
+    // QUELLE fiche ouverte depuis lui -- validation, annulation, croix, voile ou Échap, tous passent par le même
+    // close().
     await page.evaluate(() => window.TPXPerso.openManager("spec"));
     await sleep(200);
     assert(await page.evaluate(() => !!document.getElementById("tpx-modal-overlay")), "le gestionnaire ne s'est pas ouvert");

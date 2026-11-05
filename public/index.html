@@ -486,13 +486,7 @@ h2.h-section{font-size:clamp(1.7rem,3.6vw,2.6rem);margin-bottom:.75rem}
   display:inline-flex;position:relative;padding:4px;border-radius:var(--radius-pill);background:var(--surface-2);
   border:1px solid var(--border-strong);gap:4px;
 }
-/* Pastille qui glisse d'un bouton à l'autre (mesurée en JS : les deux
-   boutons n'ont pas la même largeur, contrairement aux onglets
-   Connexion/Inscription d'auth.html) — remplace un simple `background`
-   posé directement sur le bouton actif, qui ne pouvait que "sauter"
-   instantanément d'un bouton à l'autre (deux éléments DOM distincts, un
-   `background` ne peut pas glisser entre eux). Demande explicite de
-   l'utilisateur : même traitement que sur auth.html. */
+/* Pastille qui glisse d'un bouton à l'autre (mesurée en JS : les deux boutons n'ont pas la même largeur, contrairement aux onglets Connexion/Inscription d'auth.html) — remplace un simple `background` posé directement sur le bouton actif, qui ne pouvait que "sauter" instantanément d'un bouton à l'autre (deux éléments DOM distincts, un `background` ne peut pas glisser entre eux). */
 .premium-toggle-indicator{
   position:absolute;top:4px;bottom:4px;border-radius:var(--radius-pill);background:var(--gradient-brand);
   transition:left .3s cubic-bezier(.65,0,.35,1),width .3s cubic-bezier(.65,0,.35,1);z-index:0;
@@ -1288,7 +1282,7 @@ html{scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:var(--primary)
     </div>
 
     <!-- Anciennement sa propre section pleine page ; regroupée ici avec le
-         reste des origines du projet (demande explicite de l'utilisateur).
+         reste des origines du projet.
          Titre démoté en h3 (sous-partie d'"Origines", plus un h2 de
          section à part entière). -->
     <div class="typix-block reveal" style="margin-top:3rem;padding-top:2.5rem;border-top:1px solid var(--border)">
@@ -1442,16 +1436,11 @@ html{scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:var(--primary)
   }
 
   /* ---------- Nav : section active (scrollspy) ---------- */
-  // Chaque lien de nav peut correspondre à PLUSIEURS sections DOM — ex.
-  // "Tableur" doit rester actif sur toute sa vitrine, pas seulement sa
-  // courte intro : "La méthode des J, à ton rythme", "Ouvrir, voir,
-  // travailler, valider", "Le planning, semaine après semaine" et "Des
-  // statistiques..." sont des <section> SŒURS de #tableur (fermée après sa
-  // seule intro), sans id jusqu'ici — donc jamais observées, d'où un
-  // "trou" de surlignage en les traversant (bug signalé). Pareil pour
-  // "Méthode", qui doit aussi couvrir la démo animée juste après
-  // ("D'un cours travaillé à un trophée débloqué", #demo) — demande
-  // explicite de l'utilisateur.
+  // Chaque lien de nav peut correspondre à PLUSIEURS sections DOM — ex. "Tableur" doit rester actif sur toute sa
+  // vitrine, pas seulement sa courte intro : "La méthode des J, à ton rythme", "Ouvrir, voir, travailler, valider",
+  // "Le planning, semaine après semaine" et "Des statistiques..." sont des <section> SŒURS de #tableur (fermée après
+  // sa seule intro), sans id jusqu'ici — donc jamais observées, d'où un "trou" de surlignage en les traversant (bug
+  // signalé).
   var navSectionMap = {
     methode: ["methode", "demo"],
     tableur: ["tableur", "tableur-j", "tableur-today", "tableur-planning", "tableur-stats"],

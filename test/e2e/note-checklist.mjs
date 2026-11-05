@@ -1,4 +1,4 @@
-/* Liste à cocher dans les notes de la journée, titres modernisés, curseur « Matières », bouton fermer (15/10/2026).
+/* Liste à cocher dans les notes de la journée, titres modernisés, curseur « Matières », bouton fermer.
    Vraie page + vrais émulateurs ; la sauvegarde est lue SUR LE SERVEUR (Firestore), pas seulement dans l'interface.
    Lancer : node test/e2e/note-checklist.mjs [préfixes]   (PUBLIC_DIR=<copie « avant » pour la contre-épreuve) */
 import "./env-e2e.mjs";
@@ -362,7 +362,7 @@ try {
     });
   }
 
-  /* ═════ BR : texte écrit après la sortie de la liste = jamais barré (21/10/2026) ═════ */
+  /* ═════ BR : texte écrit après la sortie de la liste = jamais barré ═════ */
   const decoOfText = (page, ed, txt) => page.evaluate((sel, t) => {
     const root = document.querySelector(sel); const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT); let n, hit = null;
     while ((n = w.nextNode())) if (n.nodeValue.indexOf(t) >= 0) { hit = n; break; }

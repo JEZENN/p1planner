@@ -1,5 +1,5 @@
 /* ============================================================
-   P1PLANNER — Audit sauvegardes/pertes (2026-09-30, demande explicite de Jean)
+   P1PLANNER — Audit sauvegardes/pertes
    Tests du VRAI code de functions/index.js (adminCreateBackup / adminRestoreBackup /
    _runScheduledBackups), via fns.<nom>.run() / fns.__backupTest, contre l'ÉMULATEUR
    Firestore + Auth réels. Couvre D1 (sauvegarde automatique nocturne), D2 (contenu

@@ -1,13 +1,4 @@
-/* Modal « Organisation de la journée » (pdd) -- retour de Jean (05/10) : les popovers
-   « Matières » et « Statut » apparaissaient/disparaissaient SANS animation (display:none ->
-   block dans la même frame : la transition CSS ne jouait jamais), le bouton ne montrait pas que
-   sa fenêtre était déployée, et la flèche du Statut ne pivotait pas. Vraie page + vrais émulateurs.
-
-   Méthode : Chrome headless ne produit pas de frames régulières (échantillonner l'opacité toutes
-   les 16 ms donnait des sauts 0 -> 0.98 sans valeur intermédiaire, même pour un code correct).
-   On interroge donc l'API Web Animations : `el.getAnimations()` renvoie une CSSTransition dès
-   qu'un changement de classe déclenche réellement une transition -- jamais pour un simple
-   display:none -> block. On la termine ensuite (`finish()`) pour lire l'état final. */
+/* Modal « Organisation de la journée » Vraie page + vrais émulateurs. Méthode : Chrome headless ne produit pas de frames régulières (échantillonner l'opacité toutes les 16 ms donnait des sauts 0 -> 0.98 sans valeur intermédiaire, même pour un code correct). On interroge donc l'API Web Animations : `el.getAnimations()` renvoie une CSSTransition dès qu'un changement de classe déclenche réellement une transition -- jamais pour un simple display:none -> block. On la termine ensuite (`finish()`) pour lire l'état final. */
 import "./env-e2e.mjs";
 import { startServer } from "./e2e-server.mjs";
 import { startProxy } from "./flaky-proxy.mjs";
@@ -89,10 +80,7 @@ try {
     assert(!r, "le menu Statut fermé reçoit encore des évènements souris");
   });
 
-  // Retour de Jean (08/10, constaté sur TypixClin) : popover « Matières » ouvert, le backdrop
-  // transparent plein écran (clic dehors = fermeture) recouvre AUSSI le bouton activé : la souris
-  // y reste une flèche alors qu'un clic le referme. Statut n'a pas de backdrop (menu ancré +
-  // écouteur document) : son bouton reste au-dessus, déjà une main.
+  // Statut n'a pas de backdrop (menu ancré + écouteur document) : son bouton reste au-dessus, déjà une main.
   await S("P4", "popover « Matières » ouvert : main au survol de son bouton (pas ailleurs sur le fond) ; un clic dessus referme sans rouvrir, la journée reste ouverte", async () => {
     const cursorAt = async (x, y) => { await page.mouse.move(x, y); await sleep(30); return page.evaluate((px, py) => { const el = document.elementFromPoint(px, py); return { cursor: getComputedStyle(el).cursor, id: el.id || el.className }; }, x, y); };
     await page.evaluate(() => document.getElementById("pdd-spec-btn").click());

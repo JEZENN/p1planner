@@ -155,8 +155,7 @@ try {
     assert(iCat !== -1, "carte « Listes personnalisables » absente des Paramètres");
     assert(iTrain === -1 || iCat === iTrain + 1, "la carte n'est pas placée juste sous « Entraînements » : ordre = " + JSON.stringify(order));
 
-    // .p1-catalog-settings-row est réutilisée par la carte "Autres actions" (retour de Jean,
-    // même style de lignes) -- on scope au SÉLECTEUR de la carte "Listes personnalisables" pour
+    // .p1-catalog-settings-row est réutilisée par la carte "Autres actions" -- on scope au SÉLECTEUR de la carte "Listes personnalisables" pour
     // ne compter que ses 4 boutons à elle.
     const rows = await page.evaluate(() => [...document.querySelectorAll('[data-setting="p1-catalogs"] .p1-catalog-settings-row')].length);
     assert(rows === 4, "nombre de boutons inattendu dans la carte : " + rows);

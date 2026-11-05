@@ -1,18 +1,4 @@
-/* Retour de Jean (02/10, capture d'écran du tiroir "Session Flash") : des groupes nommés par
-   un ID Firestore brut ("bank-ue2-bio-c...", "r1nKM5MCGbuajO...") apparaissaient dans le
-   sélecteur multi-matières. Cause réelle, confirmée en lisant le code : deleteSpecialty()
-   archive la matière et ses cours mais n'a JAMAIS touché aux flashcards qui leur sont liées
-   (speId inchangé) -- fidèle au principe "jamais de suppression physique" déjà en place
-   ailleurs, mais loadAllFlashCards()/loadAllDueFlashCards() ne filtraient pas ces cartes
-   orphelines, et le tiroir ajoutait explicitement TOUT speId rencontré même hors
-   SPECIALTIES_DATA (renderFlashDrawerList). speName()/speShort() retombent sur l'ID brut
-   quand la matière est introuvable -- d'où le nom affiché.
-
-   FC1 : une matière supprimée (jamais présente dans SPECIALTIES_DATA, cartes orphelines
-         simulées directement en base) n'apparaît plus comme groupe dans le tiroir, et ses
-         cartes dues ne gonflent plus le badge global -- la matière ACTIVE reste, elle,
-         inchangée (pas de sur-correction).
-   Vraie page + vrais émulateurs. */
+/* Cause réelle, confirmée en lisant le code : deleteSpecialty() archive la matière et ses cours mais n'a JAMAIS touché aux flashcards qui leur sont liées (speId inchangé) -- fidèle au principe "jamais de suppression physique" déjà en place ailleurs, mais loadAllFlashCards()/loadAllDueFlashCards() ne filtraient pas ces cartes orphelines, et le tiroir ajoutait explicitement TOUT speId rencontré même hors SPECIALTIES_DATA (renderFlashDrawerList). speName()/speShort() retombent sur l'ID brut quand la matière est introuvable -- d'où le nom affiché. FC1 : une matière supprimée (jamais présente dans SPECIALTIES_DATA, cartes orphelines simulées directement en base) n'apparaît plus comme groupe dans le tiroir, et ses cartes dues ne gonflent plus le badge global -- la matière ACTIVE reste, elle, inchangée (pas de sur-correction). Vraie page + vrais émulateurs. */
 import "./env-e2e.mjs";
 import { startServer } from "./e2e-server.mjs";
 import { startProxy } from "./flaky-proxy.mjs";

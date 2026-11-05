@@ -17,7 +17,7 @@ const MUTANTS = [
   { id: "M6 pastille éteinte par l'écrivain des avis", file: "tableur.html", scen: ["T1"], from: "avatarDot.classList.toggle('show', hasFriends || count > 0 || window._p1ReferralUnseen === true);", to: "avatarDot.classList.toggle('show', hasFriends || count > 0);" },
   { id: "M7 code récupéré jamais à l'ouverture du menu", file: "tableur.html", scen: ["T2"], from: "if (dd && dd.classList.contains('active')) ensureCodeOnMenuOpen();", to: "" },
   { id: "M5 mémoire locale non écrite avant l'annonce", file: "comptepremium.html", scen: ["N1", "N2"], from: "writeLocalSeen(active); // AVANT d'afficher", to: "" },
-  // ── Audit sauvegardes/pertes de données (2026-09-30, demande explicite de Jean) ──
+  // ── Audit sauvegardes/pertes de données ──
   { id: "D9a runTransaction non comptée dans _p1UnconfirmedWrites", file: "tableur.html", script: "data-durability.mjs", scen: ["D9a"],
     from: "window._fsRunTransaction = function () { return _p1CountWrite(runTransaction, null, arguments); };",
     to: "window._fsRunTransaction = runTransaction;" },
@@ -39,7 +39,7 @@ const MUTANTS = [
   { id: "D12 recherche reverrouillée sans jamais pouvoir se redéverrouiller (bfcache)", file: "tableur.html", script: "data-durability.mjs", scen: ["D12"],
     from: "    function unlockSearch() {\n        input.readOnly = false;\n        if (input.value) {\n            input.value = '';\n            // Le champ peut avoir un écouteur 'input' dépendant de sa valeur (ex. bouton d'effacement,\n            // voir plus haut) : une remise à vide programmatique ne déclenche pas cet évènement toute\n            // seule, contrairement à une saisie utilisateur — il faut l'émettre explicitement.\n            input.dispatchEvent(new Event('input', { bubbles: true }));\n        }\n    }\n\n    function armUnlock() {\n        input.addEventListener('pointerdown', unlockSearch, { once: true });\n        input.addEventListener('keydown', unlockSearch, { once: true });\n    }\n\n    function lockAndClear() {\n        input.readOnly = true;\n        clearBadAutofill();\n        setTimeout(clearBadAutofill, 50);\n        setTimeout(clearBadAutofill, 250);\n        setTimeout(clearBadAutofill, 800);\n        armUnlock();\n    }\n\n    lockAndClear();\n\n    window.addEventListener('pageshow', function (e) {\n        if (e.persisted) lockAndClear();\n    });\n}",
     to: "    clearBadAutofill();\n    setTimeout(clearBadAutofill, 50);\n    setTimeout(clearBadAutofill, 250);\n    setTimeout(clearBadAutofill, 800);\n\n    window.addEventListener('pageshow', function () {\n        input.readOnly = true;\n        input.value = '';\n\n        setTimeout(clearBadAutofill, 50);\n        setTimeout(clearBadAutofill, 250);\n        setTimeout(clearBadAutofill, 800);\n    });\n\n    function unlockSearch() {\n        input.readOnly = false;\n        input.value = '';\n    }\n\n    input.addEventListener('pointerdown', unlockSearch, { once: true });\n\n    input.addEventListener('keydown', function () {\n        if (input.readOnly) {\n            input.readOnly = false;\n            input.value = '';\n        }\n    }, { once: true });\n}" },
-  // ── Audit « listes/tours/iPad/banque » (2026-10-02, comparaison au modèle EDN) ──
+  // ── Audit « listes/tours/iPad/banque » ──
   { id: "C1 maxTours() compact redevient Math.max(stocké, réglage)", file: "tableur.html", script: "tours-lock.mjs", scen: ["TL9", "TL11"],
     from: "  function maxTours(d) {\n    return (typeof window.tpxMaxToursAllowed === 'function') ? window.tpxMaxToursAllowed() : 8;\n  }",
     to: "  function maxTours(d) {\n    var real = (d && d.tours) ? d.tours.length : 8;\n    var allowed = (typeof window.tpxMaxToursAllowed === 'function') ? window.tpxMaxToursAllowed() : 8;\n    return Math.max(real, allowed);\n  }" },
@@ -86,10 +86,9 @@ const MUTANTS = [
     from: "{ id: 'bank-ue2-bio-cell',        name: 'UE2 - Biologie cellulaire',group: 's1', color: '#22c55e', short: 'U2B' },",
     to: "{ id: 'bank-ue2-bio-cell',        name: 'UE2 - Biologie cellulaire',group: 's1', color: '#22c55e', short: null },"
   },
-  // ── Retour de Jean (02/10) : flashcards orphelines après suppression d'une matière + tiret UEx rétroactif ──
   { id: "F1 filtrage des matières actives retiré de loadAllFlashCards/loadAllDueFlashCards", file: "tableur.html", script: "flash-orphan-subject.mjs", scen: ["FC1"],
-    from: "  function loadAllDueFlashCards() { var b=fb(); if(!b) return Promise.resolve([]); return b.getDocs(b.query(_col(b), b.where('nextReview','<=',nowISO()))).then(_all).then(_flashFilterActiveSpe).catch(function(e){console.warn(e);return[];}); }\n  function loadAllFlashCards() { var b=fb(); if(!b) return Promise.resolve([]); return b.getDocs(_col(b)).then(_all).then(_flashFilterActiveSpe).catch(function(e){console.warn(e);return[];}); }",
-    to: "  function loadAllDueFlashCards() { var b=fb(); if(!b) return Promise.resolve([]); return b.getDocs(b.query(_col(b), b.where('nextReview','<=',nowISO()))).then(_all).catch(function(e){console.warn(e);return[];}); }\n  function loadAllFlashCards() { var b=fb(); if(!b) return Promise.resolve([]); return b.getDocs(_col(b)).then(_all).catch(function(e){console.warn(e);return[];}); }" },
+    from: "  function loadAllDueFlashCards() { var b=fb(); if(!b || _flashPaused()) return Promise.resolve([]); return b.getDocs(b.query(_col(b), b.where('nextReview','<=',nowISO()))).then(_all).then(_flashFilterActiveSpe).catch(function(e){console.warn(e);return[];}); }\n  function loadAllFlashCards() { var b=fb(); if(!b) return Promise.resolve([]); return b.getDocs(_col(b)).then(_all).then(_flashFilterActiveSpe).catch(function(e){console.warn(e);return[];}); }",
+    to: "  function loadAllDueFlashCards() { var b=fb(); if(!b || _flashPaused()) return Promise.resolve([]); return b.getDocs(b.query(_col(b), b.where('nextReview','<=',nowISO()))).then(_all).catch(function(e){console.warn(e);return[];}); }\n  function loadAllFlashCards() { var b=fb(); if(!b) return Promise.resolve([]); return b.getDocs(_col(b)).then(_all).catch(function(e){console.warn(e);return[];}); }" },
   { id: "F2 correctif rétroactif du tiret UEx désactivé", file: "tableur.html", script: "subject-bank.mjs", scen: ["SB-DASH"],
     from: "window._p1FixBankSubjectNames = async function () {\n    var TP = window.TPXPerso;",
     to: "window._p1FixBankSubjectNames = async function () {\n    return;\n    var TP = window.TPXPerso;" },
@@ -102,7 +101,6 @@ const MUTANTS = [
   { id: "G1 réouverture du gestionnaire après une fiche (mgrPendingReturn) désactivée", file: "tableur.html", script: "delete-animation.mjs", scen: ["D4"],
     from: "var returnTo = opts.isManager ? null : (mgrPendingReturn || (old && old._tpxReturnTo) || null);",
     to: "var returnTo = null;" },
-  // ── Retour de Jean (03/10) : scrollbar visible pendant le check de validation, séparation/animation des groupes-jour « Révisions J » ──
   { id: "SB1 masquage visuel de la scrollbar <html> retiré du verrou de scroll", file: "tableur.html", script: "scrollbar-lock-visual.mjs", scen: ["SB1"],
     from: "document.documentElement.classList.add('p1-scrollbar-hidden');",
     to: "void 0;" },
@@ -112,7 +110,7 @@ const MUTANTS = [
   { id: "J4 délai avant retrait de `open` à la fermeture d'un groupe-jour supprimé (animation instantanée)", file: "tableur.html", script: "j-day-groups.mjs", scen: ["J4"],
     from: "        details._p1JCollapseTimer = setTimeout(function () {\n            details.removeAttribute('open');\n        }, 230);",
     to: "        details.removeAttribute('open');" },
-  // ── 3 retouches reprises de TypixClin (03/10 soir, demande explicite de Jean) ──
+  // ── 3 retouches reprises de TypixClin ──
   { id: "KBV1 _p1CatalogKeepFieldVisible neutralisée (clavier virtuel, listes personnalisables)", file: "tableur.html", script: "pop-legend-keyboard.mjs", scen: ["A1"],
     from: "function _p1CatalogKeepFieldVisible() {\n    var modal = document.getElementById('p1-catalog-modal');",
     to: "function _p1CatalogKeepFieldVisible() {\n    return;\n    var modal = document.getElementById('p1-catalog-modal');" },
@@ -122,7 +120,7 @@ const MUTANTS = [
   { id: "POP1 synchronisation p1-pop-open désactivée (bouton jamais bleu fenêtre ouverte)", file: "tableur.html", script: "pop-legend-keyboard.mjs", scen: ["C1"],
     from: "        var open = m.classList.contains('show') && !m.classList.contains('closing');",
     to: "        var open = false;" },
-  // ── Popovers du modal « Organisation de la journée » (05/10, retour de Jean) ──
+  // ── Popovers du modal « Organisation de la journée » ──
   { id: "PDD1 transition de fermeture du popover Matières supprimée (disparition instantanée)", file: "tableur.html", script: "pdd-popovers.mjs", scen: ["P1"],
     from: "transform-origin: top right; transition: opacity .18s ease, transform .18s cubic-bezier(.2,.8,.2,1), visibility 0s linear .18s; }",
     to: "transform-origin: top right; transition: none; }" },
@@ -138,7 +136,7 @@ const MUTANTS = [
   { id: "PDD5 main sur TOUT le backdrop (pas seulement sur le bouton)", file: "tableur.html", script: "pdd-popovers.mjs", scen: ["P4"],
     from: "this.style.cursor = over ? 'pointer' : '';",
     to: "this.style.cursor = 'pointer';" },
-  // ── Formulaire d'inscription (08/10, retour de Jean) ──
+  // ── Formulaire d'inscription ──
   { id: "SGN1 astérisque du champ Prénom retiré", file: "auth.html", script: "signup-form.mjs", scen: ["F1"],
     from: '<label for="signupFirstName">Prénom <span class="req-star" aria-hidden="true">*</span></label>',
     to: '<label for="signupFirstName">Prénom</label>' },

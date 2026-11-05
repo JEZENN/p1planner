@@ -1,4 +1,4 @@
-/* Flammes et vies (2026-10-12) — tests du VRAI code de la page : le <script id="p1-streak-js"> de public/tableur.html est
+/* Flammes et vies — tests du VRAI code de la page : le <script id="p1-streak-js"> de public/tableur.html est
    extrait et exécuté dans `vm`, avec un faux Firestore (transactions) et un stockage local PIÈGE qui lève une erreur au
    moindre accès (rien de ce système ne doit être gardé sur l'appareil).
    Lancer : npx mocha test/streak.test.mjs */

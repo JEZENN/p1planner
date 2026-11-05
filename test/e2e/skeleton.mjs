@@ -1,4 +1,4 @@
-/* Chargement en squelette (25/10/2026) : tableur (ouverture + chargements locaux) et Compte Premium, graphique de ressenti.
+/* Chargement en squelette : tableur (ouverture + chargements locaux) et Compte Premium, graphique de ressenti.
    Vraie page + émulateurs ; le proxy instable (flaky-proxy) sert à retarder / couper Firestore pour LAISSER VOIR le squelette.
    Lancer : node test/e2e/skeleton.mjs [préfixes]   (PUBLIC_DIR=<copie « avant » pour la contre-épreuve ; SKELSHOTS=1 pour les captures) */
 import "./env-e2e.mjs";

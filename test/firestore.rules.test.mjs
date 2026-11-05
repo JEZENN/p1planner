@@ -38,9 +38,6 @@ before(async function () {
     firestore: {
       rules: readFileSync(join(__dirname, "..", "firestore.rules"), "utf8"),
       host: "127.0.0.1",
-      // ⚠️ Port décalé (2026-09-30, voir test/e2e/env-e2e.mjs) : 8080 est occupé en parallèle par
-      // les émulateurs TypixClin de Jean — démarrer avec
-      // `firebase emulators:start --config firebase.emu-alt.json`.
       port: 8280
     }
   });
@@ -340,7 +337,7 @@ it("régression — tourConfidences sans trou même si le champ n'existait pas e
 
 /* ============================================================
    backups/{backupId} — filet de sécurité SERVEUR UNIQUEMENT.
-   ⚠️ Audit perte de données (2026-09-30) : avant ce correctif, le propriétaire pouvait
+   ⚠️ Audit perte de données : avant ce correctif, le propriétaire pouvait
    créer ET supprimer ses propres sauvegardes (`canWrite(uid)`), pensé pour un système de
    sauvegarde côté client qui n'a jamais existé — un bug ou un script aurait pu supprimer
    les vraies sauvegardes. Seules les Cloud Functions (Admin SDK, contournent ces Rules)
@@ -423,8 +420,7 @@ describe("Sauvegardes (backups)", () => {
 /* ============================================================
    feedbacks/{feedbackId} — envoyable même en lecture seule
    (pas gaté par canWrite), immuable, lecture strictement propriétaire.
-   Bug de test corrigé (incohérence trouvée en auditant les Rules à la
-   demande de l'utilisateur) : ce bloc ciblait "feedback" au singulier,
+   Bug de test corrigé : ce bloc ciblait "feedback" au singulier,
    qui ne correspond ni à firestore.rules (match /feedbacks/{feedbackId},
    PLURIEL — voir son commentaire, déjà corrigé dans une session
    précédente) ni au code client réel (tableur.html : addDoc(collection(db,
@@ -591,8 +587,7 @@ describe("Parrainage (referralCodes / referrals)", () => {
 });
 
 /* ============================================================
-   SESSIONS DE TRAVAIL / ENTRAÎNEMENTS DU JOUR — users/{uid}/workSessions/{id}
-   (2026-10-11). Un document par ajout ; champs EXACTS validés ; mise à jour limitée à
+   SESSIONS DE TRAVAIL / ENTRAÎNEMENTS DU JOUR — users/{uid}/workSessions/{id}. Un document par ajout ; champs EXACTS validés ; mise à jour limitée à
    deletedAt/updatedAt ; jamais de suppression physique.
    ============================================================ */
 describe("Sessions de travail (workSessions)", () => {

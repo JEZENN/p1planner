@@ -15,7 +15,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC = process.env.PUBLIC_DIR ? path.resolve(process.env.PUBLIC_DIR) : path.resolve(__dirname, "..", "..", "public"); // PUBLIC_DIR : copie mutante pour les contrôles de sensibilité
-// ⚠️ Ports décalés (2026-09-30, voir env-e2e.mjs) : évite toute collision avec TypixClin (8901/8085/
+// ⚠️ Ports décalés : évite toute collision avec TypixClin (8901/8085/
 // 9099). Storage (9199) et Functions (5001, servi par fn-bridge.mjs, pas le vrai émulateur) restent
 // à leur valeur d'origine — ni l'un ni l'autre ne figure dans la liste des ports TypixClin connus,
 // et 9199 ne collisionne plus avec rien depuis qu'AUTH_PORT est passé à 9198.
@@ -40,7 +40,7 @@ export function patchPage(html) {
   html = html.replace('connectFirestoreEmulator(db, "127.0.0.1", 8080)', `connectFirestoreEmulator(db, "127.0.0.1", ${FS_PORT})`);
   must(html.includes('connectAuthEmulator(auth, "http://127.0.0.1:9099"'), "connectAuthEmulator");
   html = html.replace('connectAuthEmulator(auth, "http://127.0.0.1:9099"', `connectAuthEmulator(auth, "http://127.0.0.1:${AUTH_PORT}"`);
-  // ⚠️ Ancre changée (2026-09-30, D7 — cache Firestore persistant) : "const db =
+  // ⚠️ Ancre changée : "const db =
   // getFirestore(app);" n'existe plus telle quelle (remplacée par un initializeFirestore()
   // try/catch, voir DECISIONS.md). "const _storage = getStorage(app);" reste un point d'ancrage
   // stable juste après, quelle que soit la branche du try/catch empruntée.

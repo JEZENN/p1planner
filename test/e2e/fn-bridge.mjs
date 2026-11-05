@@ -1,4 +1,4 @@
-/* PONT « Cloud Functions » LOCAL pour les tests E2E des pages (2026-09-26).
+/* PONT « Cloud Functions » LOCAL pour les tests E2E des pages.
    Sert le protocole des fonctions « callable » de Firebase (celui que parle
    httpsCallable) sur 127.0.0.1:5001 en exécutant le VRAI code de
    functions/index.js, dans ce processus, contre l'émulateur Firestore (Stripe
