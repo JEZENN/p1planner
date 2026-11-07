@@ -177,7 +177,7 @@ try {
     assert(R.s.every((x) => x.sw <= x.vw), "barre horizontale");
     // fermeture de « Gérer » : descente puis animation dans la page
     await startRec(page);
-    await press(page, "#tpx-mgr-close", false);
+    await press(page, "#tpx-modal-overlay .tpx-modal-close", false);
     await sleep(5200);
     R = await stopRec(page);
     assert(await pageOf(page, "CoursGerer"), "la page n'affiche pas le nouveau cours après la fermeture");

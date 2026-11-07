@@ -102,7 +102,7 @@ try {
     const docs = await waitDocs(u.uid, (d) => d.length === 3);
     assert(docs.map((x) => x.kind + ":" + x.count).sort().join() === "colle:15,colle:25,concours-blanc:100", "documents : " + JSON.stringify(docs.map((x) => [x.kind, x.count])));
     const tiles = await page.evaluate(() => ["colle", "concours-blanc"].map((k) => { const t = document.querySelector(`.ws-tr-tile[data-kind="${k}"]`); return [t.querySelector(".ws-tr-tile-n").textContent, t.querySelector(".ws-tr-tile-t").textContent, t.querySelector(".ws-tr-tile-d").textContent, t.scrollWidth > t.clientWidth + 1]; }));
-    assert(JSON.stringify(tiles) === JSON.stringify([["2", "40 QCM · 1h15", "15 · 25", false], ["1", "100 QCM · 3h00", "100", false]]), "tuiles : " + JSON.stringify(tiles));
+    assert(JSON.stringify(tiles) === JSON.stringify([["2", "40 QCM · 1h15", "15 · 25", false], ["1", "100 QCM · 3h00", "", false]]), "tuiles : " + JSON.stringify(tiles));
     const over = await page.evaluate(() => document.getElementById("p1TrBody").scrollWidth > document.getElementById("p1TrBody").clientWidth + 1);
     assert(!over, "défilement horizontal de la fenêtre sur téléphone");
     assert(page.__errors.length === 0, "erreurs JS : " + JSON.stringify(page.__errors));

@@ -320,7 +320,7 @@ try {
     assert(mid.page === "planning", "la vraie page n'a pas changé : " + mid.page);
     await sleep(1500);
     const up = await page.evaluate(() => { const n = document.querySelector(".app-nav").getBoundingClientRect(); return { y: scrollY, navTop: Math.round(n.top), navBottom: Math.round(n.bottom), hdr: Math.round(document.getElementById("header").getBoundingClientRect().bottom), on: document.getElementById("p1HdrNav").classList.contains("is-on") }; });
-    assert(up.y > 20 && up.navTop >= up.hdr && up.navTop <= up.hdr + 24 && !up.on, "remontée : juste au-dessus de la barre (pas tout en haut) et raccourcis repartis : " + JSON.stringify(up));
+    assert(up.y <= 2 && up.navTop === up.hdr + 10 && !up.on, "remontée : la barre se place à 10 px sous le header (la page est alors tout en haut, sans bandeau) et raccourcis repartis : " + JSON.stringify(up));
     /* la page active suit la vraie barre */
     await page.evaluate(() => window.scrollTo(0, 700)); await sleep(900);
     await page.evaluate(() => document.querySelector('.app-nav-btn[data-page="entrainements"]').click()); await sleep(900);

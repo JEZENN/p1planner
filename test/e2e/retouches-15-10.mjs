@@ -300,7 +300,7 @@ for (const [label, vp] of [["PC", { width: 1366, height: 900 }], ["téléphone 3
 }
 
 /* ── TR1b : changements d'onglet avec 100 lignes par page ── */
-await S("TR1b", "changement d'onglet (100 lignes par page) : le titre reste à l'opacité 1 sur CHAQUE image ; « Mes cours » (lourde) ne montre aucune image décalée ; les autres pages glissent", async () => {
+await S("TR1b", "changement d'onglet (100 lignes par page) : le titre reste à l'opacité 1 sur CHAQUE image ; « Mes cours » (lourde) glisse elle aussi, en douceur (le tableau est calculé avant le glissement) ; les autres pages glissent", async () => {
   const { u, page } = await page_({
     courses: 100,
     seed: async (u) => {
@@ -333,7 +333,7 @@ await S("TR1b", "changement d'onglet (100 lignes par page) : le titre reste à l
   const res = {};
   for (const pg of ["items", "dashboard", "entrainements", "planning", "items"]) { const r = await go(pg); (res[pg] = res[pg] || []).push(r); console.log("   ", pg, JSON.stringify(r)); }
   for (const pg of Object.keys(res)) for (const r of res[pg]) assert(r.n > 0 && r.minOp >= 0.999, `${pg} : titre transparent sur une image (opacité min ${r.minOp})`);
-  for (const r of res.items) assert(r.shifted === 0, `« Mes cours » : ${r.shifted} image(s) décalée(s) (aucune attendue)`);
+  for (const r of res.items) assert(r.shifted >= 8, `« Mes cours » : le glissement doit se jouer en douceur (${r.shifted} image(s) décalée(s), au moins 8 attendues)`);
   for (const pg of ["dashboard", "entrainements", "planning"]) assert(res[pg][0].shifted >= 1, `${pg} : le glissement a disparu (aucune image décalée)`);
   assert(page.__errors.length === 0, "erreurs JS : " + JSON.stringify(page.__errors));
 });

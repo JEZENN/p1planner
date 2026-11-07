@@ -127,11 +127,11 @@ try {
   /* ═════════ RT3 : matière présélectionnée ═════════ */
   const seed3 = seedMany([["s2", "P2"], ["s3", "P3"]], [["s2", 3]]);
   const pickVal = (page) => page.evaluate(() => (document.getElementById("tpx-it-spec") || {}).getAttribute ? document.getElementById("tpx-it-spec").getAttribute("data-value") : null);
-  const setFilter = (page, arr) => page.evaluate((a) => { selectedSpecialties = a; window.renderItemsTable(); }, arr);
+  const setFilter = (page, arr) => page.evaluate((a) => { document.querySelector('.specialty-multi-option[data-value="all"]').click(); a.forEach((id) => { const o = document.querySelector('.specialty-multi-option[data-value="' + id + '"]'); if (o) o.click(); }); }, arr);
   const openNew = async (page, touch) => { await press(page, "#tpx-btn-add-entry", touch); await page.waitForSelector("#tpx-it-spec", { timeout: 8000 }); await sleep(500); };
   const closeModal = async (page) => { await page.evaluate(() => { const o = document.getElementById("tpx-modal-overlay"); if (o) o.querySelector(".tpx-modal-close").click(); }); await sleep(600); };
   for (const [th, vp, id] of [["light", PC, "pc"], ["dark", PC, "pcsombre"], ["pastel", PC, "pcpastel"], ["light", TEL, "tel"]]) {
-    await S("RT3-" + id, `liste filtrée (${id}) : P2 seule → « Nouveau cours » sur P2 (cours enregistré dans P2, numéro 4) ; deux matières / aucun filtre → 1re matière ; changer de matière dans le formulaire fonctionne ; un cours existant garde sa matière`, async () => {
+    await S("RT3-" + id, `liste filtrée (${id}) : P2 seule → « Nouveau cours » sur P2 (cours enregistré dans P2, numéro 4) ; deux matières → la première du filtre ; aucun filtre → 1re matière ; changer de matière dans le formulaire fonctionne ; un cours existant garde sa matière`, async () => {
       const touch = !!vp.isMobile;
       const { u, page } = await open(vp, { theme: th, courses: 1, seed: seed3, pageName: "items" });
       // aucun filtre
@@ -139,7 +139,7 @@ try {
       assert((await pickVal(page)) === "s1", "sans filtre : matière " + (await pickVal(page))); await closeModal(page);
       // deux matières
       await setFilter(page, ["s2", "s3"]); await sleep(400); await openNew(page, touch);
-      assert((await pickVal(page)) === "s1", "deux matières : matière " + (await pickVal(page))); await closeModal(page);
+      assert((await pickVal(page)) === "s2", "deux matières : première du filtre, matière " + (await pickVal(page))); await closeModal(page);
       // une matière inconnue (non existante) : repli
       await setFilter(page, ["inconnue"]); await sleep(400); await openNew(page, touch);
       assert((await pickVal(page)) === "s1", "matière inconnue : " + (await pickVal(page))); await closeModal(page);
@@ -169,12 +169,18 @@ try {
       assert(page.__errors.length === 0, "erreurs JS : " + page.__errors.join(" | "));
     });
   }
-  await S("RT3-vide", "le bouton de l'écran vide « Nouveau cours » et le « Ajouter » de « Gérer » ne présélectionnent pas (1re matière), même avec un filtre sur une matière", async () => {
+  await S("RT3-vide", "le « Ajouter » de « Gérer » présélectionne la matière du filtre de la liste (P2), et la 1re matière sans filtre", async () => {
     const { page } = await open(PC, { courses: 1, seed: seed3, pageName: "items" });
     await setFilter(page, ["s2"]); await sleep(400);
     await press(page, "#tpx-btn-mgr-entry", false); await sleep(900);
     await press(page, "#tpx-mgr-add", false); await page.waitForSelector("#tpx-it-spec", { timeout: 8000 }); await sleep(500);
-    assert((await pickVal(page)) === "s1", "« Ajouter » de « Gérer » : " + (await pickVal(page)));
+    assert((await pickVal(page)) === "s2", "« Ajouter » de « Gérer » avec le filtre P2 : " + (await pickVal(page)));
+    await closeModal(page); await sleep(900);
+    await page.evaluate(() => { const b = document.querySelector("#tpx-modal-overlay .tpx-modal-close"); if (b) b.click(); }); await sleep(900);
+    await setFilter(page, []); await sleep(300);
+    await press(page, "#tpx-btn-mgr-entry", false); await sleep(900);
+    await press(page, "#tpx-mgr-add", false); await page.waitForSelector("#tpx-it-spec", { timeout: 8000 }); await sleep(500);
+    assert((await pickVal(page)) === "s1", "« Ajouter » de « Gérer » sans filtre : " + (await pickVal(page)));
   });
 } finally {
   const code = report();

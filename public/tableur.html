@@ -2276,7 +2276,13 @@ html[data-theme="dark"]::-webkit-scrollbar-thumb:hover { background: linear-grad
 .mobile-menu { position: fixed; top: var(--header-height); left: 0; width: 100%; background-color: var(--white); padding: 2rem; z-index: calc(var(--z-sticky) - 1); box-shadow: var(--shadow-lg); transform: translateY(-100%); opacity: 0; visibility: hidden; transition: all var(--transition-normal); display: flex; flex-direction: column; gap: 1.5rem; }
 .mobile-menu.active { transform: translateY(0); opacity: 1; visibility: visible; }
 
-.page-header { padding-top: calc(var(--header-height) + 2rem); padding-bottom: 1.5rem; background: linear-gradient(135deg, rgba(239, 246, 255, 0.8) 0%, rgba(219, 234, 254, 0.8) 100%); text-align: center; }
+/* écart entre le header fixe et la barre d'onglets = celui du défilement au clic sur un onglet (header + 10 px) ;
+   --p1-main-pt reprend le padding haut de .main-content (mêmes seuils de largeur) */
+:root { --p1-nav-gap: 10px; --p1-main-pt: 1.5rem; }
+@media (max-width: 768px) { :root { --p1-main-pt: 1rem; } }
+@media (max-width: 480px) { :root { --p1-main-pt: 0.75rem; } }
+.page-header .page-title, .page-header .welcome-message, .page-header .page-subtitle { display: none !important; }
+.page-header { padding-top: calc(var(--header-height) + var(--p1-nav-gap) - var(--p1-main-pt)); padding-bottom: 0; background: linear-gradient(135deg, rgba(239, 246, 255, 0.8) 0%, rgba(219, 234, 254, 0.8) 100%); text-align: center; }
 [data-theme="dark"] .page-header { background: linear-gradient(135deg, rgba(17, 24, 39, 0.8) 0%, rgba(31, 41, 55, 0.8) 100%); }
 .page-title { font-size: 2.2rem; font-weight: 800; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 0.5rem; animation: fadeInUp var(--transition-slow) forwards; }
 .page-subtitle { font-size: 1rem; color: var(--gray-600); max-width: 600px; margin: 0 auto 1rem; }
@@ -14673,8 +14679,22 @@ window._getScrollbarWidth = function() {
   transition:color .3s ease, opacity .2s ease;
 }
 .ct-sign-l { left:6px; } .ct-sign-r { right:6px; }
-@keyframes ctflip { 0%{transform:scaleY(1);}40%{transform:scaleY(0);}100%{transform:scaleY(1);} }
-.ct-num.flip { animation:ctflip .18s ease; }
+/* Changement de chiffre : l'ancien glisse et s'efface, le nouveau arrive du côté opposé (vers le haut si on ajoute, vers le bas si on retire) */
+.ct-num-v { display:block; }
+.ct-num::after { content:attr(data-prev); position:absolute; inset:0; display:none; align-items:center; justify-content:center; }
+.ct-num.ct-roll-up::after, .ct-num.ct-roll-down::after { display:flex; }
+.ct-num.ct-roll-up .ct-num-v { animation:ctRollInUp .26s cubic-bezier(.2,.7,.3,1) var(--ct-d,0ms) both; }
+.ct-num.ct-roll-up::after { animation:ctRollOutUp .26s cubic-bezier(.2,.7,.3,1) var(--ct-d,0ms) both; }
+.ct-num.ct-roll-down .ct-num-v { animation:ctRollInDown .26s cubic-bezier(.2,.7,.3,1) var(--ct-d,0ms) both; }
+.ct-num.ct-roll-down::after { animation:ctRollOutDown .26s cubic-bezier(.2,.7,.3,1) var(--ct-d,0ms) both; }
+@keyframes ctRollInUp { from { transform:translateY(58%); opacity:0; } to { transform:translateY(0); opacity:1; } }
+@keyframes ctRollOutUp { from { transform:translateY(0); opacity:1; } to { transform:translateY(-58%); opacity:0; } }
+@keyframes ctRollInDown { from { transform:translateY(-58%); opacity:0; } to { transform:translateY(0); opacity:1; } }
+@keyframes ctRollOutDown { from { transform:translateY(0); opacity:1; } to { transform:translateY(58%); opacity:0; } }
+@media (prefers-reduced-motion: reduce) {
+  .ct-num.ct-roll-up .ct-num-v, .ct-num.ct-roll-down .ct-num-v { animation:none; }
+  .ct-num.ct-roll-up::after, .ct-num.ct-roll-down::after { display:none; animation:none; }
+}
 
 /* Bloc confiance — même gabarit que la tuile Tours, contour moyen, LECTURE SEULE */
 .ct-conf {
@@ -15640,6 +15660,24 @@ window.TPXNotesPending = {
     box-shadow: 0 2px 8px var(--tpx-accent-30);
 }
 .tpx-btn-primary:hover { box-shadow: 0 6px 18px var(--tpx-accent-45); }
+/* Fenêtres de création et de gestion : survol et appui sur les boutons principal, secondaire (Annuler…), suppression et confirmation */
+#tpx-modal-overlay .tpx-btn-primary:not(:disabled), #tpx-modal-overlay .tpx-btn-confirm-danger:not(:disabled) { transition: box-shadow 0.16s ease, transform 0.16s ease, filter 0.16s ease; }
+#tpx-modal-overlay .tpx-btn-danger:not(:disabled), #tpx-modal-overlay .tpx-btn:not(.tpx-btn-primary):not(.tpx-btn-danger):not(.tpx-btn-confirm-danger):not(:disabled) { transition: background 0.14s ease, color 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease, transform 0.14s ease; }
+#tpx-modal-overlay .tpx-btn:not(.tpx-btn-primary):not(.tpx-btn-danger):not(.tpx-btn-confirm-danger) { background: #f1f5f9; border-color: #e2e8f0; color: #475569; }
+[data-theme="dark"] #tpx-modal-overlay .tpx-btn:not(.tpx-btn-primary):not(.tpx-btn-danger):not(.tpx-btn-confirm-danger) { background: rgba(148, 163, 184, 0.12); border-color: rgba(148, 163, 184, 0.28); color: #cbd5e1; }
+@media (hover: hover) {
+    #tpx-modal-overlay .tpx-btn-primary:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.06); box-shadow: 0 8px 20px var(--tpx-accent-45); }
+    #tpx-modal-overlay .tpx-btn-confirm-danger:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.06); }
+    #tpx-modal-overlay .tpx-btn-danger:hover:not(:disabled) { background: #ef4444; border-color: #ef4444; color: #fff; box-shadow: 0 3px 10px rgba(239, 68, 68, 0.35); }
+    #tpx-modal-overlay .tpx-btn:not(.tpx-btn-primary):not(.tpx-btn-danger):not(.tpx-btn-confirm-danger):hover:not(:disabled) { background: #e2e8f0; border-color: #cbd5e1; color: #1e293b; transform: translateY(-1px); box-shadow: 0 3px 10px rgba(15, 23, 42, 0.10); }
+    [data-theme="dark"] #tpx-modal-overlay .tpx-btn:not(.tpx-btn-primary):not(.tpx-btn-danger):not(.tpx-btn-confirm-danger):hover:not(:disabled) { background: rgba(148, 163, 184, 0.26); border-color: rgba(148, 163, 184, 0.5); color: #f1f5f9; }
+}
+#tpx-modal-overlay .tpx-btn-danger:active:not(:disabled) { background: #dc2626; border-color: #dc2626; color: #fff; box-shadow: none; transform: scale(0.96); }
+#tpx-modal-overlay .tpx-btn-primary:active:not(:disabled) { transform: translateY(0) scale(0.96); filter: brightness(0.92); box-shadow: 0 2px 6px var(--tpx-accent-30); }
+#tpx-modal-overlay .tpx-btn-confirm-danger:active:not(:disabled) { transform: translateY(0) scale(0.96); filter: brightness(0.92); }
+#tpx-modal-overlay .tpx-btn:not(.tpx-btn-primary):not(.tpx-btn-danger):not(.tpx-btn-confirm-danger):active:not(:disabled) { background: #cbd5e1; border-color: #94a3b8; color: #0f172a; box-shadow: none; transform: scale(0.96); }
+[data-theme="dark"] #tpx-modal-overlay .tpx-btn:not(.tpx-btn-primary):not(.tpx-btn-danger):not(.tpx-btn-confirm-danger):active:not(:disabled) { background: rgba(148, 163, 184, 0.38); border-color: rgba(148, 163, 184, 0.6); color: #f8fafc; }
+@media (prefers-reduced-motion: reduce) { #tpx-modal-overlay .tpx-btn { transition: none; } #tpx-modal-overlay .tpx-btn:hover, #tpx-modal-overlay .tpx-btn:active { transform: none; } }
 .tpx-btn-danger { border-color: var(--tpx-danger-35); color: var(--tpx-danger-text); }
 .tpx-btn-danger:hover { background: var(--tpx-danger-08); border-color: var(--tpx-danger); }
 .tpx-btn-confirm-danger {
@@ -16835,16 +16873,12 @@ window.TPXNotesPending = {
 #p1-skel { display: none; }
 html.p1-skel #loader, html.p1-noloader #loader { display: none !important; }   /* p1-noloader : jamais retirée (l'ancien écran ne réapparaît pas à la fin du squelette) */
 html.p1-skel #main-content, html.p1-skel #presentation-section { display: none !important; }
-html.p1-skel #p1-skel { display: block; padding: 1.5rem; transition: opacity 0.2s ease; }
+html.p1-skel #p1-skel { display: block; padding: var(--p1-main-pt) 1.5rem 1.5rem; transition: opacity 0.2s ease; }
 html.p1-skel.p1-skel-out #p1-skel { opacity: 0; }
 html.p1-skel-in #main-content { animation: p1SkelIn 0.35s ease both; }
 @keyframes p1SkelIn { from { opacity: 0; } to { opacity: 1; } }
 .p1-sk { display: block; border-radius: 8px; background: linear-gradient(90deg, var(--gray-200) 25%, var(--gray-100) 37%, var(--gray-200) 63%); background-size: 400% 100%; animation: p1SkBg 1.4s ease infinite; }
 @keyframes p1SkBg { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
-html.p1-skel #welcome-message:empty { display: block; position: relative; }
-html.p1-skel #welcome-message:empty::before { content: '\00a0'; }   /* une ligne de texte de haut, comme le vrai message */
-html.p1-skel #welcome-message:empty::after { content: ''; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 230px; max-width: 70%; height: 18px; border-radius: 8px;
-    background: linear-gradient(90deg, var(--gray-200) 25%, var(--gray-100) 37%, var(--gray-200) 63%); background-size: 400% 100%; animation: p1SkBg 1.4s ease infinite; }
 html.p1-skel .user-auth:not(.logged-in) .auth-btn { visibility: hidden; }
 html.p1-skel .user-auth .user-avatar { color: transparent !important; background: linear-gradient(90deg, var(--gray-200) 25%, var(--gray-100) 37%, var(--gray-200) 63%) !important; background-size: 400% 100% !important; animation: p1SkBg 1.4s ease infinite; box-shadow: none !important; }
 html.p1-skel .user-auth .avatar-notif-dot, html.p1-skel .user-auth .avatar-whatsnew-dot { display: none !important; }
@@ -16888,7 +16922,7 @@ html.p1-skel-noj .p1-sk-j { display: none; }
 .p1-sk-chip { width: 64px; height: 26px; border-radius: 999px; }
 .p1-sk-bar { height: 7px; border-radius: 999px; margin-top: auto; }
 @media (max-width: 768px) {
-    html.p1-skel #p1-skel { padding: 12px 4px; }
+    html.p1-skel #p1-skel { padding: var(--p1-main-pt) 4px 12px; }
     .p1-sk-tools .p1-sk { height: 40px; }
     .p1-sk-navbar .p1-sk { max-width: 52px; height: 40px; border-radius: 12px; } .p1-sk-navbar .p1-sk:not(.on) { height: 22px; max-width: 26px; }
     .p1-sk-head { padding: 16px; } .p1-sk-btn { width: 44px; } .p1-sk-title { width: 140px; }
@@ -16906,7 +16940,18 @@ html.p1-skel-noj .p1-sk-j { display: none; }
 .p1-skl-pill { width: 56px; height: 22px; border-radius: 999px; flex: none; }
 .p1-skl-flash .p1-skl-row { padding: 10px 12px; border: 1px solid var(--gray-200); border-radius: 12px; }
 .p1-skl-list .p1-skl-row { padding: 6px 4px; }
-@media (prefers-reduced-motion: reduce) { .p1-sk, html.p1-skel #welcome-message:empty::after, html.p1-skel .user-auth:not(.logged-in)::after { animation: none; } html.p1-skel-in #main-content { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .p1-sk, html.p1-skel .user-auth:not(.logged-in)::after { animation: none; } html.p1-skel-in #main-content { animation: none; } }
+</style>
+<style id="p1-greet-css">
+/* salutation éphémère du header (le texte vient du message de bienvenue, masqué dans le bandeau) */
+.p1-greet { position: absolute; left: 50%; top: 0; width: 0; height: var(--header-height); pointer-events: none; z-index: 2; }
+.p1-greet-pill { position: absolute; left: 0; top: 50%; transform: translate(-50%, -50%); box-sizing: border-box; padding: 0.38rem 1rem; border-radius: 999px; white-space: nowrap;
+    background: var(--white); color: var(--gray-700); border: 1px solid var(--gray-200); box-shadow: 0 4px 14px rgba(15, 23, 42, 0.1);
+    font-size: 0.9rem; font-weight: 600; line-height: 1.35; text-align: center; opacity: 0; animation: p1GreetLife 2800ms ease both; }
+.p1-greet-pill.is-below { top: calc(var(--header-height) + 10px); transform: translate(-50%, 0); white-space: normal; width: max-content; max-width: calc(100vw - 24px); }
+@keyframes p1GreetLife { 0% { opacity: 0; translate: 0 -8px; } 11% { opacity: 1; translate: 0 0; } 84% { opacity: 1; translate: 0 0; } 100% { opacity: 0; translate: 0 0; } }
+@keyframes p1GreetFade { 0% { opacity: 0; } 11% { opacity: 1; } 84% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .p1-greet-pill { animation-name: p1GreetFade; } }
 </style>
 <script id="p1-skel-early">document.documentElement.classList.add('p1-skel', 'p1-noloader');
 /* case « Révisions J » du squelette : seulement si la Méthode des J est activée (même clé que l'application, lue sans attendre la connexion) */
@@ -16984,6 +17029,7 @@ try { var _p1j = false; for (var _i = 0; _i < localStorage.length; _i++) { var _
             </div>
         </nav>
     </div>
+    <div class="p1-greet" id="p1-greet" role="status" aria-live="polite" aria-atomic="true"></div>
 </header>
 
 <section class="page-header">
@@ -17480,7 +17526,7 @@ window.p1SkelHTML = function (kind) {
 		<!-- Section Cours à revoir en priorité -->
 <div class="stats-section-title priority-section">
     <i class="fas fa-fire"></i> Cours à revoir en priorité
-    <span class="scope-ref-badge" style="display:none;" data-tooltip="Liste établie à partir des items traités dans les collèges de référence uniquement"><i class="fas fa-star"></i> Référence</span>
+    <span class="scope-ref-badge" style="display:none;" data-tooltip="Liste établie à partir des cours traités dans les collèges de référence uniquement"><i class="fas fa-star"></i> Référence</span>
     <span class="help-icon" onclick="openHelpModal('stats-priority')">?</span>
 </div>
 <div class="priority-items-grid" id="priority-items-list">
@@ -17489,7 +17535,7 @@ window.p1SkelHTML = function (kind) {
 	<!-- Section Classement des matières fortes -->
 <div class="stats-section-title ranking">
     <i class="fas fa-medal"></i> Mes matières préférées
-    <span class="scope-ref-badge" style="display:none;" data-tooltip="Liste établie à partir des items traités dans les collèges de référence uniquement"><i class="fas fa-star"></i> Référence</span>
+    <span class="scope-ref-badge" style="display:none;" data-tooltip="Liste établie à partir des cours traités dans les collèges de référence uniquement"><i class="fas fa-star"></i> Référence</span>
     <span class="help-icon" onclick="openHelpModal('stats-favorites')">?</span>
 </div>
     <div class="specialty-ranking-container" id="specialty-ranking">
@@ -18007,7 +18053,7 @@ window.p1SkelHTML = function (kind) {
 								</button>
 								<div class="pagination-info">
 									<span class="pagination-current" id="pagination-current-top">1 / 8</span>
-									<span class="pagination-total" id="pagination-total-top">760 items</span>
+									<span class="pagination-total" id="pagination-total-top">760 cours</span>
 								</div>
 								<button class="pagination-btn" id="pagination-next-top" title="Page suivante">
 									<i class="fas fa-chevron-right"></i>
@@ -18110,7 +18156,7 @@ window.p1SkelHTML = function (kind) {
         
         <div class="empty-state" id="items-empty" style="display: none;">
             <i class="fas fa-search"></i>
-            <p>Aucun item ne correspond</p>
+            <p>Aucun cours ne correspond</p>
         </div>
         
         <!-- Pagination Bas -->
@@ -18124,7 +18170,7 @@ window.p1SkelHTML = function (kind) {
             
             <div class="pagination-info">
                 <span class="pagination-current" id="pagination-current-bottom">1 / 8</span>
-                <span class="pagination-total" id="pagination-total-bottom">760 items</span>
+                <span class="pagination-total" id="pagination-total-bottom">760 cours</span>
             </div>
             
             <button class="pagination-btn" id="pagination-next-bottom" title="Page suivante">
@@ -18142,7 +18188,7 @@ window.p1SkelHTML = function (kind) {
                 </button>
                 <div class="custom-dropdown-menu" id="pagination-dropdown-menu">
                     <div class="custom-dropdown-header">
-                        <i class="fas fa-bars"></i> Items par page
+                        <i class="fas fa-bars"></i> Cours par page
                     </div>
                     <div class="custom-dropdown-option" data-value="30">30 / page</div>
                     <div class="custom-dropdown-option selected" data-value="50">50 / page</div>
@@ -19072,7 +19118,7 @@ window.p1SkelHTML = function (kind) {
 .flash-drawer-name { flex:1; min-width:0; font-size:0.84rem; font-weight:600; color: var(--gray-800); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 [data-theme="dark"] .flash-drawer-name { color: var(--gray-800); }
 
-/* ===== Sous-panneau "Toutes les flashcards" / "Choisir des items" =====
+/* ===== Sous-panneau "Toutes les flashcards" / "Choisir des cours" =====
    Indenté avec filet à gauche (cf référence : .flash-drawer-sub /
    .flash-drawer-sub-inner) pour lire visuellement comme le contenu "enfant"
    de la carte matière, pas comme une section détachée. */
@@ -20440,6 +20486,7 @@ body.tours-compact #sort-specialty-dropdown .custom-select-option[data-value="ti
       <button type="button" id="flashDrawerSelectAllBtn" onclick="window.selectAllFlashMatieres()"><i class="fas fa-square-check" id="flashDrawerSelectAllIcon" style="display:none;"></i> <span>Tout sélectionner</span></button>
       <button type="button" id="flashDrawerDueOnlyBtn" onclick="window.selectDueFlashMatieres()"><i class="fas fa-bolt"></i> Uniquement les dues</button>
     </div>
+    <div class="flash-drawer-opts" id="flashDrawerOpts"></div>
     <div class="flash-drawer-list" id="flashDrawerList"></div>
     <div class="flash-drawer-footer">
       <span id="flashDrawerCount">0 carte sélectionnée</span>
@@ -20701,7 +20748,7 @@ body.tours-compact #sort-specialty-dropdown .custom-select-option[data-value="ti
           <button class="notes-close-btn" onclick="closeResourcesConfigModal()"><i class="fas fa-times"></i></button>
         </div>
         <div class="resources-config-body">
-        <p class="resources-config-subtitle">Sélectionnez jusqu’à 3 ressources à afficher pour chaque item, vous pourrez ensuite les valider en fonction de votre avancée.</p>
+        <p class="resources-config-subtitle">Sélectionnez jusqu’à 3 ressources à afficher pour chaque cours, vous pourrez ensuite les valider en fonction de votre avancée.</p>
         <div class="resources-selected-count">
             <span id="resources-count">0</span> / 3 ressources sélectionnées
         </div>
@@ -21453,7 +21500,7 @@ body.tours-compact #sort-specialty-dropdown .custom-select-option[data-value="ti
                     <div class="settings-card-icon tours"><i class="fas fa-list-ul"></i></div>
                     <div class="settings-card-titles">
                         <div class="settings-card-title">Affichage des tours</div>
-                        <div class="settings-card-sub">Choisissez la manière dont les tours de révision seront affichés dans la liste des items.</div>
+                        <div class="settings-card-sub">Choisissez la manière dont les tours de révision seront affichés dans la liste des cours.</div>
                     </div>
                 </div>
 
@@ -24183,7 +24230,7 @@ function startUserSettingsListener(userId) {
 function stopUserSettingsListener() {
     if (unsubscribeUserSettings) { unsubscribeUserSettings(); unsubscribeUserSettings = null; }
 }
-let currentSort = { field: 'name', direction: 'asc' }; // P1Planner : "num" = id Firestore, tri par nom par défaut
+let currentSort = { field: 'num', direction: 'asc' }; // tri par défaut : matière puis numéro d'affichage (courseNum)
 let pendingTour = null;
 
 
@@ -25678,7 +25725,7 @@ function loadUserData(userId) {
 								title: 'Protection des données activée',
 								message: 'Une tentative d\'écrasement de vos données a été détectée et bloquée.',
 								details: [
-									{ icon: 'shield-alt', text: `${Object.keys(userData.items).length} items protégés` },
+									{ icon: 'shield-alt', text: `${Object.keys(userData.items).length} cours protégés` },
 									{ icon: 'database', text: 'Vos données sont en sécurité' }
 								],
 								primaryBtn: { text: 'OK, merci', action: () => {} }
@@ -27144,7 +27191,7 @@ async function updateBackupModalContent() {
     statusGrid.innerHTML = `
         <div class="backup-status-item">
             <i class="fas fa-check-circle"></i>
-            <span>${content.items} items et leurs tours</span>
+            <span>${content.items} cours et leurs tours</span>
         </div>
         <div class="backup-status-item">
             <i class="fas fa-check-circle"></i>
@@ -27238,7 +27285,7 @@ if (!canPerformAction('save')) return;
         message: 'Vos données actuelles seront remplacées par cette sauvegarde. Cette action est irréversible.',
         details: [
             { icon: 'calendar-alt', text: formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1) },
-            { icon: 'file-alt', text: `${itemsCount} items et leurs tours seront restaurés` },
+            { icon: 'file-alt', text: `${itemsCount} cours et leurs tours seront restaurés` },
 			{ icon: 'file-alt', text: `Le planning et la To-do List seront également restaurés` }
 
         ],
@@ -27287,7 +27334,7 @@ if (!canPerformAction('save')) return;
         details: [
             { icon: 'cloud', text: 'Sauvegarde cloud' },
             { icon: 'calendar-alt', text: formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1) },
-            { icon: 'file-alt', text: `${firebaseBackup.itemsCount} items et leurs tours seront restaurés` },
+            { icon: 'file-alt', text: `${firebaseBackup.itemsCount} cours et leurs tours seront restaurés` },
 			{ icon: 'file-alt', text: `Le planning et la To-do List seront également restaurés` }
         ],
         cancelText: 'Annuler',
@@ -27369,7 +27416,7 @@ async function performRestoreFirebase() {
                 title: 'Restauration cloud réussie !',
                 message: 'Vos données ont été restaurées depuis le cloud avec succès.',
                 details: [
-                    { icon: 'file-alt', text: `${itemsRestored} items et leurs tours récupérés` },
+                    { icon: 'file-alt', text: `${itemsRestored} cours et leurs tours récupérés` },
                     { icon: 'trophy', text: `${Object.keys(userData.trophies || {}).length} trophées` },
                     { icon: 'calendar', text: `${Object.keys(userData.planningData || {}).length} jours de planning et la To-do List` }
                 ],
@@ -27458,7 +27505,7 @@ if (content.items === 0) {
                 title: 'Sauvegarde créée !',
                 message: 'Votre sauvegarde a été créée localement ET sur le cloud.',
                 details: [
-                    { icon: 'file-alt', text: `${content.items} items et leurs tours sauvegardés` },
+                    { icon: 'file-alt', text: `${content.items} cours et leurs tours sauvegardés` },
 					{ icon: 'file-alt', text: `Planning et To-Do List sauvegardés` },
                     { icon: 'cloud', text: 'Sauvegarde cloud ✓' }
                 ],
@@ -28163,6 +28210,7 @@ function _p1ApplyCatalogsSnapshot(data) {
     try { applyUserSettings(data); } catch (e) { console.warn('[P1] applyUserSettings (settings/preferences)', e); }
     window._p1FlashSettingsRaw = data.flashSettings || null;
     try { if (window.p1FlashPause) window.p1FlashPause.apply(data.flashSettings); } catch (e) { console.warn('[P1] pause des révisions', e); }
+    try { if (window.P1FlashAlgo) window.P1FlashAlgo.setRemote(data.flashSettings, window.currentUser && window.currentUser.uid); } catch (e) { console.warn('[P1] réglages des flashcards', e); }
     // Catalogues personnalisés d'abord : AVAILABLE_RESOURCES/AVAILABLE_SUPPORTS doivent
     // refléter le vrai catalogue de l'utilisateur AVANT le filtrage de selectedResources
     // ci-dessous (qui dépend de la liste d'id valides). ALL_*_FULL garde aussi les entrées
@@ -29684,7 +29732,7 @@ function renderPriorityItems() {
     });
 
     if (allItems.length === 0) {
-			container.innerHTML = '<div class="priority-empty"><i class="fas fa-fire"></i><p>Aucun item révisé pour l\'instant !</p></div>';
+			container.innerHTML = '<div class="priority-empty"><i class="fas fa-fire"></i><p>Aucun cours révisé pour l\'instant !</p></div>';
 			container.style.border = 'none';
 			container.style.background = 'none';
         return;
@@ -30244,7 +30292,7 @@ function getTotalPages() {
 function updatePaginationUI() {
     const totalPages = getTotalPages();
     const currentText = itemsPerPage === 'all' ? '1 / 1' : currentPage + ' / ' + totalPages;
-    const totalText = totalFilteredItems + ' items';
+    const totalText = totalFilteredItems + ' cours';
     
     // Mettre à jour les deux paginations (haut et bas)
     ['top', 'bottom'].forEach(pos => {
@@ -30381,11 +30429,11 @@ function renderItemsTable() {
     const filterStatus = document.getElementById('filter-item-status')?.value || 'all';
 
     let allItems = [];
-    SPECIALTIES_DATA.forEach(s => {
+    SPECIALTIES_DATA.forEach((s, specialtyIndex) => {
         s.items.forEach(item => {
             const d = getItemData(s.id, item.fc);
             const lastDate = d.tourDates.filter(x => x).pop() || d.lastRevision;
-            allItems.push({ ...item, specialtyId: s.id, specialtyName: s.name, daysSince: getDaysSince(lastDate), toursCompleted: d.tours.filter(t => t !== null).length });
+            allItems.push({ ...item, specialtyId: s.id, specialtyIndex: specialtyIndex, specialtyName: s.name, daysSince: getDaysSince(lastDate), toursCompleted: d.tours.filter(t => t !== null).length });
         });
     });
 
@@ -30416,7 +30464,7 @@ const matchSpec = selectedSpecialties.length === 0 || selectedSpecialties.includ
     // Tri
     filtered.sort((a, b) => {
         let cmp = 0;
-        if (currentSort.field === 'num') cmp = a.displayNum - b.displayNum;
+        if (currentSort.field === 'num') cmp = (a.specialtyIndex - b.specialtyIndex) || (a.displayNum - b.displayNum) || a.name.localeCompare(b.name);
         else if (currentSort.field === 'name') cmp = a.name.localeCompare(b.name);
         else if (currentSort.field === 'specialty') cmp = a.specialtyName.localeCompare(b.specialtyName);
         else if (currentSort.field === 'days') cmp = (a.daysSince ?? 9999) - (b.daysSince ?? 9999);
@@ -30471,7 +30519,7 @@ const matchSpec = selectedSpecialties.length === 0 || selectedSpecialties.includ
             });
         } else {
             emptyState.className = 'empty-state';
-            emptyState.innerHTML = '<i class="fas fa-search"></i><p>Aucun item ne correspond</p>';
+            emptyState.innerHTML = '<i class="fas fa-search"></i><p>Aucun cours ne correspond</p>';
         }
         emptyState.style.display = ''; 
         return; 
@@ -30799,6 +30847,7 @@ document.getElementById('filter-item-status')?.addEventListener('change', functi
 // ===== MULTI-SELECT SPÉCIALITÉS =====
 const MAX_SPECIALTY_SELECTION = 4;
 let selectedSpecialties = []; // Tableau des spécialités sélectionnées
+window.p1GetSelectedSpecialties = function () { return selectedSpecialties.slice(); };   // lecture du filtre depuis les autres scripts (la variable est locale au module)
 
 function initSpecialtyMultiSelect() {
     const container = document.getElementById('specialty-dropdown');
@@ -31026,7 +31075,7 @@ window.removeSpecialtyChip = function(event, sId) {
 window.navigateToSpecialty = function(sId) {
     document.querySelectorAll('.app-nav-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.app-page').forEach(p => p.classList.remove('active'));
-    document.querySelector('[data-page="items"]').classList.add('active');
+    document.querySelector('.app-nav-btn[data-page="items"]').classList.add('active');
     document.getElementById('page-items').classList.add('active');
     if (window._syncNavPill) window._syncNavPill();
 
@@ -31769,7 +31818,7 @@ document.addEventListener('keydown', function(e) {
 window.navigateToSpecialty = function(sId) {
     document.querySelectorAll('.app-nav-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.app-page').forEach(p => p.classList.remove('active'));
-    document.querySelector('[data-page="items"]').classList.add('active');
+    document.querySelector('.app-nav-btn[data-page="items"]').classList.add('active');
     document.getElementById('page-items').classList.add('active');
     if (window._syncNavPill) window._syncNavPill();
 
@@ -31936,9 +31985,7 @@ renderSpecialtyOptions();
         statusDropdown.querySelector('[data-value="all"]').classList.add('selected');
     }
     
-    // P1Planner : tri par "num" n'a plus de sens (id Firestore, pas un vrai
-    // numéro) — tri alphabétique par défaut à la place.
-    currentSort = { field: 'name', direction: 'asc' };
+    currentSort = { field: 'num', direction: 'asc' };
     renderItemsTable();
 
     // Retirer l'indicateur visuel de tri (sélecteur bleu)
@@ -31946,7 +31993,7 @@ renderSpecialtyOptions();
         h.classList.remove('sorted', 'sort-desc');
         const ic = h.querySelector('.sort-icon'); if(ic){ic.classList.remove('fa-arrow-down','fa-arrow-up');ic.classList.add('fa-sort');}
     });
-    const _defNum = document.querySelector('#page-items .items-table th[data-sort="name"]');
+    const _defNum = document.querySelector('#page-items .items-table th[data-sort="num"]');
     if (_defNum) { _defNum.classList.add('sorted'); const ic=_defNum.querySelector('.sort-icon'); if(ic){ic.classList.remove('fa-sort','fa-arrow-up');ic.classList.add('fa-arrow-down');} } // ✅ ajouté
 
     // Scroll jusqu'aux boutons de navigation
@@ -32608,7 +32655,7 @@ let ignoreScrollClose = false;
             function (snap) {
                 snap.docChanges().forEach(function (ch) {
                     if (ch.type === 'removed') delete _tasksById[ch.doc.id];
-                    else _tasksById[ch.doc.id] = Object.assign({ id: ch.doc.id }, ch.doc.data());
+                    else _tasksById[ch.doc.id] = Object.assign({ id: ch.doc.id }, ch.doc.data({ serverTimestamps: 'estimate' }));
                 });
                 checklistData = Object.keys(_tasksById)
                     .map(function (id) { return _tasksById[id]; })
@@ -34478,7 +34525,7 @@ function addItemFromTable(specialtyId, fc, itemNum, itemName, specialtyColor, sp
     const exists = checklistData.some(item => item.itemKey === itemKey);
     
     if (exists) {
-        return { success: false, message: 'Cet item est déjà dans la to-do List !' };
+        return { success: false, message: 'Ce cours est déjà dans la To-do List !' };
     }
     
     const shortName = itemName.length > 45 ? itemName.substring(0, 42) + '...' : itemName;
@@ -34508,7 +34555,7 @@ function addItemFromTable(specialtyId, fc, itemNum, itemName, specialtyColor, sp
     // checklistData et redessine dès que l'écriture aboutit.
     p1CreateTask(newItem);
 
-    return { success: true, message: (displayNum != null ? 'Cours ' + displayNum : 'Item') + ' ajouté à la To-do List !' };
+    return { success: true, message: (displayNum != null ? 'Cours ' + displayNum : 'Cours') + ' ajouté à la To-do List !' };
 }
 
 function completeChecklistItem(id) {
@@ -35222,11 +35269,17 @@ document.querySelectorAll('.app-nav-btn').forEach(btn => {
 
         // Rafraîchir la table des items quand on ouvre la page "Mes cours"
         if (this.dataset.page === 'items') {
-            setTimeout(function() {
-                if (typeof renderItemsTable === 'function') {
-                    renderItemsTable();
-                }
-            }, 50);
+            if (typeof renderItemsTable === 'function') {
+                try { renderItemsTable(); } catch (e) { console.warn('[Mes cours] rendu du tableau impossible :', e); }
+            }
+            var _pgItems = document.getElementById('page-items');
+            if (_pgItems) {
+                requestAnimationFrame(function () {
+                    if (!_pgItems.classList.contains('active')) return;
+                    _pgItems.classList.remove('p1-items-in'); void _pgItems.offsetWidth; _pgItems.classList.add('p1-items-in');
+                    setTimeout(function () { _pgItems.classList.remove('p1-items-in'); }, 340);
+                });
+            }
         }
         
         // Rafraîchir les stats et trophées quand on ouvre la page "Statistiques"
@@ -39860,7 +39913,7 @@ body.tc-kb-open-phone .flash-expand-btn {
             <span class="tours-today-metric-label">Note affichée :</span>
             <button type="button" class="seg-switch tours-metric-seg" id="toursTodayMetricToggle" data-active="avg" role="switch" aria-checked="false" aria-label="Type de note affichée">
                 <span class="seg-thumb" aria-hidden="true"></span>
-                <span class="seg-opt seg-opt-left active" data-metric="avg" onclick="setToursTodayMetric('avg')"><i class="fas fa-chart-line"></i><span class="metric-label-full">Moyenne de l'item</span><span class="metric-label-short">Moy. item</span></span>
+                <span class="seg-opt seg-opt-left active" data-metric="avg" onclick="setToursTodayMetric('avg')"><i class="fas fa-chart-line"></i><span class="metric-label-full">Moyenne du cours</span><span class="metric-label-short">Moy. cours</span></span>
                 <span class="seg-opt seg-opt-right" data-metric="today" onclick="setToursTodayMetric('today')"><i class="fas fa-gauge-high"></i><span class="metric-label-full">Confiance sur le tour</span><span class="metric-label-short">Confiance tour</span></span>
             </button>
         </div>
@@ -39896,7 +39949,7 @@ body.tc-kb-open-phone .flash-expand-btn {
             <span class="tours-today-metric-label">Note affichée :</span>
             <button type="button" class="seg-switch tours-metric-seg" id="toursWeekMetricToggle" data-active="avg" role="switch" aria-checked="false" aria-label="Type de note affichée">
                 <span class="seg-thumb" aria-hidden="true"></span>
-                <span class="seg-opt seg-opt-left active" data-metric="avg" onclick="setToursWeekMetric('avg')"><i class="fas fa-chart-line"></i><span class="metric-label-full">Moyenne de l'item</span><span class="metric-label-short">Moy. item</span></span>
+                <span class="seg-opt seg-opt-left active" data-metric="avg" onclick="setToursWeekMetric('avg')"><i class="fas fa-chart-line"></i><span class="metric-label-full">Moyenne du cours</span><span class="metric-label-short">Moy. cours</span></span>
                 <span class="seg-opt seg-opt-right" data-metric="today" onclick="setToursWeekMetric('today')"><i class="fas fa-gauge-high"></i><span class="metric-label-full">Confiance sur le tour</span><span class="metric-label-short">Confiance tour</span></span>
             </button>
         </div>
@@ -41841,7 +41894,7 @@ document.addEventListener('mousedown', function(e) {
 
 function notesClear(event) {
     event.preventDefault();
-    if (confirm('Effacer toutes les notes de cet item ?')) {
+    if (confirm('Effacer toutes les notes de ce cours ?')) {
         document.getElementById('notesEditorArea').innerHTML = '';
         notesOnInput();
     }
@@ -41856,6 +41909,7 @@ function notesClear(event) {
 
 function notesOpenTour() {
     var itemKey = window._notesCurrentItemKey;
+    window._p1NotesTourOrigin = { key: itemKey, t: Date.now() };   /* mode Compact : l'animation de la ligne remplacera le grand check pour ce tour */
     closeNotesModal();
     setTimeout(function() {
         // Signale l'origine "liste des items" → variante compacte du modal d'ajout de tour
@@ -42261,7 +42315,7 @@ window.notesCreateFlashcard = function () {
         <div class="notes-shared-panel" id="notesSharedPanel">
           <div class="notes-shared-empty" id="notesSharedEmpty">
             <i class="fas fa-inbox"></i>
-            <p>Aucune note partagée reçue pour cet item</p>
+            <p>Aucune note partagée reçue pour ce cours</p>
           </div>
           <div id="notesSharedList"></div>
         </div>
@@ -42342,7 +42396,7 @@ window.notesCreateFlashcard = function () {
     </button>
     <div class="notes-confirm-icon"><i class="fas fa-trash-alt"></i></div>
     <div class="notes-confirm-title">Effacer les notes ?</div>
-    <div class="notes-confirm-text">Toutes les notes de cet item seront supprimées définitivement.</div>
+    <div class="notes-confirm-text">Toutes les notes de ce cours seront supprimées définitivement.</div>
     <div class="notes-confirm-actions">
       <button class="notes-confirm-cancel" onclick="notesCloseConfirm()">Annuler</button>
       <button class="notes-confirm-delete" onclick="notesConfirmClear()">Effacer</button>
@@ -44076,7 +44130,7 @@ function p1StartTrainingsListener(uid) {
     function (snap) {
       snap.docChanges().forEach(function (ch) {
         if (ch.type === 'removed') { delete _trainingItemsById[ch.doc.id]; return; }
-        var raw = ch.doc.data();
+        var raw = ch.doc.data({ serverTimestamps: 'estimate' });
         var b = {};
         Object.keys(raw).forEach(function (k) {
           if (k === 'updatedAt' || k === 'archivedAt') return;
@@ -49103,7 +49157,7 @@ async function loadSharedNotesForItem() {
 
         if (snaps.empty) {
             if (emptyEl) {
-                emptyEl.innerHTML = '<i class="fas fa-inbox"></i><p>Aucune note partagée reçue pour cet item</p>';
+                emptyEl.innerHTML = '<i class="fas fa-inbox"></i><p>Aucune note partagée reçue pour ce cours</p>';
                 emptyEl.style.display = 'flex';
             }
             return;
@@ -51807,6 +51861,22 @@ window._applyItemPriority = function(priority, specialtyId, fc) {
   }
 
   /* ---------- Construction du HTML d'une cellule compacte ---------- */
+  // Mémorise le dernier chiffre affiché de chaque cours : un changement lance l'animation, qui reprend à la bonne
+  // phase si la cellule est redessinée (écoute Firestore) pendant qu'elle joue.
+  var _ctRoll = {};
+  var CT_ROLL_MS = 260;
+  function rollState(sId, fc, n) {
+    var k = sId + '|' + fc, now = Date.now(), e = _ctRoll[k];
+    if (!e) { _ctRoll[k] = { n: n, from: null, dir: 0, until: 0 }; e = _ctRoll[k]; }
+    else if (e.n !== n) { e = _ctRoll[k] = { n: n, from: e.n, dir: n > e.n ? 1 : -1, until: now + CT_ROLL_MS }; }
+    if (e.from == null || now >= e.until) return { cls: 'ct-num', attrs: '', style: '' };
+    return {
+      cls: 'ct-num ' + (e.dir > 0 ? 'ct-roll-up' : 'ct-roll-down'),
+      attrs: ' data-prev="' + e.from + '"',
+      style: ';--ct-d:-' + Math.max(0, CT_ROLL_MS - (e.until - now)) + 'ms'
+    };
+  }
+
   function buildCompactCell(sId, fc) {
     var d = _getItemData(sId, fc);
     if (!d) return '';
@@ -51814,6 +51884,7 @@ window._applyItemPriority = function(priority, specialtyId, fc) {
     var conf = pendingConf(_getItemKey(sId, fc), d);
     var p = palAt(n);
     var max = maxTours(d);
+    var roll = rollState(sId, fc, n);
     // Zones désactivées aux extrêmes : pas de survol, pas de clic
     var leftDisabled  = (n <= 0)   ? ' ct-zone-disabled' : '';
     var rightDisabled = (n >= max) ? ' ct-zone-disabled' : '';
@@ -51831,7 +51902,7 @@ window._applyItemPriority = function(priority, specialtyId, fc) {
             '<div class="ct-div ct-div-bot" style="background:' + p.border + '"></div>' +
             '<div class="ct-sign ct-sign-l" style="border-color:' + p.text + ';color:' + p.text + '">−</div>' +
             '<div class="ct-sign ct-sign-r" style="border-color:' + p.text + ';color:' + p.text + '">+</div>' +
-            '<div class="ct-num" style="color:' + p.text + '">' + n + '</div>' +
+            '<div class="' + roll.cls + '"' + roll.attrs + ' style="color:' + p.text + roll.style + '"><span class="ct-num-v">' + n + '</span></div>' +
           '</div>' +
         '</div>' +
         '<span class="ct-cap">Tours</span>' +
@@ -51892,17 +51963,7 @@ window._applyItemPriority = function(priority, specialtyId, fc) {
   function updateCellNow(sId, fc) {
     var cell = document.querySelector('#items-table-body .tour-cell[data-specialty="' + sId + '"][data-fc="' + fc + '"]');
     if (cell && getMode() === 'compact') {
-      // Mémorise l'ancien chiffre avant le re-render pour décider d'animer
-      var oldNumEl = cell.querySelector('.ct-num');
-      var oldNum = oldNumEl ? oldNumEl.textContent.trim() : null;
       cell.innerHTML = buildCompactCell(sId, fc);
-      var newNumEl = cell.querySelector('.ct-num');
-      if (newNumEl && oldNum !== null && oldNum !== newNumEl.textContent.trim()) {
-        // Force un reflow puis applique l'animation pour qu'elle redémarre proprement
-        newNumEl.classList.remove('flip');
-        void newNumEl.offsetWidth;
-        newNumEl.classList.add('flip');
-      }
     }
     updateDaysBadgeNow(sId, fc);
   }
@@ -54347,9 +54408,9 @@ window._applyItemPriority = function(priority, specialtyId, fc) {
                     fresh = true;
                 }
                 tile.querySelector('.ws-tr-tile-n').textContent = x.n;
-                /* épreuve : « 100 QCM · 4h30 » puis le détail « 20 · 30 · 50 » (un par épreuve) ; QCM : le temps seul */
+                /* épreuve : « 100 QCM · 4h30 » puis, seulement s'il y a plusieurs épreuves, le détail « 20 · 30 · 50 » (un par épreuve) ; QCM : le temps seul */
                 tile.querySelector('.ws-tr-tile-t').textContent = t.epr ? x.q + ' QCM · ' + fmt(x.m) : fmt(x.m);
-                var dl = tile.querySelector('.ws-tr-tile-d'); dl.textContent = t.epr ? x.list.join(' · ') : ''; if (t.epr) dl.setAttribute('title', x.list.join(' + ') + ' = ' + x.q + ' QCM'); else dl.removeAttribute('title');
+                var dl = tile.querySelector('.ws-tr-tile-d'), multi = t.epr && x.list.length > 1; dl.textContent = multi ? x.list.join(' · ') : ''; if (multi) dl.setAttribute('title', x.list.join(' + ') + ' = ' + x.q + ' QCM'); else dl.removeAttribute('title');
                 var mb = tile.querySelector('.ws-tr-minus'), lastTxt = 'le dernier ajout de ' + t.name + (x.last ? ' (' + (Math.round(+x.last.count) || 1) + ' QCM · ' + fmt(x.last.minutes) + ')' : '');
                 mb.setAttribute('aria-label', 'Retirer ' + lastTxt);
                 tile.setAttribute('aria-label', t.epr ? t.name + ' : ' + x.n + ' (' + x.list.join(', ') + ' QCM, total ' + x.q + '), ' + fmt(x.m) : t.name + ' : ' + x.n + ', ' + fmt(x.m));
@@ -55580,7 +55641,7 @@ window._applyItemPriority = function(priority, specialtyId, fc) {
   function todayMidnight() { var d = new Date(); d.setHours(0,0,0,0); return d; }
   function _flashPaused() { return !!(window.p1FlashPause && window.p1FlashPause.isPaused()); }
   function _flashRawDue(c) { return !c.nextReview || new Date(c.nextReview).getTime() <= Date.now(); }
-  function isDue(c) { return !_flashPaused() && _flashRawDue(c); }
+  function isDue(c) { return !_flashPaused() && !(c && c.suspended) && _flashRawDue(c); }
   function daysUntil(iso) { if (!iso) return 0; return Math.round((new Date(iso).getTime() - todayMidnight().getTime()) / 86400000); }
   function speName(id) { var SD = window.SPECIALTIES_DATA || []; for (var i=0;i<SD.length;i++) if (SD[i].id===id) return SD[i].name; return id; }
   function speShort(id) { var SH = window.SPECIALTY_SHORT || {}; if (SH[id]) return SH[id]; var n = speName(id); return n.replace(/^(la |le |les |l'|de |du |des |d')/gi,'').trim().substring(0,3).toUpperCase(); }
@@ -55712,15 +55773,19 @@ window._applyItemPriority = function(priority, specialtyId, fc) {
 
   // ---------- SM-2 (hesitant TOUJOURS < know : hesitant plafonne a 21j, know a 60j) ----------
   function updateCardInterval(card, rating) {
+    var _fcx = window.P1FlashAlgo && window.P1FlashAlgo.schedule(card, rating); if (_fcx) return _fcx;
     var interval = card.interval || 0;
     if (rating === 'fail') interval = 1;
     else if (rating === 'hesitant') interval = Math.min(Math.max(Math.round(interval * 1.5), 3), 21);
     else if (rating === 'know') interval = Math.min(Math.max(Math.round(interval * 2.5), 7), 60);
     var nr = new Date(); nr.setDate(nr.getDate() + interval);
-    return { interval: interval, nextReview: nr.toISOString(), lastReview: new Date().toISOString() };
+    var _fco = { interval: interval, nextReview: nr.toISOString(), lastReview: new Date().toISOString() };
+    if (rating === 'fail') _fco.lapses = (card.lapses || 0) + 1;
+    return _fco;
   }
-  function previewLabel(c, r) { var x = updateCardInterval(c, r); return x.interval <= 1 ? 'Demain' : 'Dans ' + x.interval + 'j'; }
+  function previewLabel(c, r) { if (window.P1FlashAlgo) { var _fcl = window.P1FlashAlgo.label(c, r); if (_fcl) return _fcl; } var x = updateCardInterval(c, r); return x.interval <= 1 ? 'Demain' : 'Dans ' + x.interval + 'j'; }
   function statusInfo(c) {
+    if (c && c.suspended) return { cls:'suspended', icon:'fa-pause', txt:'Suspendue' };
     if (_flashPaused() && _flashRawDue(c)) return { cls:'soon', icon:'fa-pause', txt:'En pause' };
     if (isDue(c)) return { cls:'due', icon:'fa-calendar-day', txt:"Aujourd'hui" };
     var d = daysUntil(c.nextReview);
@@ -55749,7 +55814,7 @@ window._applyItemPriority = function(priority, specialtyId, fc) {
     var ids = _flashActiveSpeIds();
     return cards.filter(function (c) { return ids[c.speId]; });
   }
-  function loadAllDueFlashCards() { var b=fb(); if(!b || _flashPaused()) return Promise.resolve([]); return b.getDocs(b.query(_col(b), b.where('nextReview','<=',nowISO()))).then(_all).then(_flashFilterActiveSpe).catch(function(e){console.warn(e);return[];}); }
+  function loadAllDueFlashCards() { var b=fb(); if(!b || _flashPaused()) return Promise.resolve([]); return b.getDocs(b.query(_col(b), b.where('nextReview','<=',nowISO()))).then(_all).then(function (a) { return a.filter(function (c) { return !c.suspended; }); }).then(_flashFilterActiveSpe).catch(function(e){console.warn(e);return[];}); }
   function loadAllFlashCards() { var b=fb(); if(!b) return Promise.resolve([]); return b.getDocs(_col(b)).then(_all).then(_flashFilterActiveSpe).catch(function(e){console.warn(e);return[];}); }
   // 🔒 Une carte dont itemId ne résout plus vers un item/cours réellement
   // existant (item supprimé/archivé entre-temps) doit être traitée comme
@@ -55779,12 +55844,14 @@ window._applyItemPriority = function(priority, specialtyId, fc) {
       // qu'un autre onglet aurait pu écrire entre-temps sans qu'on l'écrase
       // silencieusement avec une valeur qu'on n'a en réalité pas modifiée.
       if (card.itemIdTouched) payload.itemId = card.itemId;
+      if (Object.prototype.hasOwnProperty.call(card, 'flag')) payload.flag = card.flag;
       return b.setDoc(_ref(b,card.id), payload, {merge:true}).then(function(){return card.id;});
     }
     // Création : itemId toujours écrit explicitement (jamais un champ
     // absent), y compris null pour "Non classé" — vient soit du contexte
     // verrouillé (bouton Flashcard des Notes), soit du sélecteur normal.
     var doc={ speId:card.speId, recto:card.recto, verso:card.verso, itemId:(card.itemId!==undefined?card.itemId:null), interval:0, nextReview:nowISO(), lastReview:null, createdAt:nowISO(), updatedAt:_ts, source:'manuel' };
+    if (card.flag) doc.flag = card.flag;
     return b.addDoc(_col(b), doc).then(function(r){return r.id;});
   }
   function deleteFlashCard(id) { var b=fb(); if(!b) return Promise.reject(new Error('offline')); return b.deleteDoc(_ref(b,id)); }
@@ -55950,7 +56017,7 @@ window._applyItemPriority = function(priority, specialtyId, fc) {
   function _flashCardRowHtml(c) {
     var st = statusInfo(c);
     return '<div class="flash-list-row ' + st.cls + '" onclick="window._flashEditCard(\'' + c.id + '\')">' +
-      '<span class="flash-list-recto">' + plain(c.recto) + '</span>' +
+      '<span class="flash-list-recto">' + plain(c.recto) + '</span>' + (window.P1FlashAlgo ? window.P1FlashAlgo.rowBadges(c) : '') +
       '<span class="flash-list-status ' + st.cls + '"><i class="fas ' + st.icon + '"></i>' + st.txt + '</span>' +
     '</div>';
   }
@@ -55996,7 +56063,7 @@ window._applyItemPriority = function(priority, specialtyId, fc) {
 
     var bannerText = due.length
       ? '<b>' + due.length + '</b> carte' + (due.length>1?'s':'') + ' à réviser'
-      : (cards.length ? "À jour pour aujourd'hui 🎉" : 'Commencez par créer une carte');
+      : (cards.length ? "À jour pour <span style=\"white-space:nowrap\">aujourd'hui<span class=\"flash-uptodate-check\" aria-hidden=\"true\"><i class=\"fas fa-check\"></i></span></span>" : 'Commencez par créer une carte');
 
     return '<div class="flash-due-banner">' +
         '<span class="flash-due-banner-text">' + bannerText + '</span>' +
@@ -56036,7 +56103,7 @@ window._applyItemPriority = function(priority, specialtyId, fc) {
   function _flashCardRowHtmlForNotes(c) {
     var st = statusInfo(c);
     return '<div class="flash-list-row ' + st.cls + '" onclick="window._notesFlashEditCard(\'' + c.id + '\')">' +
-      '<span class="flash-list-recto">' + plain(c.recto) + '</span>' +
+      '<span class="flash-list-recto">' + plain(c.recto) + '</span>' + (window.P1FlashAlgo ? window.P1FlashAlgo.rowBadges(c) : '') +
       '<span class="flash-list-status ' + st.cls + '"><i class="fas ' + st.icon + '"></i>' + st.txt + '</span>' +
     '</div>';
   }
@@ -56072,7 +56139,7 @@ window._applyItemPriority = function(priority, specialtyId, fc) {
         : '<button class="flash-launch-session-btn" disabled><i class="fas fa-bolt"></i> Réviser</button>';
       var bannerText = due.length
         ? ('<b>' + due.length + '</b> carte' + (due.length > 1 ? 's' : '') + ' à réviser')
-        : (cards.length ? "À jour pour aujourd'hui 🎉" : 'Aucune flashcard pour ce cours');
+        : (cards.length ? "À jour pour <span style=\"white-space:nowrap\">aujourd'hui<span class=\"flash-uptodate-check\" aria-hidden=\"true\"><i class=\"fas fa-check\"></i></span></span>" : 'Aucune flashcard pour ce cours');
       var rows = cards.length
         ? cards.map(_flashCardRowHtmlForNotes).join('')
         : '<div class="flash-empty"><i class="fas fa-layer-group"></i>Aucune flashcard pour ce cours.<br>Créez-en une pour commencer.</div>';
@@ -56186,6 +56253,7 @@ window._applyItemPriority = function(priority, specialtyId, fc) {
   // bouton Flashcard des Notes. Verrouille le classement sur cet item précis
   // (matière et item déjà déterminés par le contexte, jamais à resélectionner).
   function openFlashEdit(card, speIdOverride, lockedContext) {
+    if (window.P1FlashAlgo) window.P1FlashAlgo.editorOpen(card);
     _flashFormCardId = card ? card.id : null;
     _flashFormSpeId = (lockedContext && lockedContext.speId) || speIdOverride || (card && card.speId) || window.speErrCurrentId || null;
     if (speIdOverride === undefined) _flashSessionEditCardId = null; // édition normale (gestionnaire)
@@ -56443,6 +56511,7 @@ window._flashEditOverlayClick = _flashEditOverlayClick;
     // sans effet à la création, où itemId est de toute façon toujours écrit.
     var _pickedItemId = _flashPickerItemCtl ? _flashPickerItemCtl.get() : null;
     var card = { id:_flashFormCardId, speId:speId, recto:sanit(r.innerHTML), verso:sanit(v.innerHTML), itemId:_pickedItemId, itemIdTouched:_flashPickerItemTouched };
+    if (window.P1FlashAlgo) window.P1FlashAlgo.editorApply(card);
     var sessionEditId = _flashSessionEditCardId;
     var _notesCb = _flashNotesCreateCallback; _flashNotesCreateCallback = null;
     // 🔒 Brouillon local écrit AVANT la tentative Firestore : ne bloque
@@ -56586,6 +56655,7 @@ window._flashEditOverlayClick = _flashEditOverlayClick;
     opts = opts || {};
     if (_flashPaused()) { window.p1FlashPause.notice(); return; }
     if (!cards || !cards.length) return;
+    if (window.P1FlashAlgo) { cards = window.P1FlashAlgo.prepareSession(cards, opts); if (!cards) return; }
     var cahier = document.getElementById('speErrOverlay');
     var cahierOpen = cahier && cahier.classList.contains('active');
     var mode = (opts.inline && cahierOpen) ? 'inline' : 'modal';
@@ -56681,6 +56751,7 @@ window._flashEditOverlayClick = _flashEditOverlayClick;
           '<button class="flash-eval-btn know" onclick="window._flashEval(\'know\')">🟢 Su<span class="flash-eval-btn-sub">' + previewLabel(card,'know') + '</span></button>' +
         '</div></div>' +
       '</div>';
+    if (window.P1FlashAlgo) window.P1FlashAlgo.decorate(e.stage, card, s);
     _flashMatchRevealHeight();
   }
   function _flashMatchRevealHeight() {
@@ -56704,7 +56775,7 @@ window._flashEditOverlayClick = _flashEditOverlayClick;
     var ev = document.getElementById('speFlashEvalWrap'); setTimeout(function(){ if (ev) ev.style.display='block'; }, 200);
     _setFlashSessionEditVisible(true); /* PORTAGE: crayon visible seulement après affichage de la réponse */
   }
-  function evaluateCard(rating) { var s=_flashSession; if(!s) return; var card=s.cards[s.idx]; if(s.results[rating]) s.results[rating].push(card); updateCardAfterReview(card.id,card,rating); showFlashCard(s.idx+1); }
+  function evaluateCard(rating) { var s=_flashSession; if(!s) return; var card=s.cards[s.idx]; if (window.P1FlashAlgo) window.P1FlashAlgo.onEval(s, card, rating); else if(s.results[rating]) s.results[rating].push(card); updateCardAfterReview(card.id,card,rating); showFlashCard(s.idx+1); }
   function showFlashEndScreen(results) {
     var s = _flashSession; if (!s) return; var e = s.els;
     // Récap : la pastille de matière du header disparaît (elle reste visible pendant les cartes)
@@ -56781,6 +56852,62 @@ window._flashEditOverlayClick = _flashEditOverlayClick;
   var _flashDrawerSelectAllOn = false; // piloté UNIQUEMENT par un clic sur "Tout sélectionner" — jamais recalculé
   var _flashDrawerDueOnlyOn = false; // idem pour "Uniquement les dues" ; vrai par défaut à l'ouverture si des dues existent (cf renderFlashDrawerList)
 
+  // ---------- Session Flash : sélection par drapeau ----------
+  var FD_FLAGS = { important: 'Importantes', difficile: 'Difficiles', corriger: 'À corriger' };
+  var _flashDrawerFlags = [];
+  function _flashDrawerFlagCards(cards) { return cards.filter(function (c) { return !c.suspended && _flashDrawerFlags.indexOf(c.flag) !== -1; }); }
+  // Cartes retenues pour un ensemble de cartes coché : avec des drapeaux, TOUTES les cartes de ces drapeaux (même non dues, jamais suspendues) ; sinon les dues, ou tout à défaut.
+  function _flashDrawerPick(cards) {
+    if (_flashDrawerFlags.length) return _flashDrawerFlagCards(cards);
+    var due = cards.filter(isDue);
+    return due.length ? due : cards.filter(function (c) { return !c.suspended; });
+  }
+  function _flashDrawerPaintOpts() {
+    var host = document.getElementById('flashDrawerOpts'); if (!host) return;
+    host.querySelectorAll('.fdo-chips button').forEach(function (b) {
+      var f = b.getAttribute('data-f'), on = f ? _flashDrawerFlags.indexOf(f) !== -1 : !_flashDrawerFlags.length;
+      b.classList.toggle('is-on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+  }
+  function _flashDrawerSelectFlags() {
+    _flashDrawerSelectAllOn = false; _flashDrawerDueOnlyOn = false;
+    Object.keys(_flashDrawerState).forEach(function (speId) {
+      var st = _flashDrawerState[speId];
+      var hit = _flashDrawerGroups(speId).filter(function (g) { return _flashDrawerFlagCards(g.cards).length > 0; });
+      if (hit.length) { st.checked = true; st.mode = 'items'; st.items = new Set(hit.map(function (g) { return g.key; })); }
+      else st.checked = false;
+    });
+    _flashDrawerSyncDom();
+  }
+  function _flashDrawerRenderOpts() {
+    var host = document.getElementById('flashDrawerOpts'); if (!host) return;
+    if (!_flashAllCache) { host.innerHTML = ''; return; }
+    var n = {}; Object.keys(FD_FLAGS).forEach(function (k) { n[k] = 0; });
+    Object.keys(_flashAllCache).forEach(function (id) { (_flashAllCache[id] || []).forEach(function (c) { if (n[c.flag] != null && !c.suspended) n[c.flag]++; }); });
+    var TIP = { important: 'Toutes tes cartes « Important », même non dues', difficile: 'Toutes tes cartes « Difficile », même non dues', corriger: 'Toutes tes cartes « À corriger », même non dues' };
+    host.innerHTML =
+      '<div class="fdo-row"><span class="fdo-label"><i class="fas fa-flag"></i> Sélection par drapeau</span><div class="fdo-chips" role="group" aria-label="Sélection par drapeau">' +
+        '<button type="button" data-f="" data-p1-tip="Sans filtre de drapeau : les cartes dues" data-p1-tip-keep="1"><i class="fas fa-check fdo-ck"></i>Indifférent</button>' +
+        Object.keys(FD_FLAGS).map(function (k) {
+          return '<button type="button" data-f="' + k + '" class="f-' + k + '"' + (n[k] ? '' : ' disabled') + ' data-p1-tip="' + TIP[k] + '" data-p1-tip-keep="1"><i class="fas fa-check fdo-ck"></i><span class="p1fc-dot f-' + k + '"></span>' + FD_FLAGS[k] + '<span class="fdo-n">' + n[k] + '</span></button>'; }).join('') +
+      '</div></div>';
+    _flashDrawerPaintOpts();
+    if (!host._fdoBound) {
+      host._fdoBound = true;
+      host.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var b = e.target.closest('button[data-f]'); if (!b || b.disabled) return;
+        var f = b.getAttribute('data-f');
+        if (!f) _flashDrawerFlags = [];
+        else if (_flashDrawerFlags.indexOf(f) !== -1) _flashDrawerFlags = _flashDrawerFlags.filter(function (x) { return x !== f; });
+        else _flashDrawerFlags = _flashDrawerFlags.concat([f]);
+        _flashDrawerPaintOpts();
+        if (_flashDrawerFlags.length) { _flashDrawerSelectFlags(); updateFlashDrawerCount(); }
+        else { _flashDrawerDueOnlyOn = false; selectDueFlashMatieres(); updateFlashDrawerCount(); }
+      });
+    }
+  }
+
   // Regroupe les cartes déjà en cache (_flashAllCache) d'UNE matière par
   // classement — même logique que _flashGroupCards(), mais synchrone (pas
   // de nouvel appel Firestore : le drawer a déjà tout chargé d'un coup).
@@ -56842,7 +56969,7 @@ window._flashEditOverlayClick = _flashEditOverlayClick;
         '<div class="flash-drawer-subpanel-inner">' +
           '<div class="flash-drawer-mode-toggle">' +
             '<button type="button" class="flash-drawer-mode-btn' + (st.mode === 'all' ? ' active' : '') + '" data-mode="all" onclick="window._flashDrawerSetMode(\'' + speId + '\',\'all\')">Toutes les flashcards</button>' +
-            '<button type="button" class="flash-drawer-mode-btn' + (st.mode === 'items' ? ' active' : '') + '" data-mode="items" onclick="window._flashDrawerSetMode(\'' + speId + '\',\'items\')">Choisir des items</button>' +
+            '<button type="button" class="flash-drawer-mode-btn' + (st.mode === 'items' ? ' active' : '') + '" data-mode="items" onclick="window._flashDrawerSetMode(\'' + speId + '\',\'items\')">Choisir des cours</button>' +
           '</div>' +
           '<div class="flash-drawer-subitems' + (st.mode === 'items' ? ' open' : '') + '">' +
             '<div class="flash-drawer-subitems-inner">' + itemsHtml + '</div>' +
@@ -56858,9 +56985,12 @@ window._flashEditOverlayClick = _flashEditOverlayClick;
     list.innerHTML=(window.p1SkelHTML ? window.p1SkelHTML('flash') : '<div class="flash-empty"><i class="fas fa-spinner fa-spin"></i>Chargement…</div>');
     _flashDrawerSelectAllOn = false;
     _flashDrawerDueOnlyOn = false;
+    _flashDrawerFlags = [];
+    var _fdoHost = document.getElementById('flashDrawerOpts'); if (_fdoHost && !_flashAllCache) _fdoHost.innerHTML = '';
     loadAllFlashCards().then(function(all){
       var byspe={}; all.forEach(function(c){ (byspe[c.speId]=byspe[c.speId]||[]).push(c); });
       _flashAllCache = byspe;
+      _flashDrawerRenderOpts();
       var SD = window.SPECIALTIES_DATA || []; var ordered=[];
       SD.forEach(function(s){ if (byspe[s.id]) ordered.push(s.id); });
       Object.keys(byspe).forEach(function(id){ if (ordered.indexOf(id)===-1) ordered.push(id); });
@@ -56944,7 +57074,7 @@ window._flashEditOverlayClick = _flashEditOverlayClick;
     var st = _flashDrawerState[speId]; if (!st) return;
     st.mode = mode;
     if (mode === 'items' && !st.items.size) {
-      // Passage manuel en "Choisir des items" : tout précocher par défaut
+      // Passage manuel en "Choisir des cours" : tout précocher par défaut
       // (équivalent à "Toutes les flashcards", affinable ensuite carte par carte).
       st.items = new Set(_flashDrawerGroups(speId).map(function (g) { return g.key; }));
     }
@@ -56964,6 +57094,7 @@ window._flashEditOverlayClick = _flashEditOverlayClick;
     // Bascule bistable : reclique dessus pour tout décocher.
     _flashDrawerSelectAllOn = !_flashDrawerSelectAllOn;
     _flashDrawerDueOnlyOn = false;
+    if (_flashDrawerFlags.length) { _flashDrawerFlags = []; _flashDrawerPaintOpts(); }
     Object.keys(_flashDrawerState).forEach(function (speId) {
       var st = _flashDrawerState[speId];
       st.checked = _flashDrawerSelectAllOn;
@@ -56975,6 +57106,7 @@ window._flashEditOverlayClick = _flashEditOverlayClick;
     // Bascule bistable, comme "Tout sélectionner" : reclique dessus pour tout
     // décocher plutôt que de rester bleu sans action possible.
     _flashDrawerDueOnlyOn = !_flashDrawerDueOnlyOn;
+    if (_flashDrawerFlags.length) { _flashDrawerFlags = []; _flashDrawerPaintOpts(); }
     // Ne bleuit JAMAIS "Tout sélectionner" par coïncidence, même si toutes
     // les matières se retrouvent cochées parce qu'elles ont toutes des dues.
     _flashDrawerSelectAllOn = false;
@@ -56999,13 +57131,11 @@ window._flashEditOverlayClick = _flashEditOverlayClick;
       var st = _flashDrawerState[speId]; if (!st.checked) return;
       if (st.mode === 'all') {
         var cards = (_flashAllCache && _flashAllCache[speId]) || [];
-        var due = cards.filter(isDue);
-        cnt += due.length || cards.length;
+        cnt += _flashDrawerPick(cards).length;
       } else {
         _flashDrawerGroups(speId).forEach(function (g) {
           if (!st.items.has(g.key)) return;
-          var due = g.cards.filter(isDue);
-          cnt += due.length || g.cards.length;
+          cnt += _flashDrawerPick(g.cards).length;
         });
       }
     });
@@ -57019,13 +57149,11 @@ window._flashEditOverlayClick = _flashEditOverlayClick;
       var st = _flashDrawerState[speId]; if (!st.checked) return;
       if (st.mode === 'all') {
         var cards = (_flashAllCache && _flashAllCache[speId]) || [];
-        var due = cards.filter(isDue);
-        collected = collected.concat(due.length ? due : cards);
+        collected = collected.concat(_flashDrawerPick(cards));
       } else {
         _flashDrawerGroups(speId).forEach(function (g) {
           if (!st.items.has(g.key)) return;
-          var due = g.cards.filter(isDue);
-          collected = collected.concat(due.length ? due : g.cards);
+          collected = collected.concat(_flashDrawerPick(g.cards));
         });
       }
     });
@@ -57071,6 +57199,15 @@ window._flashEditOverlayClick = _flashEditOverlayClick;
   window._flashResetOnOpen = _flashResetOnOpen;
   window._flashFlip = flipFlashCard;
   window._flashEval = evaluateCard;
+  window._flashAllCards = function () { var b = fb(); if (!b) return Promise.reject(new Error('offline')); return b.getDocs(_col(b)).then(_all); };
+  window._flashSetCardFields = function (id, fields) { var b = fb(); if (!b || !id) return Promise.reject(new Error('offline')); return b.setDoc(_ref(b, id), fields, { merge: true }); };
+  window._flashAfterCardChange = function (speId, keepView) {
+    try { if (!keepView && !_flashSession && window.speErrCurrentId && document.getElementById('speFlashView_manage')) renderFlashManageView(window.speErrCurrentId); } catch (e) {}
+    try { updateFlashGlobalCount(); } catch (e) {}
+    try { if (speId) updateSpeFlashBadge(speId); } catch (e) {}
+  };
+  window._flashShowCard = showFlashCard;
+  window._flashSizeReveal = _flashMatchRevealHeight;
   window._flashQuit = quitFlashSession;
   window._flashNewCard = _flashNewCard;
   window._flashEditCard = _flashEditCard;
@@ -57628,7 +57765,7 @@ if (!window._ednScrollLock) {
 [data-theme="dark"] .pdd-status-btn { background: var(--pdd-status-bg, #1e293b); color: var(--pdd-status-fg, #e2e8f0); }
 .pdd-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; background: #94a3b8; }
 .pdd-caret { font-size: 0.62rem; opacity: 0.6; transition: transform .25s cubic-bezier(.2,.8,.2,1), opacity .18s ease; }
-/* Retour de Jean : les boutons Matieres / Statut doivent montrer que leur fenetre est
+/* Les boutons Matieres / Statut montrent que leur fenetre est
    deployee (anneau + bordure), et la fleche du Statut pivote en animation. Classe is-open posee
    par openSpecPop/openStatusMenu et retiree par leurs fonctions de fermeture. */
 .pdd-status-btn.is-open .pdd-caret { transform: rotate(180deg); opacity: 1; }
@@ -60308,7 +60445,7 @@ body.tpx-premium-locked .day-detail-open-btn {
 						</div>
 						<div class="tpx-benefit-text">
 							<b>Tours de révision</b>
-							Enregistrez vos tours et suivez votre progression pour chaque item.
+							Enregistrez vos tours et suivez votre progression pour chaque cours.
 						</div>
 					</div>
 
@@ -61307,7 +61444,7 @@ const CARD_HTML = `
                 <i class="fas fa-pen"></i> Modifier
             </button>
         </div>
-        <!-- ⚠️ Autofill navigateur (retour de Jean, capture d'écran à l'appui, 2026-09-29) :
+        <!-- ⚠️ Autofill navigateur :
              ce fichier ne contient AUCUNE balise <form> nulle part. Chrome/Edge regroupent
              alors TOUS les champs texte/mot de passe de la page en un seul "formulaire
              virtuel" (heuristique "unowned form"), sans tenir compte de la distance réelle
@@ -66205,7 +66342,7 @@ function setTrainingsPageVisible(visible) {
                 var cache = cacheFor(kind);
                 snap.docChanges().forEach(function (ch) {
                     if (ch.type === 'removed') delete cache[ch.doc.id];
-                    else cache[ch.doc.id] = Object.assign({ id: ch.doc.id }, ch.doc.data());
+                    else cache[ch.doc.id] = Object.assign({ id: ch.doc.id }, ch.doc.data({ serverTimestamps: 'estimate' }));
                 });
                 rebuildStateFromLive();
             }, function (err) {
@@ -66441,7 +66578,7 @@ function setTrainingsPageVisible(visible) {
                     window.showCustomAlert({
                         type: 'error',
                         title: 'Cours non supprimé',
-                        message: 'Impossible de sécuriser les flashcards liées à cet item. L\'item n\'a pas été supprimé. Réessaie lorsque la connexion est disponible.'
+                        message: 'Impossible de sécuriser les flashcards liées à ce cours. Le cours n\'a pas été supprimé. Réessaie lorsque la connexion est disponible.'
                     });
                 }
                 return;
@@ -66485,6 +66622,18 @@ function setTrainingsPageVisible(visible) {
                 subjectId: data.specialtyId, name: data.name,
                 archivedAt: null, updatedAt: stamp()
             };
+            if (!courseId) {
+                payload.createdAt = stamp();
+                // Les cours de la matière sans numéro enregistré gardent leur numéro affiché : il est enregistré
+                // avant l'ajout, pour qu'un nouveau cours ne les renumérote jamais.
+                var shown = typeof window.p1ComputeDisplayNums === 'function' ? window.p1ComputeDisplayNums() : {};
+                var fixed = state.items.filter(function (i) {
+                    return i.specialtyId === data.specialtyId && typeof i.courseNum !== 'number' && typeof shown[i.specialtyId + '|' + i.num] === 'number';
+                });
+                for (var k = 0; k < fixed.length; k++) {
+                    await f.set(f.doc(f.db, 'users', state.uid, 'courses', fixed[k].num), { courseNum: shown[fixed[k].specialtyId + '|' + fixed[k].num] }, { merge: true });
+                }
+            }
             // P1Planner : courseNum est un vrai numéro choisi par l'utilisateur,
             // unique PAR MATIÈRE — champ distinct de l'id Firestore du document
             // (jamais utilisé comme clé de progression, contrairement à l'ancien
@@ -66500,6 +66649,72 @@ function setTrainingsPageVisible(visible) {
         } catch (e) {
             console.warn('[TPXPerso] Sauvegarde cours impossible :', e);
             if (typeof window.showCustomAlert === 'function') window.showCustomAlert('Impossible d\'enregistrer ce cours.', 'error');
+        }
+    }
+
+    /* Changement de matière d'un cours existant. Tout ce qui est rangé par la clé « matière-cours » suit le cours dans UN SEUL
+       lot d'écritures (tout aboutit ou rien) : le cours, sa note (copiée sous la nouvelle clé, l'ancienne n'est jamais supprimée),
+       ses flashcards (speId), ses tâches du Programme de la journée (clé, matière affichée, numéro). Les cours des deux matières
+       qui n'ont pas de numéro enregistré gardent le numéro qu'ils affichent. Lectures forcées sur le serveur : hors ligne, on
+       refuse plutôt que de déplacer sur des données incomplètes. Retourne true si le lot est validé. */
+    async function moveItem(data) {
+        var f = fs();
+        var fail = function (msg) {
+            if (typeof window.showCustomAlert === 'function') window.showCustomAlert({ type: 'error', title: 'Cours non déplacé', message: msg });
+            return false;
+        };
+        if (!f.db || !f.doc || !f.collection || !state.uid || !data.key || !data.specialtyId ||
+            !window._fsWriteBatch || !window._fsQuery || !window._fsWhere || !window._fsGetDocsFromServer || !window._fsGetDocFromServer) {
+            return fail('Impossible de changer la matière pour le moment. Réessaie dans un instant.');
+        }
+        var cut = data.key.indexOf('|');
+        var oldSpec = data.key.slice(0, cut), courseId = data.key.slice(cut + 1), newSpec = data.specialtyId;
+        if (!oldSpec || !courseId || oldSpec === newSpec) return false;
+        var dest = state.specialties.filter(function (x) { return x.id === newSpec; })[0];
+        if (!dest) return fail('Cette matière n\'existe plus.');
+        var oldKey = oldSpec + '-' + courseId, newKey = newSpec + '-' + courseId;
+        // Une note de ce cours encore en attente d'enregistrement : on ne déplace pas avant qu'elle soit partie.
+        try {
+            if (window.TPXNotesPending && window.TPXNotesPending.read(oldKey)) {
+                return fail('Une note de ce cours n\'est pas encore enregistrée. Réessaie dans un instant.');
+            }
+        } catch (e0) {}
+        try {
+            var uid = state.uid, db = f.db, q = window._fsQuery, w = window._fsWhere;
+            var cards = await window._fsGetDocsFromServer(q(f.collection(db, 'users', uid, TPXC('FlashCards')), w('itemId', '==', courseId)));
+            var tasks = await window._fsGetDocsFromServer(q(f.collection(db, 'users', uid, 'tasks'), w('itemKey', '==', oldKey)));
+            var noteSnap = await window._fsGetDocFromServer(f.doc(db, 'users', uid, TPXC('notes'), oldKey));
+            var shown = typeof window.p1ComputeDisplayNums === 'function' ? window.p1ComputeDisplayNums() : {};
+            var fixed = state.items.filter(function (i) {
+                return (i.specialtyId === oldSpec || i.specialtyId === newSpec) && i.num !== courseId &&
+                       typeof i.courseNum !== 'number' && typeof shown[i.specialtyId + '|' + i.num] === 'number';
+            });
+            var cardDocs = cards.docs.filter(function (d) { return d.get('speId') === oldSpec; });
+            var total = 1 + fixed.length + cardDocs.length + tasks.size + (noteSnap && noteSnap.exists() ? 1 : 0);
+            if (total > 450) return fail('Trop de données liées à ce cours pour le déplacer en une fois (' + total + ').');
+            var batch = window._fsWriteBatch(db);
+            fixed.forEach(function (i) {
+                batch.set(f.doc(db, 'users', uid, 'courses', i.num), { courseNum: shown[i.specialtyId + '|' + i.num] }, { merge: true });
+            });
+            cardDocs.forEach(function (d) { batch.update(d.ref, { speId: newSpec }); });
+            var shortName = shortOf(dest);
+            tasks.docs.forEach(function (d) {
+                var txt = String(d.get('text') || '');
+                var upd = { itemKey: newKey, specialtyColor: dest.color || '#6b7280', specialtyName: dest.name, specialtyShort: shortName };
+                if (typeof data.courseNum === 'number' && /^\d+ - /.test(txt)) upd.text = txt.replace(/^\d+ - /, data.courseNum + ' - ');
+                batch.update(d.ref, upd);
+            });
+            if (noteSnap && noteSnap.exists()) batch.set(f.doc(db, 'users', uid, TPXC('notes'), newKey), noteSnap.data());
+            var payload = { subjectId: newSpec, name: data.name, archivedAt: null, updatedAt: stamp() };
+            if (typeof data.courseNum === 'number') payload.courseNum = data.courseNum;
+            batch.set(f.doc(db, 'users', uid, 'courses', courseId), payload, { merge: true });
+            var done = batch.commit();
+            try { if (data.fx && window.tpxPersoFx) window.tpxPersoFx.done('item', newSpec + '|' + courseId, 'edit'); } catch (e1) {}
+            await done;
+            return true;
+        } catch (e) {
+            console.warn('[TPXPerso] Changement de matière impossible :', e);
+            return fail('Vérifie ta connexion puis réessaie : rien n\'a été modifié.');
         }
     }
 
@@ -66950,7 +67165,7 @@ function setTrainingsPageVisible(visible) {
                 'l\'empêcherait d\'être sauvegardée.</div>' +
             '</div>' +
             '<div class="tpx-hint" style="font-size:.84rem;line-height:1.6;">Deux solutions : retirer une image ' +
-            'devenue inutile, ou répartir le contenu sur la note d\'un autre item. Le texte, lui, ne pèse ' +
+            'devenue inutile, ou répartir le contenu sur la note d\'un autre cours. Le texte, lui, ne pèse ' +
             'presque rien — ce sont les images qui occupent la place.</div>',
             '<button class="tpx-btn tpx-btn-primary" id="tpx-nh-ok" type="button">J\'ai compris</button>');
         m.overlay.querySelector('#tpx-nh-ok').addEventListener('click', m.close);
@@ -67139,6 +67354,13 @@ function setTrainingsPageVisible(visible) {
         root.querySelectorAll('input.tpx-input').forEach(function (inp) {
             if (inp.getAttribute('data-tpx-clear')) return;
             inp.setAttribute('data-tpx-clear', '1');
+            // Pas de suggestions « informations enregistrées » du navigateur sur ces champs.
+            inp.setAttribute('autocomplete', 'off');
+            inp.setAttribute('data-lpignore', 'true');
+            inp.setAttribute('data-1p-ignore', '');
+            inp.setAttribute('data-bwignore', 'true');
+            inp.setAttribute('data-form-type', 'other');
+            inp.setAttribute('data-protonpass-ignore', 'true');
 
             var wrap = document.createElement('div');
             wrap.className = 'tpx-input-wrap';
@@ -67206,7 +67428,7 @@ function setTrainingsPageVisible(visible) {
                 '<label class="tpx-label" for="tpx-mat-short">Abréviation</label>' +
                 '<input class="tpx-input" id="tpx-mat-short" type="text" maxlength="3" placeholder="CAR" value="' + esc(s ? (s.short || '') : '') + '">' +
                 '<div class="tpx-hint">Affichée sur les pastilles ' +
-                (APP === 'edn' ? 'de la liste des items et du menu de filtre' : 'de la liste des SDD') +
+                (APP === 'edn' ? 'de la liste des cours et du menu de filtre' : 'de la liste des SDD') +
                 '. Laissez vide pour la déduire du nom.</div>' +
             '</div>' +
             '<div class="tpx-field"><span class="tpx-label">Couleur</span>' + swatchesHtml(pick.color) + '</div>' +
@@ -67290,7 +67512,7 @@ function setTrainingsPageVisible(visible) {
         var entries = APP === 'edn'
             ? state.items.filter(function (i) { return i.specialtyId === id; }).length
             : state.sdd.filter(function (d) { return (d.specialties || []).indexOf(id) !== -1; }).length;
-        var entryWord = APP === 'edn' ? 'item' : 'SDD';
+        var entryWord = APP === 'edn' ? 'cours' : 'SDD';
 
         // P1Planner : archivage (soft-delete), jamais de suppression physique
         // (voir firestore.rules — allow delete: if false partout sauf backups).
@@ -67301,18 +67523,18 @@ function setTrainingsPageVisible(visible) {
         var body =
             '<div class="tpx-warn">' +
                 '<div class="tpx-warn-icon"><i class="fas fa-triangle-exclamation"></i></div>' +
-                '<div class="tpx-warn-txt">Vous êtes sur le point d\'archiver la matière ' +
+                '<div class="tpx-warn-txt">Vous êtes sur le point de supprimer la matière ' +
                 '<strong>' + esc(s.name) + '</strong>' +
-                (entries ? ' et ' + entries + ' ' + entryWord + (entries > 1 ? 's' : '') + ' associé' + (entries > 1 ? 's' : '') : '') +
+                (entries ? ' et ' + entries + ' ' + entryWord + (entries > 1 && APP !== 'edn' ? 's' : '') + ' associé' + (entries > 1 ? 's' : '') : '') +
                 '.</div>' +
             '</div>' +
-            '<div class="tpx-onb-note"><i class="fas fa-shield-halved"></i><span>Rien n\'est supprimé définitivement : ' +
-            'la matière et ses cours sont archivés et disparaissent de vos listes, mais aucune donnée n\'est perdue.</span></div>';
+            '<div class="tpx-onb-note"><i class="fas fa-triangle-exclamation"></i><span>Cette action est définitive et irréversible : ' +
+            'la matière, ses cours, leurs tours et leurs notes seront perdus.</span></div>';
 
-        var m = buildModal('Archiver cette matière ?', 'fa-box-archive', body,
+        var m = buildModal('Supprimer cette matière ?', 'fa-triangle-exclamation', body,
             '<button class="tpx-btn" id="tpx-del-no" type="button">Annuler</button>' +
             '<button class="tpx-btn tpx-btn-confirm-danger" id="tpx-del-yes" type="button">' +
-            '<i class="fas fa-box-archive"></i> Archiver</button>');
+            '<i class="fas fa-trash"></i> Supprimer</button>');
 
         var root = m.overlay;
         var yes = root.querySelector('#tpx-del-yes');
@@ -67421,12 +67643,36 @@ function setTrainingsPageVisible(visible) {
         return { get: function () { return box.getAttribute('data-value'); } };
     }
 
-    /* Liste filtrée sur UNE seule matière (sur-mesure) : la création part sur cette matière */
-    function filteredSingleSpecialty() {
-        var cur = g(APP === 'edn' ? 'selectedSpecialties' : 'sddFilterSpecialties');
-        if (!Array.isArray(cur) || cur.length !== 1) return null;
-        var id = String(cur[0]);
-        return state.specialties.some(function (s) { return s.id === id; }) ? id : null;
+    /* Liste filtrée (sur-mesure) : la création part sur la matière du filtre, ou sur la première des matières
+       filtrées (dans l'ordre de la liste des matières). Aucun filtre : null (première matière par défaut). */
+    function filteredFirstSpecialty() {
+        var cur = (APP === 'edn' && typeof window.p1GetSelectedSpecialties === 'function')
+            ? window.p1GetSelectedSpecialties()
+            : g(APP === 'edn' ? 'selectedSpecialties' : 'sddFilterSpecialties');
+        if (!Array.isArray(cur) || !cur.length) return null;
+        var ids = cur.map(String);
+        var found = state.specialties.filter(function (s) { return ids.indexOf(s.id) >= 0; })[0];
+        return found ? found.id : null;
+    }
+
+    /* Numéro affiché d'un cours : le courseNum choisi, sinon le numéro de repli calculé pour l'affichage. */
+    function shownCourseNum(i, map) {
+        var v = map ? map[i.specialtyId + '|' + i.num] : null;
+        if (typeof v === 'number') return v;
+        return typeof i.courseNum === 'number' ? i.courseNum : null;
+    }
+    function displayNumsMap() { return typeof window.p1ComputeDisplayNums === 'function' ? window.p1ComputeDisplayNums() : {}; }
+
+    /* Numéro proposé pour un nouveau cours : le plus grand numéro AFFICHÉ de la matière + 1. */
+    function nextCourseNum(specId) {
+        var map = displayNumsMap(), max = 0;
+        state.items.forEach(function (i) {
+            if (i.specialtyId !== specId) return;
+            var v = shownCourseNum(i, map);
+            if (v != null && v > max) max = v;
+        });
+        var n = max + 1;
+        return n > 9999 ? '' : String(n);
     }
 
     function openItemModal(key, preSpec) {
@@ -67458,12 +67704,13 @@ function setTrainingsPageVisible(visible) {
         var body =
             '<div class="tpx-field">' +
                 '<span class="tpx-label" id="tpx-it-spec-label">Matière</span>' +
-                specialtyPickerHtml('tpx-it-spec', it ? it.specialtyId : firstSpec, isExisting) +
+                specialtyPickerHtml('tpx-it-spec', it ? it.specialtyId : firstSpec, false) +
+                (it ? '<div class="tpx-hint" id="tpx-it-move-hint" style="display:none;">Les tours, la note, les flashcards et les tâches de ce cours le suivent dans la nouvelle matière.</div>' : '') +
             '</div>' +
             '<div class="tpx-field">' +
                 '<label class="tpx-label" for="tpx-it-num">Numéro <span style="font-weight:400;color:var(--tpx-text-faint);">(optionnel)</span></label>' +
-                '<input class="tpx-input" id="tpx-it-num" type="text" inputmode="numeric" maxlength="4" placeholder="1" value="' + esc(it && it.courseNum != null ? String(it.courseNum) : '') + '">' +
-                '<div class="tpx-hint">Un numéro unique dans cette matière. Laissez vide pour un classement automatique.</div>' +
+                '<input class="tpx-input" id="tpx-it-num" type="text" inputmode="numeric" maxlength="4" placeholder="1" value="' + esc(it ? (shownCourseNum(it, displayNumsMap()) != null ? String(shownCourseNum(it, displayNumsMap())) : '') : nextCourseNum(firstSpec)) + '">' +
+                '<div class="tpx-hint">Un numéro unique dans cette matière, proposé à la suite des autres. Laissez vide pour qu\'il soit attribué automatiquement.</div>' +
             '</div>' +
             '<div class="tpx-field">' +
                 '<label class="tpx-label" for="tpx-it-name">Intitulé</label>' +
@@ -67476,17 +67723,37 @@ function setTrainingsPageVisible(visible) {
 
         var m = buildModal(it ? 'Modifier le cours' : 'Nouveau cours', 'fa-list-check', body, foot);
         var root = m.overlay;
-        var picker = bindSpecialtyPicker(root, 'tpx-it-spec', null, isExisting);
         var numEl = root.querySelector('#tpx-it-num');
+        var numTouched = false;
+        var picker = bindSpecialtyPicker(root, 'tpx-it-spec', function (v) {
+            // Le numéro proposé suit la matière tant qu'il n'a pas été saisi à la main (cours existant : son numéro s'il reste dans sa matière).
+            if (!numTouched) {
+                if (isExisting && v === it.specialtyId) { var own = shownCourseNum(it, displayNumsMap()); numEl.value = own != null ? String(own) : ''; }
+                else numEl.value = nextCourseNum(v);
+            }
+            var mh = root.querySelector('#tpx-it-move-hint');
+            if (mh) mh.style.display = (isExisting && v !== it.specialtyId) ? '' : 'none';
+        }, false);
         // Numéro : chiffres uniquement, filtré en temps réel (saisie ET
         // collage — 'input' se déclenche aussi après un collage).
         numEl.addEventListener('input', function () {
+            numTouched = true;
             var filtered = numEl.value.replace(/[^0-9]/g, '').slice(0, 4);
             if (filtered !== numEl.value) numEl.value = filtered;
         });
+        // Entrée dans l'intitulé ou le numéro = « Ajouter le cours » / « Enregistrer ».
+        [root.querySelector('#tpx-it-name'), numEl].forEach(function (el) {
+            el.addEventListener('keydown', function (e) {
+                if (e.key !== 'Enter' || e.isComposing || e.repeat) return;
+                e.preventDefault();
+                root.querySelector('#tpx-it-ok').click();
+            });
+        });
         setTimeout(function () { root.querySelector('#tpx-it-name').focus(); }, 60);
 
+        var sending = false;
         root.querySelector('#tpx-it-ok').addEventListener('click', function () {
+            if (sending) return;
             var nameEl = root.querySelector('#tpx-it-name');
             var name = nameEl.value.trim();
             var err = root.querySelector('#tpx-it-err');
@@ -67496,16 +67763,19 @@ function setTrainingsPageVisible(visible) {
                 err.textContent = 'L\u2019intitulé du cours ne peut pas dépasser 100 caractères.';
                 err.style.display = ''; return;
             }
-            var specValue = isExisting ? it.specialtyId : (picker ? picker.get() : firstSpec);
+            var specValue = picker ? picker.get() : (it ? it.specialtyId : firstSpec);
+            var moving = !!it && specValue !== it.specialtyId;
 
             // Numéro : optionnel, chiffres uniquement, unique dans la matière
             // choisie. Vide = pas de courseNum, repli automatique à l'affichage.
             var numRaw = numEl.value.trim().replace(/[^0-9]/g, '').slice(0, 4);
             var courseNum = null;
+            var shownMap = displayNumsMap();
+            if (!numRaw && (!it || moving)) numRaw = nextCourseNum(specValue);   // numéro laissé vide : attribué à la suite
             if (numRaw) {
                 courseNum = parseInt(numRaw, 10);
                 var numClash = state.items.some(function (i) {
-                    return i.specialtyId === specValue && i.courseNum === courseNum &&
+                    return i.specialtyId === specValue && shownCourseNum(i, shownMap) === courseNum &&
                            (!it || (i.specialtyId + '|' + i.num) !== key);
                 });
                 if (numClash) { err.textContent = 'Le numéro ' + courseNum + ' est déjà utilisé dans cette matière.'; err.style.display = ''; return; }
@@ -67520,14 +67790,16 @@ function setTrainingsPageVisible(visible) {
                        (!it || (i.specialtyId + '|' + i.num) !== key);
             });
             if (nameClash) { err.textContent = 'Un cours de cette matière porte déjà cet intitulé.'; err.style.display = ''; return; }
-            upsertItem({ key: key || null, specialtyId: specValue, name: name, courseNum: courseNum, fx: true });
+            sending = true;
+            if (moving) moveItem({ key: key, specialtyId: specValue, name: name, courseNum: courseNum, fx: true });
+            else upsertItem({ key: key || null, specialtyId: specValue, name: name, courseNum: courseNum, fx: true });
             m.close();
         });
 
         var del = root.querySelector('#tpx-it-del');
         if (del) del.addEventListener('click', function () {
-            confirmModal('Archiver ce cours ?',
-                'Le cours sera archivé et disparaîtra de vos listes. Ses tours et sa note restent enregistrés, rien n\'est supprimé.',
+            confirmModal('Supprimer ce cours ?',
+                'Ce cours sera supprimé définitivement : ses tours, sa note et sa progression seront perdus. Cette action est irréversible. Ses flashcards sont conservées (classées « Non classé »).',
                 function () { deleteItem(key); m.close(); });
         });
     }
@@ -67605,7 +67877,7 @@ function setTrainingsPageVisible(visible) {
 
     function needSpecialtyFirst() {
         var m = buildModal('Créez d\'abord une matière', 'fa-folder-plus',
-            '<div class="tpx-hint" style="font-size:.86rem;line-height:1.6;">Chaque ' + (APP === 'edn' ? 'item' : 'SDD') +
+            '<div class="tpx-hint" style="font-size:.86rem;line-height:1.6;">Chaque ' + (APP === 'edn' ? 'cours' : 'SDD') +
             ' est rattaché à une matière. Créez-en une pour continuer.</div>',
             '<button class="tpx-btn" id="tpx-ns-no" type="button">Plus tard</button>' +
             '<button class="tpx-btn tpx-btn-primary" id="tpx-ns-go" type="button">Créer une matière</button>');
@@ -67618,7 +67890,7 @@ function setTrainingsPageVisible(visible) {
         if (!supported()) return false;
         var m = buildModal('Disponible en programme sur-mesure', 'fa-wand-magic-sparkles',
             '<div class="tpx-hint" style="font-size:.86rem;line-height:1.6;">Vous suivez le programme officiel : les matières et ' +
-            (APP === 'edn' ? 'items' : 'SDD') + ' sont fournis et ne se modifient pas. Passez au programme sur-mesure pour construire votre propre liste. ' +
+            (APP === 'edn' ? 'cours' : 'SDD') + ' sont fournis et ne se modifient pas. Passez au programme sur-mesure pour construire votre propre liste. ' +
             'Vos tours déjà enregistrés sont conservés et réapparaîtront si vous revenez au programme officiel.</div>',
             '<button class="tpx-btn" id="tpx-rc-no" type="button">Rester sur l\'officiel</button>' +
             '<button class="tpx-btn tpx-btn-primary" id="tpx-rc-go" type="button">Passer au sur-mesure</button>');
@@ -67644,7 +67916,7 @@ function setTrainingsPageVisible(visible) {
         mgrTab = tab || 'spec';
         mgrFilter = '';
 
-        var entryLabel = APP === 'edn' ? 'Items' : 'SDD';
+        var entryLabel = APP === 'edn' ? 'Cours' : 'SDD';
         var body =
             '<div class="tpx-mgr-tabs" id="tpx-mgr-tabs">' +
                 '<button type="button" class="tpx-mgr-tab" data-tab="spec"><i class="fas fa-folder"></i> Matières <span class="tpx-mgr-count" id="tpx-mgr-c-spec"></span></button>' +
@@ -67660,13 +67932,11 @@ function setTrainingsPageVisible(visible) {
             '<div class="tpx-mgr-list" id="tpx-mgr-list"></div>';
 
         var foot =
-            '<button class="tpx-btn" id="tpx-mgr-close" type="button">Fermer</button>' +
             '<button class="tpx-btn tpx-btn-primary" id="tpx-mgr-add" type="button"><i class="fas fa-plus"></i> <span id="tpx-mgr-add-label"></span></button>';
 
         var m = buildModal('Gérer mon programme', 'fa-sliders', body, foot, { wide: true, isManager: true });
         var root = m.overlay;
 
-        root.querySelector('#tpx-mgr-close').addEventListener('click', m.close);
         root.querySelectorAll('.tpx-mgr-tab').forEach(function (b) {
             b.addEventListener('click', function () {
                 var nt = b.getAttribute('data-tab'); if (nt === mgrTab) return;
@@ -67697,7 +67967,7 @@ function setTrainingsPageVisible(visible) {
             mgrPendingReturn = { tab: mgrTab, filter: q.value };
             try {
                 if (mgrTab === 'spec') openSpecialtyModal(null);
-                else APP === 'edn' ? openItemModal(null) : openSddModal(null);
+                else APP === 'edn' ? openItemModal(null, filteredFirstSpecialty()) : openSddModal(null);
             } finally { mgrPendingReturn = null; }
         });
 
@@ -67735,6 +68005,10 @@ function setTrainingsPageVisible(visible) {
         var s = state.specialties.filter(function (x) { return x.id === id; })[0];
         return (s && s.color) || '#6b7280';
     }
+    function specIconOf(id) {
+        var s = state.specialties.filter(function (x) { return x.id === id; })[0];
+        return (s && s.icon) || 'fa-book-medical';
+    }
 
     function renderManagerList(root, m) {
         var list = root.querySelector('#tpx-mgr-list');
@@ -67751,7 +68025,7 @@ function setTrainingsPageVisible(visible) {
                     color: s.color || '#6b7280',
                     icon: s.icon || 'fa-book-medical',
                     title: s.name,
-                    sub: n + ' ' + (APP === 'edn' ? 'item' : 'SDD') + (n > 1 && APP === 'edn' ? 's' : ''),
+                    sub: n + ' ' + (APP === 'edn' ? 'cours' : 'SDD') + (n > 1 && APP !== 'edn' ? 's' : ''),
                     edit: function () { openSpecialtyModal(s.id); },
                     // Un simple renderManager(root, m) après coup opère alors sur un DOM déjà détaché du document (aucun effet
                     // visible, ET le gestionnaire ne réapparaissait plus jamais après confirmation — vrai bug préexistant, pas
@@ -67769,7 +68043,17 @@ function setTrainingsPageVisible(visible) {
             // vient de p1ComputeDisplayNums() (courseNum choisi, ou repli
             // alphabétique par matière).
             var _mgrNums = window.p1ComputeDisplayNums ? window.p1ComputeDisplayNums() : {};
-            state.items.forEach(function (i) {
+            var _mgrSpecRank = {};
+            state.specialties.forEach(function (sp, k) { _mgrSpecRank[sp.id] = k; });
+            var _mgrNum = function (i) { var v = _mgrNums[i.specialtyId + '|' + i.num]; return typeof v === 'number' ? v : Infinity; };
+            // Classés par matière (ordre de la liste des matières) puis par numéro.
+            state.items.slice().sort(function (a, b) {
+                var ra = _mgrSpecRank[a.specialtyId], rb = _mgrSpecRank[b.specialtyId];
+                if (ra !== rb) return (ra === undefined ? 1e9 : ra) - (rb === undefined ? 1e9 : rb);
+                var na = _mgrNum(a), nb = _mgrNum(b);
+                if (na !== nb) return na < nb ? -1 : 1;
+                return String(a.name).localeCompare(String(b.name));
+            }).forEach(function (i) {
                 var _dn = _mgrNums[i.specialtyId + '|' + i.num];
                 var label = (_dn != null ? _dn : '?') + ' — ' + i.name;
                 if (mgrFilter && label.toLowerCase().indexOf(mgrFilter) === -1 &&
@@ -67778,16 +68062,16 @@ function setTrainingsPageVisible(visible) {
                 rows.push({
                     key: key,
                     color: specColorOf(i.specialtyId),
-                    icon: i.reference ? 'fa-star' : 'fa-list-check',
+                    icon: specIconOf(i.specialtyId),
                     title: label,
-                    sub: specNameOf(i.specialtyId) + (i.reference ? ' · item de référence' : ''),
+                    sub: specNameOf(i.specialtyId) + (i.reference ? ' · cours de référence' : ''),
                     edit: function () { openItemModal(key); },
                     // Voir le commentaire détaillé sur le "del" de la matière ci-dessus : même correctif
                     // (buildModal() à overlay unique détruit déjà ce gestionnaire à l'ouverture de la
                     // confirmation, donc on ROUVRE au lieu de réutiliser un DOM détaché).
                     del: function () {
-                        confirmModal('Archiver ce cours ?',
-                            'Le cours « ' + i.name + ' » sera archivé et disparaîtra de vos listes. Ses tours et sa note restent enregistrés, rien n\'est supprimé.',
+                        confirmModal('Supprimer ce cours ?',
+                            'Le cours « ' + i.name + ' » sera supprimé définitivement : ses tours, sa note et sa progression seront perdus. Cette action est irréversible. Ses flashcards sont conservées (classées « Non classé »).',
                             function () { deleteItem(key); setTimeout(function () { openManager(mgrTab); }, 220); });
                     }
                 });
@@ -67891,7 +68175,7 @@ function setTrainingsPageVisible(visible) {
                 listHeader.firstChild);
             listHeader.insertBefore(
                 makeBtn('tpx-btn-add-entry', 'fa-plus', APP === 'edn' ? 'Nouveau cours' : 'Nouvelle SDD',
-                    function () { var one = filteredSingleSpecialty(); APP === 'edn' ? openItemModal(null, one) : openSddModal(null, one); }),
+                    function () { var one = filteredFirstSpecialty(); APP === 'edn' ? openItemModal(null, one) : openSddModal(null, one); }),
                 listHeader.firstChild);
         }
         updateHeaderUi();
@@ -68243,7 +68527,7 @@ function updateSettingsUi() {
                     : 'La page d\'accueil rassemble votre avancement sur les stations : ce qui a été travaillé, à quel rythme, et ce qui mérite d\'y revenir.',
                 points: EDN
                     ? [
-                        { icon: 'fa-calendar-day', text: 'Des compteurs <strong>quotidiens, hebdomadaires et généraux</strong> : items vus, tours effectués, temps de travail.' },
+                        { icon: 'fa-calendar-day', text: 'Des compteurs <strong>quotidiens, hebdomadaires et généraux</strong> : cours vus, tours effectués, temps de travail.' },
                         { icon: 'fa-arrow-trend-up', text: 'Vos <strong>matières préférées</strong> et les <strong>cours à revoir en priorité</strong>, calculés à partir de vos tours et de votre niveau de confiance.' },
                         { icon: 'fa-trophy', text: 'Un système de <strong>trophées</strong> qui se débloquent au fil de votre avancement.' },
                         { icon: 'fa-list-check', text: 'Une <strong>To-Do list quotidienne</strong>, que vous alimentez depuis n\'importe quelle page.' }
@@ -68429,8 +68713,8 @@ function updateSettingsUi() {
         var SETTINGS = {
             scope: {
                 id: 'scope',
-                label: 'Périmètre des items',
-                hint: 'Certains items sont traités par plusieurs collèges. Ce réglage décide s\'ils comptent une fois ou autant de fois qu\'ils apparaissent.',
+                label: 'Périmètre des cours',
+                hint: 'Certains cours sont traités par plusieurs collèges. Ce réglage décide s\'ils comptent une fois ou autant de fois qu\'ils apparaissent.',
                 // P1Planner : retiré (notion de collèges EDN sans équivalent
                 // pour des cours créés librement — voir plus haut, réglage 1
                 // du modal Paramètres, retiré pour la même raison).
@@ -68442,10 +68726,10 @@ function updateSettingsUi() {
                     }
                 },
                 options: [
-                    { value: 'all', icon: 'fa-layer-group', label: 'Tous les items',
+                    { value: 'all', icon: 'fa-layer-group', label: 'Tous les cours',
                       desc: 'Tout le programme, doublons entre collèges compris.' },
-                    { value: 'reference', icon: 'fa-star', label: 'Items de référence',
-                      desc: 'Chaque item une seule fois, dans son collège de référence.' }
+                    { value: 'reference', icon: 'fa-star', label: 'Cours de référence',
+                      desc: 'Chaque cours une seule fois, dans son collège de référence.' }
                 ]
             },
             tours: {
@@ -68525,7 +68809,7 @@ function updateSettingsUi() {
                         : 'Toutes les situations de départ officielles, déjà en place.' },
                     { value: CUSTOM, icon: 'fa-wand-magic-sparkles', label: 'Programme sur-mesure',
                       desc: EDN
-                        ? 'Page blanche : vos matières, vos items, vos intitulés.'
+                        ? 'Page blanche : vos matières, vos cours, vos intitulés.'
                         : 'Page blanche : vos matières, vos situations, vos intitulés.' }
                 ]
             },
@@ -69738,6 +70022,11 @@ h2.section-title > i:first-child:not(#p1-h):active, h2.planning-month-title > i:
 @keyframes p1PageSlideIn { from { transform: translateY(12px); } to { transform: translateY(0); } }
 .app-page.page-entering { animation-name: p1PageSlideIn; }
 #page-items.app-page.page-entering { animation: none; }
+/* « Mes cours » : le tableau est calculé AVANT le glissement (le calcul bloque l'écran : joué pendant, l'animation se réduisait à un saut) ;
+   l'animation démarre ensuite, comme sur les autres pages */
+#page-items.app-page.p1-items-in { animation: p1PageSlideIn 300ms cubic-bezier(0.4, 0, 0.2, 1); }
+body.p1-hdr-go #page-items.app-page.p1-items-in { animation: none !important; }
+@media (prefers-reduced-motion: reduce) { #page-items.app-page.p1-items-in { animation: none; } }
 
 /* Suppression d'une tâche : glissement + fondu + repli de la hauteur et de l'écart (0,3 s) */
 .checklist-item.p1-todo-leaving {
@@ -70471,6 +70760,12 @@ html body .todo-pin-enter { opacity: 1; transition: none; animation: p1PinIn 0.2
     }
     window.p1PlayTourAdded = function (t, isNew, conf, fromJ) {
         try {
+            var org = window._p1NotesTourOrigin; window._p1NotesTourOrigin = null;
+            if (t && org && compact() && org.key === t.specialtyId + '-' + t.fc && Date.now() - org.t < 120000 && typeof window.p1CompactAddFx === 'function') {
+                var cfxOk = false;
+                try { cfxOk = !!window.p1CompactAddFx(t.specialtyId, t.fc); } catch (e0) {}
+                if (cfxOk) return;   /* tour ajouté depuis la fenêtre des notes : cadre vert + « +1 tour » sur la ligne ; sinon l'ancien check */
+            }
             if (!t || compact() || typeof window.p1TourAddedFx !== 'function') { check(); return; }
             var cls = new RegExp('(^|\\s)c' + conf + '(\\s|$)');
             var go = function () {
@@ -70675,7 +70970,7 @@ html body .todo-pin-enter { opacity: 1; transition: none; animation: p1PinIn 0.2
     function bringIntoView(el) {
         var r = el.getBoundingClientRect(), vh = window.innerHeight || document.documentElement.clientHeight;
         var inList = el.closest('#tpx-mgr-list');
-        if (inList) { var lr = inList.getBoundingClientRect(); if (r.top < lr.top || r.bottom > lr.bottom) { try { el.scrollIntoView({ block: 'nearest', behavior: lessMotion() ? 'auto' : 'smooth' }); } catch (e) {} return 360; } return 0; }
+        if (inList) { var lr = inList.getBoundingClientRect(); if (r.top < lr.top || r.bottom > lr.bottom) { try { el.scrollIntoView({ block: 'nearest', behavior: 'auto' }); } catch (e) {} return 360; } return 0; }
         if (r.top < 70 || r.bottom > vh - 8) { try { el.scrollIntoView({ block: 'center', behavior: lessMotion() ? 'auto' : 'smooth' }); } catch (e) { el.scrollIntoView(); } return 480; }
         return 0;
     }
@@ -70698,6 +70993,7 @@ html body .todo-pin-enter { opacity: 1; transition: none; animation: p1PinIn 0.2
         el.classList.remove('tpx-pfx-hit', 'tpx-pfx-pop'); void el.offsetWidth; el.classList.add('tpx-pfx-hit'); if (pop) el.classList.add('tpx-pfx-pop');
         setTimeout(function () { el.classList.remove('tpx-pfx-hit', 'tpx-pfx-pop'); }, 2500);
         if (lessMotion()) return;
+        var first = el.getBoundingClientRect();   /* même instant que la mesure d'origine du calque */
         var l = layer(2500, get, z);
         var g = document.createElement('div'); g.className = 'tpx-pfx-glow';
         g.style.left = (r.x + 1) + 'px'; g.style.top = (r.y + 1) + 'px'; g.style.width = Math.max(0, r.w - 2) + 'px'; g.style.height = Math.max(0, r.h - 2) + 'px';
@@ -70709,6 +71005,19 @@ html body .todo-pin-enter { opacity: 1; transition: none; animation: p1PinIn 0.2
         var cx = anchor ? anchor.left + anchor.width / 2 : r.x + Math.min(r.w / 2, 140), cy = anchor ? anchor.top + anchor.height / 2 : r.y + r.h / 2;
         p.style.left = (r.x + r.w / 2) + 'px'; p.style.top = pillTop(el, r.y) + 'px'; l.appendChild(p);
         if (mode === 'add') confetti(l, cx, cy);
+        /* la fenêtre ou la liste peut encore bouger (ouverture, défilement) pendant la mesure : le cadre et la pastille
+           reprennent la taille et la position réelles de la ligne à chaque image */
+        (function track() {
+            if (!l.isConnected) return;
+            var e = get();
+            if (e && e.isConnected) {
+                var rr = e.getBoundingClientRect(), vr = visibleRect(e), dx = rr.left - first.left, dy = rr.top - first.top;
+                g.style.left = (vr.x + 1 - dx) + 'px'; g.style.top = (vr.y + 1 - dy) + 'px';
+                g.style.width = Math.max(0, vr.w - 2) + 'px'; g.style.height = Math.max(0, vr.h - 2) + 'px';
+                p.style.left = (vr.x + vr.w / 2 - dx) + 'px'; p.style.top = (pillTop(e, vr.y) - dy) + 'px';
+            }
+            requestAnimationFrame(track);
+        })();
     }
     /* suppression dans le gestionnaire : la ligne rougit, tremble, se replie */
     function playRowOut(row, type, z) {
@@ -71739,7 +72048,9 @@ body.tours-compact .legend-button, body.tours-compact #legendModal { display: no
 .p1-hdr-b { position: relative; width: 44px; height: 36px; padding: 0; border: 0; border-radius: 999px; background: transparent; color: var(--gray-500); display: inline-flex; align-items: center; justify-content: center; font-size: 1.08rem; cursor: pointer; flex-shrink: 0; -webkit-tap-highlight-color: transparent; transition: background 0.15s ease, color 0.15s ease; }
 .p1-hdr-b:hover { background: var(--gray-100); color: var(--gray-800); }
 .p1-hdr-b:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
-.p1-hdr-b.active { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.35); }
+.p1-hdr-b { z-index: 1; }
+.p1-hdr-ind { position: absolute; left: 0; top: 4px; width: 44px; height: 36px; border-radius: 999px; background: linear-gradient(135deg, var(--primary), var(--primary-dark)); box-shadow: 0 2px 8px rgba(59, 130, 246, 0.35); pointer-events: none; z-index: 0; opacity: 0; transition: transform 0.26s cubic-bezier(0.4, 0, 0.2, 1), width 0.26s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease; will-change: transform; }
+.p1-hdr-b.active, .p1-hdr-b.active:hover { background: transparent; color: #fff; }
 .p1-hdr-b.todo { background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: #fff; margin-left: 2px; }
 .p1-hdr-b.todo:hover { filter: brightness(1.08); }
 .p1-hdr-b.jrev { background: rgba(59, 130, 246, 0.12); color: var(--primary); }
@@ -71751,9 +72062,10 @@ body.tours-compact .legend-button, body.tours-compact #legendModal { display: no
 [data-theme="dark"] .p1-hdr-b { color: #94a3b8; }
 [data-theme="dark"] .p1-hdr-b:hover { background: #334155; color: #e2e8f0; }
 [data-theme="dark"] .p1-hdr-b.active, [data-theme="dark"] .p1-hdr-b.todo { color: #fff; }
+[data-theme="dark"] .p1-hdr-b.active:hover { background: transparent; color: #fff; }
 [data-theme="dark"] .p1-hdr-cnt { box-shadow: 0 0 0 2px #1e293b; }
 @media (max-width: 767px) { .p1-hdr-nav { display: none !important; } }
-@media (prefers-reduced-motion: reduce) { .p1-hdr-nav.is-on, .p1-hdr-nav.is-off, .p1-hdr-nav.is-on .p1-hdr-b { animation: none; } .p1-hdr-b { transition: none; } .p1-cfx-glow, .p1-cfx-glow::after, .p1-cfx-pill { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .p1-hdr-nav.is-on, .p1-hdr-nav.is-off, .p1-hdr-nav.is-on .p1-hdr-b { animation: none; } .p1-hdr-b, .p1-hdr-ind { transition: none; } .p1-cfx-glow, .p1-cfx-glow::after, .p1-cfx-pill { animation: none; } }
 /* 1b. Paramètres en deux colonnes : sommaire fixe à gauche, une seule rubrique à droite (le contenu des cartes ne change pas) */
 .settings-modal-inner.p1-set-split .settings-intro, .settings-modal-inner.p1-set-split #p1SetToc { display: none !important; }   /* remplacés par le sommaire de gauche */
 .p1-set-row { display: flex; flex: 1; min-height: 0; min-width: 0; }
@@ -71896,6 +72208,247 @@ html[data-theme="pastel"] .train-cl-status-option.p1-tl-tour:hover { background:
 .quick-actions > .flash-global-btn { align-self: stretch; height: auto; }
 #page-dashboard .section-header .quick-actions > #btn-reset-filters-specialty { align-self: stretch; height: auto; }
 /*@@EVOL-CSS-END@@*/
+</style>
+<style id="p1-fc-style">
+.settings-card-icon.p1fc-ico { background: linear-gradient(135deg, var(--primary), var(--accent)); box-shadow: 0 3px 10px rgba(59,130,246,0.35); }
+.p1fc-set [hidden] { display: none !important; }
+@media (min-width: 768px) { .flash-drawer { width: 440px; } }
+#p1-tip { position: fixed; z-index: 100000; pointer-events: none; background: linear-gradient(135deg, #1e2d45 0%, #111827 100%); color: #f8fafc; padding: 0.32rem 0.7rem; border-radius: 8px; font-size: 0.72rem; font-weight: 500; font-family: var(--font-body); letter-spacing: 0.01em; white-space: nowrap; max-width: 240px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.07); opacity: 0; visibility: hidden; transition: opacity 0.15s ease, visibility 0.15s ease; }
+#p1-tip.is-wrap { white-space: normal; text-align: center; line-height: 1.35; }
+#p1-tip::after { content: ''; position: absolute; top: 100%; left: var(--p1-tip-arrow, 50%); transform: translateX(-50%); border: 5px solid transparent; border-top-color: #111827; pointer-events: none; }
+#p1-tip.is-below::after { top: auto; bottom: 100%; border-top-color: transparent; border-bottom-color: #111827; }
+#p1-tip.visible { opacity: 1; visibility: visible; }
+@media (prefers-reduced-motion: reduce) { #p1-tip { transition: none; } }
+.p1fc-body { display: flex; flex-direction: column; gap: 0.7rem; margin-top: 0.8rem; }
+.p1fc-modes { display: flex; flex-direction: column; gap: 0.5rem; }
+.p1fc-mode { width: 100%; box-sizing: border-box; }
+.flash-uptodate-check { display: inline-flex; align-items: center; justify-content: center; width: 1.25em; height: 1.25em; margin-left: 0.35em; vertical-align: middle; position: relative; top: -0.08em; border-radius: 50%; background: #22c55e; color: #fff; font-size: 0.85em; box-shadow: 0 2px 6px rgba(34, 197, 94, 0.3); }
+.flash-uptodate-check i { font-size: 0.68em; color: #fff; }
+html[data-theme="pastel"] .flash-uptodate-check { background: #6fae84; box-shadow: 0 2px 6px rgba(111, 174, 132, 0.3); }
+.p1fc-mode { position: relative; display: grid; grid-template-columns: 34px 1fr; column-gap: 0.75rem; row-gap: 2px; align-items: center; text-align: left; padding: 0.7rem 2.6rem 0.7rem 0.8rem;
+  border: 1.5px solid var(--gray-200); border-radius: var(--border-radius-lg); background: var(--white); cursor: pointer; font-family: inherit; color: var(--gray-700);
+  transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease, background .18s ease; }
+.p1fc-mode:hover { border-color: var(--gray-300); box-shadow: var(--shadow-sm); transform: translateY(-1px); }
+.p1fc-mode:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.p1fc-mode.is-active { border-color: var(--primary); background: rgba(59,130,246,0.06); box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
+.p1fc-mode-ico { grid-row: span 2; width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 0.85rem; }
+.p1fc-mode-ico.simple { background: linear-gradient(135deg, #94a3b8, #64748b); }
+.p1fc-mode-ico.anki { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+.p1fc-mode-ico.fsrs { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
+.p1fc-mode-name { font-weight: 800; font-size: 0.9rem; color: var(--gray-900); display: flex; align-items: center; gap: 0.4rem; }
+.p1fc-mode-desc { font-size: 0.74rem; line-height: 1.35; color: var(--gray-500); }
+.p1fc-mode-check { position: absolute; top: 50%; margin-top: -9px; right: 0.8rem; width: 18px; height: 18px; border-radius: 50%; background: var(--primary); color: #fff; font-size: 0.6rem; display: none; align-items: center; justify-content: center; }
+.p1fc-mode.is-active .p1fc-mode-check { display: flex; }
+.p1fc-pill { font-size: 0.6rem; font-weight: 800; letter-spacing: .02em; text-transform: uppercase; padding: 2px 6px; border-radius: 999px; background: rgba(139,92,246,0.14); color: #6d28d9; }
+.p1fc-explain { display: flex; gap: 0.7rem; align-items: flex-start; padding: 0.75rem 0.85rem; border-radius: var(--border-radius-md); background: var(--white); border: 1px solid var(--gray-200); }
+.p1fc-explain-ico { width: 26px; height: 26px; border-radius: 8px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; }
+.p1fc-explain-ico.simple { background: rgba(100,116,139,.12); color: #475569; }
+.p1fc-explain-ico.anki { background: rgba(59,130,246,.12); color: #2563eb; }
+.p1fc-explain-ico.fsrs { background: rgba(139,92,246,0.12); color: #6d28d9; }
+.p1fc-explain strong { display: block; font-size: 0.82rem; color: var(--gray-900); margin-bottom: 2px; }
+.p1fc-explain span, .p1fc-explain p { font-size: 0.78rem; line-height: 1.45; color: var(--gray-600); margin: 0; }
+.p1fc-explain p { margin-top: 0.4rem; }
+.p1fc-more { margin-top: 0.35rem; border: none; background: none; padding: 0; color: var(--primary); font: inherit; font-size: 0.76rem; font-weight: 700; cursor: pointer; display: inline-flex; gap: 0.3rem; align-items: center; }
+.p1fc-more i { transition: transform .2s ease; }
+.p1fc-more[aria-expanded="true"] i { transform: rotate(180deg); }
+.p1fc-explain .p1fc-more { display: flex; width: fit-content; }
+.p1fc-set .p1fc-chips, .p1fc-set .p1fc-seg { position: relative; gap: 3px; padding: 3px; border-radius: 12px; background: var(--gray-100); border: 1px solid var(--gray-200); }
+.p1fc-set .p1fc-chips button, .p1fc-set .p1fc-seg button { position: relative; z-index: 1; height: 32px; padding: 0 0.85rem; border-radius: 9px; font-size: 0.82rem; font-weight: 600; color: var(--gray-600); }
+.p1fc-set .p1fc-chips button:hover, .p1fc-set .p1fc-seg button:hover { color: var(--gray-900); }
+.p1fc-set .p1fc-chips button.is-on, .p1fc-set .p1fc-seg button.is-on { background: var(--white, #fff); color: var(--primary); box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,.1)); }
+.p1fc-set .p1fc-slide::before { content: ''; position: absolute; top: 3px; bottom: 3px; left: 0; width: var(--p1fc-w); transform: translateX(var(--p1fc-x)); background: var(--white, #fff); border-radius: 9px;
+  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,.1)); transition: transform .28s cubic-bezier(.4, 0, .2, 1), width .28s cubic-bezier(.4, 0, .2, 1); }
+.p1fc-set .p1fc-slide button.is-on { background: transparent; box-shadow: none; }
+[data-theme="dark"] .p1fc-set .p1fc-chips, [data-theme="dark"] .p1fc-set .p1fc-seg { background: var(--gray-200); border-color: var(--gray-300); }
+[data-theme="dark"] .p1fc-set .p1fc-chips button.is-on, [data-theme="dark"] .p1fc-set .p1fc-seg button.is-on { background: var(--gray-50); color: var(--primary); }
+[data-theme="dark"] .p1fc-set .p1fc-slide::before { background: var(--gray-50); }
+[data-theme="dark"] .p1fc-set .p1fc-slide button.is-on { background: transparent; }
+@media (prefers-reduced-motion: reduce) { .p1fc-set .p1fc-slide::before { transition: none; } }
+.p1fc-set .p1fc-row:has(> .p1fc-seg, > .p1fc-chips) { flex-wrap: wrap; row-gap: 0.55rem; }
+.p1fc-set .p1fc-row:has(> .p1fc-seg, > .p1fc-chips) > .p1fc-row-txt { flex: 1 1 240px; }
+.p1fc-set .p1fc-row > .p1fc-seg, .p1fc-set .p1fc-row > .p1fc-chips { margin-left: auto; }
+@media (max-width: 640px) { .p1fc-set .p1fc-seg, .p1fc-set .p1fc-chips { flex: 1 1 100%; max-width: 100%; } .p1fc-set .p1fc-seg button, .p1fc-set .p1fc-chips button { flex: 1 1 0; min-width: 0; padding: 0 0.4rem; justify-content: center; font-size: 0.78rem; } }
+.p1fc-goal { padding: 0.85rem 0.9rem; border-radius: var(--border-radius-md); background: var(--white); border: 1px solid var(--gray-200); display: flex; flex-direction: column; gap: 0.5rem; }
+.p1fc-row-head { display: flex; justify-content: space-between; align-items: center; }
+.p1fc-row-label { font-size: 0.84rem; font-weight: 700; color: var(--gray-800); display: flex; align-items: center; gap: 0.45rem; }
+.p1fc-row-label i { color: var(--primary); width: 16px; text-align: center; }
+.p1fc-goal-val { font-weight: 800; font-size: 0.95rem; color: #6d28d9; background: rgba(139,92,246,0.12); padding: 3px 10px; border-radius: 999px; font-variant-numeric: tabular-nums; }
+.p1fc-range { -webkit-appearance: none; appearance: none; width: 100%; height: 8px; border-radius: 999px; outline: none; margin: 0.35rem 0 0.1rem; cursor: pointer;
+  background: linear-gradient(90deg, #8b5cf6 0%, #8b5cf6 var(--p1fc-fill, 66.6%), var(--gray-200) var(--p1fc-fill, 66.6%)); }
+.p1fc-range::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: #fff; border: 3px solid #8b5cf6; box-shadow: 0 2px 6px rgba(109,40,217,.35); cursor: pointer; }
+.p1fc-range::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: #fff; border: 3px solid #8b5cf6; box-shadow: 0 2px 6px rgba(109,40,217,.35); cursor: pointer; }
+.p1fc-range:focus-visible { box-shadow: 0 0 0 3px rgba(139,92,246,.25); }
+.p1fc-range-scale { display: flex; justify-content: space-between; font-size: 0.68rem; color: var(--gray-500); font-weight: 600; }
+.p1fc-goal-est { font-size: 0.76rem; color: var(--gray-600); display: flex; gap: 0.45rem; align-items: center; padding-top: 0.15rem; }
+.p1fc-goal-est i { color: #6d28d9; }
+.p1fc-rows { display: flex; flex-direction: column; border-radius: var(--border-radius-md); background: var(--white); border: 1px solid var(--gray-200); }
+.p1fc-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.7rem 0.9rem; }
+.p1fc-row.stack { flex-direction: column; align-items: stretch; gap: 0.55rem; }
+.p1fc-row.stack .p1fc-seg { align-self: flex-start; }
+.p1fc-row + .p1fc-row { border-top: 1px solid var(--gray-100); }
+.p1fc-row[hidden] { display: none; }
+.p1fc-row-txt { min-width: 0; }
+.p1fc-row-sub { font-size: 0.72rem; color: var(--gray-500); margin-top: 2px; padding-left: calc(16px + 0.45rem); line-height: 1.35; }
+.p1fc-toggle:disabled { opacity: .55; cursor: wait; }
+.p1fc-row-note { font-size: 0.72rem; color: var(--gray-500); padding: 0.6rem 0.9rem; display: flex; gap: 0.45rem; align-items: center; }
+.p1fc-row-note i { color: var(--gray-400); }
+.p1fc-step { display: inline-flex; align-items: center; border: 1.5px solid var(--gray-200); border-radius: 999px; overflow: hidden; flex-shrink: 0; background: var(--white); }
+.p1fc-step button { width: 30px; height: 30px; border: none; background: transparent; color: var(--gray-600); cursor: pointer; font-size: 0.75rem; }
+.p1fc-step button:hover { background: var(--gray-100); color: var(--primary); }
+.p1fc-step button:disabled { opacity: .35; cursor: default; background: transparent; color: var(--gray-600); }
+.p1fc-step span { min-width: 2.6em; text-align: center; font-weight: 800; font-size: 0.85rem; color: var(--gray-900); font-variant-numeric: tabular-nums; }
+.p1fc-step small { font-weight: 600; color: var(--gray-500); font-size: 0.7rem; margin-left: 2px; }
+.p1fc-chips, .p1fc-seg { display: inline-flex; gap: 4px; padding: 3px; border-radius: 999px; background: var(--gray-100); flex-shrink: 0; }
+.p1fc-chips button, .p1fc-seg button { border: none; background: transparent; padding: 0 0.75rem; height: 28px; border-radius: 999px; font: inherit; font-size: 0.76rem; font-weight: 700; color: var(--gray-600); cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.35rem; transition: background .15s ease, color .15s ease, box-shadow .15s ease; }
+.p1fc-chips button.is-on, .p1fc-seg button.is-on { background: var(--white); color: var(--primary); box-shadow: 0 1px 3px rgba(15,23,42,0.12); }
+.p1fc-toggle { position: relative; width: 42px; height: 24px; border-radius: 999px; background: var(--gray-300); border: none; cursor: pointer; flex-shrink: 0; transition: background .2s ease; }
+.p1fc-toggle::after { content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: transform .2s ease; }
+.p1fc-toggle.is-on { background: var(--primary); }
+.p1fc-toggle.is-on::after { transform: translateX(18px); }
+.p1fc-short { display: none; }
+/* fenêtre de création / modification : drapeau */
+.p1fc-edit-flag { flex-shrink: 0; display: flex; flex-direction: column; gap: 0.3rem; }
+.p1fc-edit-flag .flash-rt-label { margin-bottom: 0; }
+.p1fc-edit-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.p1fc-edit-chips button { display: inline-flex; align-items: center; gap: 0.4rem; height: 30px; padding: 0 0.75rem; border-radius: 999px; border: 1.5px solid var(--gray-200); background: var(--white); color: var(--gray-600); font: inherit; font-size: 0.78rem; font-weight: 700; cursor: pointer; transition: border-color .15s ease, background .15s ease, color .15s ease, box-shadow .15s ease; }
+.p1fc-edit-chips button:hover { border-color: var(--gray-300); color: var(--gray-800); }
+.p1fc-edit-chips button { transition: border-color .15s ease, background .15s ease, color .15s ease, box-shadow .15s ease, transform .15s ease; }
+.p1fc-edit-chips button:hover { transform: translateY(-1px); box-shadow: 0 3px 8px rgba(15,23,42,0.08); }
+.p1fc-edit-chips button:active { transform: scale(0.96); }
+.p1fc-edit-chips button[data-f=""]:hover { border-color: var(--gray-400); background: var(--gray-50); }
+.p1fc-edit-chips button.f-important:hover { border-color: #22c55e; background: rgba(34,197,94,0.07); color: #15803d; }
+.p1fc-edit-chips button.f-difficile:hover { border-color: #f59e0b; background: rgba(245,158,11,0.08); color: #b45309; }
+.p1fc-edit-chips button.f-corriger:hover { border-color: #ef4444; background: rgba(239,68,68,0.06); color: #b91c1c; }
+.p1fc-edit-chips .p1fc-dot { transition: transform .15s ease; }
+.p1fc-edit-chips button:hover .p1fc-dot { transform: scale(1.2); }
+.p1fc-edit-chips button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.p1fc-edit-chips button.is-on { border-color: var(--primary); background: rgba(59,130,246,0.08); color: var(--gray-900); box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
+.p1fc-edit-chips button.is-on.f-important { border-color: #22c55e; background: rgba(34,197,94,0.10); box-shadow: 0 0 0 3px rgba(34,197,94,0.14); }
+.p1fc-edit-chips button.is-on.f-difficile { border-color: #f59e0b; background: rgba(245,158,11,0.10); box-shadow: 0 0 0 3px rgba(245,158,11,0.14); }
+.p1fc-edit-chips button.is-on.f-corriger { border-color: #ef4444; background: rgba(239,68,68,0.08); box-shadow: 0 0 0 3px rgba(239,68,68,0.12); }
+.p1fc-edit-chips .p1fc-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+[data-theme="dark"] .p1fc-edit-chips button { background: #1e293b; border-color: #334155; color: #cbd5e1; }
+[data-theme="dark"] .p1fc-edit-chips button.is-on { color: #f1f5f9; }
+/* carte de révision */
+.flash-card-container.p1fc-dec .flash-card-face { padding-top: 3.2rem; }
+.p1fc-badges { position: absolute; top: 12px; left: 12px; z-index: 6; display: flex; gap: 6px; flex-wrap: wrap; max-width: calc(100% - 140px); pointer-events: none; }
+.p1fc-flag-badge { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.72rem; font-weight: 700; padding: 4px 10px; border-radius: 999px; }
+.p1fc-flag-badge.f-important { color: #15803d; background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.3); }
+.p1fc-flag-badge.f-difficile { color: #b45309; background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); }
+.p1fc-flag-badge.f-corriger { color: #b91c1c; background: rgba(239,68,68,0.10); border: 1px solid rgba(239,68,68,0.25); }
+.p1fc-tools { position: absolute; top: 10px; right: 10px; z-index: 6; display: flex; gap: 6px; transition: right .42s cubic-bezier(.4,0,.2,1); }
+.p1fc-tools.with-edit.edit-on { right: 52px; }   /* « Modifier » visible (verso) : les deux boutons se décalent */
+@media (hover: hover) { .flash-card-container:has(#flashSessEditBtn:hover) .p1fc-tools.with-edit.edit-on { right: calc(18px + var(--p1fc-edit-w, 104px)); }
+  .flash-card-container #flashSessEditBtn.flash-session-edit-btn:hover { max-width: var(--p1fc-edit-w, 140px); } }   /* même rythme que les outils */
+#flashSessEditBtn.p1fc-reveal { animation: p1fcEditIn .3s cubic-bezier(.22,1,.36,1) .1s both; }
+@keyframes p1fcEditIn { from { opacity: 0; transform: scale(.7); } to { opacity: 1; transform: none; } }
+.p1fc-tool { height: 34px; min-width: 34px; max-width: 34px; border: none; border-radius: 17px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.85rem; padding: 0; overflow: hidden; white-space: nowrap; cursor: pointer;
+  background: rgba(100,116,139,0.12); color: #475569; transition: max-width .42s cubic-bezier(.4,0,.2,1), padding .42s cubic-bezier(.4,0,.2,1), background .15s ease, color .15s ease, transform .12s ease; }
+.p1fc-tool:active { transform: scale(0.9); }
+.p1fc-tool .p1fc-tool-label { font-size: 0.78rem; font-weight: 600; opacity: 0; max-width: 0; overflow: hidden; margin-left: 0; font-family: var(--font-body); transition: opacity .25s ease, max-width .42s cubic-bezier(.4,0,.2,1), margin-left .42s cubic-bezier(.4,0,.2,1); }
+@media (hover: hover) {
+  .p1fc-tool:hover { max-width: 140px; padding: 0 12px 0 9px; }
+  .p1fc-tool:hover .p1fc-tool-label { opacity: 1; max-width: 100px; margin-left: 6px; }
+  .p1fc-tool.pause:hover { background: #475569; color: #fff; }
+  .p1fc-tool.flag:hover { background: #475569; color: #fff; }
+  .p1fc-tool.flag.f-important:hover { background: #22c55e; color: #fff; } .p1fc-tool.flag.f-difficile:hover { background: #f59e0b; color: #fff; } .p1fc-tool.flag.f-corriger:hover { background: #ef4444; color: #fff; }
+}
+.p1fc-tool.is-open { max-width: 140px; padding: 0 12px 0 9px; background: #475569; color: #fff; }
+.p1fc-tool.is-open .p1fc-tool-label { opacity: 1; max-width: 100px; margin-left: 6px; }
+.p1fc-tool.flag.f-important { background: rgba(34,197,94,0.16); color: #15803d; } .p1fc-tool.flag.f-important.is-open { background: #22c55e; color: #fff; }
+.p1fc-tool.flag.f-difficile { background: rgba(245,158,11,0.16); color: #b45309; } .p1fc-tool.flag.f-difficile.is-open { background: #f59e0b; color: #fff; }
+.p1fc-tool.flag.f-corriger { background: rgba(239,68,68,0.14); color: #b91c1c; } .p1fc-tool.flag.f-corriger.is-open { background: #ef4444; color: #fff; }
+.p1fc-flag-menu { position: absolute; top: 50px; right: 10px; z-index: 7; background: var(--white); border: 1px solid var(--gray-200); border-radius: 12px; box-shadow: 0 10px 30px rgba(15,23,42,0.16); padding: 6px; min-width: 190px; display: flex; flex-direction: column; gap: 2px; animation: p1fcMenuIn .16s ease; }
+@keyframes p1fcMenuIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+.p1fc-flag-menu button { display: flex; align-items: center; gap: 0.6rem; border: none; background: transparent; padding: 0.5rem 0.65rem; border-radius: 8px; font: inherit; font-size: 0.82rem; font-weight: 600; color: var(--gray-700); cursor: pointer; text-align: left; }
+.p1fc-flag-menu button:hover { background: var(--gray-100); }
+/* survol coloré des drapeaux (menu de la carte) */
+.p1fc-flag-menu button[data-f="important"]:hover { background: rgba(34,197,94,0.12); color: #15803d; }
+.p1fc-flag-menu button[data-f="difficile"]:hover { background: rgba(245,158,11,0.13); color: #b45309; }
+.p1fc-flag-menu button[data-f="corriger"]:hover { background: rgba(239,68,68,0.11); color: #b91c1c; }
+.p1fc-flag-menu button:hover .p1fc-dot { transform: scale(1.25); }
+.p1fc-flag-menu .p1fc-dot { transition: transform .15s ease; }
+/* Session Flash — cartes à drapeau, ordre */
+.flash-drawer-opts { display: flex; flex-direction: column; gap: 0.6rem; margin: 0 0 0.8rem; padding: 0.7rem 0.8rem; border: 1px solid var(--gray-200); border-radius: var(--border-radius-lg); background: var(--gray-50); flex-shrink: 0; }
+.flash-drawer-opts:empty { display: none; }
+.fdo-row { display: flex; flex-direction: column; gap: 0.35rem; }
+.fdo-label { font-size: 0.68rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: var(--gray-500); display: flex; align-items: center; gap: 0.4rem; }
+.fdo-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.fdo-chips button { display: inline-flex; align-items: center; gap: 0.4rem; height: 30px; padding: 0 0.7rem; border-radius: 999px; border: 1.5px solid var(--gray-200); background: var(--white); color: var(--gray-600); font: inherit; font-size: 0.76rem; font-weight: 700; cursor: pointer;
+  transition: border-color .15s ease, background .15s ease, color .15s ease, box-shadow .15s ease, transform .15s ease; }
+.fdo-chips button:not(.is-on):not(:disabled):hover { transform: translateY(-1px); border-color: var(--gray-300); background: var(--gray-100); color: var(--gray-800); }   /* survol neutre, distinct de la sélection */
+.fdo-chips button:active:not(:disabled) { transform: scale(0.96); }
+.fdo-chips button:disabled { opacity: .45; cursor: default; }
+.fdo-chips button:focus-visible, .fdo-seg button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.fdo-ck { display: none; font-size: 0.66rem; }
+.fdo-chips button.is-on .fdo-ck { display: inline; }
+.fdo-chips button.is-on .p1fc-dot { display: none; }
+.fdo-chips button[data-f=""].is-on { color: var(--primary); }
+.fdo-chips button.is-on.f-important { color: #15803d; } .fdo-chips button.is-on.f-difficile { color: #b45309; } .fdo-chips button.is-on.f-corriger { color: #b91c1c; }
+[data-theme="dark"] .fdo-chips button:not(.is-on):not(:disabled):hover { background: #334155; color: #f1f5f9; }
+.fdo-chips button.is-on { border-color: var(--primary); background: rgba(59,130,246,0.08); color: var(--gray-900); box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
+.fdo-chips button.is-on.f-important { border-color: #22c55e; background: rgba(34,197,94,0.12); box-shadow: 0 0 0 3px rgba(34,197,94,0.14); }
+.fdo-chips button.is-on.f-difficile { border-color: #f59e0b; background: rgba(245,158,11,0.12); box-shadow: 0 0 0 3px rgba(245,158,11,0.14); }
+.fdo-chips button.is-on.f-corriger { border-color: #ef4444; background: rgba(239,68,68,0.10); box-shadow: 0 0 0 3px rgba(239,68,68,0.12); }
+.fdo-n { min-width: 18px; padding: 1px 6px; border-radius: 999px; background: var(--gray-100); color: var(--gray-600); font-size: 0.66rem; font-weight: 800; text-align: center; font-variant-numeric: tabular-nums; }
+.fdo-chips button.is-on .fdo-n { background: var(--white); }
+.fdo-seg { display: inline-flex; gap: 4px; padding: 3px; border-radius: 999px; background: var(--gray-100); align-self: flex-start; }
+.fdo-seg button { border: none; background: transparent; height: 28px; padding: 0 0.8rem; border-radius: 999px; font: inherit; font-size: 0.76rem; font-weight: 700; color: var(--gray-600); cursor: pointer; display: inline-flex; align-items: center; gap: 0.35rem; transition: background .15s ease, color .15s ease, box-shadow .15s ease; }
+.fdo-seg button:hover { color: var(--gray-900); }
+.fdo-seg button.is-on { background: var(--white); color: var(--primary); box-shadow: 0 1px 3px rgba(15,23,42,0.12); }
+[data-theme="dark"] .flash-drawer-opts { background: #0f172a; border-color: #334155; }
+[data-theme="dark"] .fdo-chips button { background: #1e293b; border-color: #334155; color: #cbd5e1; }
+[data-theme="dark"] .fdo-chips button.is-on { color: #f1f5f9; }
+[data-theme="dark"] .fdo-n { background: #334155; color: #e2e8f0; }
+[data-theme="dark"] .fdo-seg { background: #334155; }
+[data-theme="dark"] .fdo-seg button.is-on { background: #1e293b; color: #93c5fd; }
+.p1fc-flag-menu button.is-on { background: rgba(59,130,246,0.08); color: var(--gray-900); }
+.p1fc-flag-menu .p1fc-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+.p1fc-flag-menu .p1fc-sep { height: 1px; background: var(--gray-100); margin: 3px 4px; }
+.p1fc-dot.f-important { background: #22c55e; } .p1fc-dot.f-difficile { background: #f59e0b; } .p1fc-dot.f-corriger { background: #ef4444; } .p1fc-dot.f-none { background: transparent; border: 1.5px solid var(--gray-300); }
+.p1fc-mode-chip { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.72rem; font-weight: 800; color: #6d28d9; background: rgba(139,92,246,0.12); padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
+.p1fc-mode-chip.anki { color: #1d4ed8; background: rgba(59,130,246,0.12); }
+.flash-eval-btn.easy { background: #0ea5e9; color: #fff; }
+/* liste des cartes */
+.p1fc-row-badges { display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0; }
+.p1fc-row-flag { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.p1fc-row-flag.f-important { background: #22c55e; } .p1fc-row-flag.f-difficile { background: #f59e0b; } .p1fc-row-flag.f-corriger { background: #ef4444; }
+.p1fc-row-resume { border: none; font: inherit; font-size: 0.7rem; font-weight: 700; color: var(--primary); background: rgba(59,130,246,0.10); padding: 3px 9px; border-radius: 999px; cursor: pointer; white-space: nowrap; }
+.p1fc-row-resume:hover { background: var(--primary); color: #fff; }
+.flash-list-row.suspended { opacity: 0.72; }
+.flash-list-status.suspended { color: var(--gray-500); background: var(--gray-100); }
+/* message bref */
+/* état d'une action sur son bouton (à la place des messages) */
+.p1fc-tool.p1fc-busy, .p1fc-tool.p1fc-busy:hover { max-width: 34px !important; padding: 0 !important; }
+.p1fc-tool.p1fc-busy .p1fc-tool-label { opacity: 0 !important; max-width: 0 !important; margin-left: 0 !important; }
+.p1fc-tool.p1fc-pend, .p1fc-tool.p1fc-pend:hover { background: rgba(245,158,11,0.18) !important; color: #d97706 !important; }
+.p1fc-tool.p1fc-pend i { animation: p1fcPend .9s ease-in-out infinite; }
+@keyframes p1fcPend { 50% { opacity: .45; } }
+.p1fc-tool.p1fc-ok, .p1fc-tool.p1fc-ok:hover, .p1fc-row-resume.p1fc-ok { background: #22c55e !important; color: #fff !important; }
+.p1fc-tool.p1fc-ok i, .p1fc-row-resume.p1fc-ok i { animation: p1fcOk .35s cubic-bezier(.34,1.56,.64,1); }
+@keyframes p1fcOk { from { transform: scale(.3) rotate(-20deg); opacity: 0; } to { transform: none; opacity: 1; } }
+.p1fc-tool.p1fc-err, .p1fc-tool.p1fc-err:hover, .p1fc-row-resume.p1fc-err { background: #ef4444 !important; color: #fff !important; animation: p1fcShake .4s ease; }
+@keyframes p1fcShake { 20%, 60% { transform: translateX(-3px); } 40%, 80% { transform: translateX(3px); } }
+.p1fc-toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 12px); opacity: 0; z-index: 20000; max-width: min(92vw, 440px); background: var(--white); color: var(--gray-700); border: 1px solid var(--gray-200); border-left: 4px solid #f59e0b; box-shadow: 0 10px 28px rgba(15,23,42,0.14); padding: 0.7rem 1rem; border-radius: 12px; font-size: 0.82rem; font-weight: 600; line-height: 1.4; box-shadow: 0 10px 30px rgba(15,23,42,0.3); transition: opacity .2s ease, transform .2s ease; pointer-events: none; text-align: center; }
+.p1fc-toast.show { opacity: 1; transform: translate(-50%, 0); }
+[data-theme="dark"] .p1fc-mode, [data-theme="dark"] .p1fc-explain, [data-theme="dark"] .p1fc-goal, [data-theme="dark"] .p1fc-rows, [data-theme="dark"] .p1fc-step, [data-theme="dark"] .p1fc-flag-menu { background: #1e293b; border-color: #334155; }
+[data-theme="dark"] .p1fc-mode.is-active { background: rgba(59,130,246,0.14); border-color: #60a5fa; }
+[data-theme="dark"] .p1fc-mode-name, [data-theme="dark"] .p1fc-explain strong, [data-theme="dark"] .p1fc-step span { color: #f1f5f9; }
+[data-theme="dark"] .p1fc-row + .p1fc-row { border-color: #334155; }
+[data-theme="dark"] .p1fc-chips, [data-theme="dark"] .p1fc-seg { background: #0f172a; }
+[data-theme="dark"] .p1fc-chips button.is-on, [data-theme="dark"] .p1fc-seg button.is-on { background: #334155; color: #93c5fd; }
+[data-theme="dark"] .p1fc-mode-chip.anki { color: #93c5fd; background: rgba(59,130,246,0.22); }
+[data-theme="dark"] .p1fc-flag-menu button { color: #e2e8f0; }
+[data-theme="dark"] .p1fc-flag-menu button:hover { background: #334155; }
+@media (max-width: 640px) {
+  .p1fc-row { flex-wrap: wrap; }
+  .p1fc-row.stack .p1fc-seg { align-self: stretch; }
+  .p1fc-row.stack .p1fc-seg button { flex: 1; justify-content: center; padding: 0 0.4rem; }
+  .p1fc-long { display: none; } .p1fc-short { display: inline; }
+  .p1fc-badges { max-width: calc(100% - 128px); }
+  .p1fc-mode-chip.is-multi { display: none; }   /* session multi-matières : place prise par « Mélangé / Par matière » */
+}
+@media (prefers-reduced-motion: reduce) { .p1fc-tool, .p1fc-tool .p1fc-tool-label, .p1fc-mode, .p1fc-toast, .p1fc-flag-menu { transition: none; animation: none; } }
 </style>
 <script id="p1-evol-js">
 (function () {
@@ -72042,6 +72595,7 @@ html[data-theme="pastel"] .train-cl-status-option.p1-tl-tour:hover { background:
             var jr = document.getElementById('global-jrev-btn'), jrOn = !!jr && jr.getClientRects().length > 0 && getComputedStyle(jr).display !== 'none';
             s += (jrOn ? '|jrev' : '') + (todo ? '|todo' : '');
             if (s === sig) return; sig = s; pill.innerHTML = ''; cnt = null; jcnt = null;
+            ind = document.createElement('span'); ind.className = 'p1-hdr-ind'; ind.setAttribute('aria-hidden', 'true'); pill.appendChild(ind); indReady = false;
             bs.forEach(function (rb, i) {
                 var ic = rb.querySelector('i'), sp = rb.querySelector('span');
                 var b = document.createElement('button'); b.type = 'button'; b.className = 'p1-hdr-b'; b.setAttribute('data-page', rb.getAttribute('data-page')); b.style.setProperty('--i', i);
@@ -72075,6 +72629,7 @@ html[data-theme="pastel"] .train-cl-status-option.p1-tl-tour:hover { background:
         }
         /* le bouton To-Do (et son compteur) est créé après le chargement : on suit le compteur dès que la pilule est construite */
         var obsEl = null;
+        var ind = null, indReady = false;   /* pastille active unique : elle glisse d'un raccourci à l'autre */
         var obsJ = null, obsJc = null;
         function watchCount() {
             var rc = document.getElementById('global-todo-count');
@@ -72090,7 +72645,16 @@ html[data-theme="pastel"] .train-cl-status-option.p1-tl-tour:hover { background:
             if (typeof r0 === 'function' && !r0.__p1hdr) { var w = function () { var r = r0.apply(this, arguments); sched(); setTimeout(sched, 120); return r; }; w.__p1hdr = true; window.refreshJMethodUI = w; }
         }
         window.addEventListener('storage', function (e) { if (e && e.key && /^jMethodEnabled__/.test(e.key)) sched(); });
-        function syncActive() { var act = nav.querySelector('.app-nav-btn.active'); var p = act ? act.getAttribute('data-page') : null; [].forEach.call(pill.querySelectorAll('.p1-hdr-b[data-page]'), function (b) { b.classList.toggle('active', b.getAttribute('data-page') === p); }); }
+        function syncActive() { var act = nav.querySelector('.app-nav-btn.active'); var p = act ? act.getAttribute('data-page') : null; [].forEach.call(pill.querySelectorAll('.p1-hdr-b[data-page]'), function (b) { b.classList.toggle('active', b.getAttribute('data-page') === p); }); moveInd(); }
+        function moveInd() {
+            if (!ind || !ind.isConnected) return;
+            var ab = pill.querySelector('.p1-hdr-b.active');
+            if (!ab) { ind.style.opacity = '0'; return; }
+            if (!ab.offsetWidth) return;   /* raccourcis non affichés : repositionnée à l'affichage */
+            if (!indReady) ind.style.transition = 'none';
+            ind.style.top = ab.offsetTop + 'px'; ind.style.width = ab.offsetWidth + 'px'; ind.style.transform = 'translateX(' + ab.offsetLeft + 'px)'; ind.style.opacity = '1';
+            if (!indReady) { void ind.offsetWidth; ind.style.transition = ''; indReady = true; }
+        }
         function copyCount(el, realId) {
             if (!el) return; var rc = document.getElementById(realId);
             var shown = !!rc && rc.style.display !== 'none' && getComputedStyle(rc).display !== 'none' && rc.textContent.trim() !== '' && rc.textContent.trim() !== '0';
@@ -72112,7 +72676,7 @@ html[data-theme="pastel"] .train-cl-status-option.p1-tl-tour:hover { background:
             build(); return place();
         }
         function setState(on) {
-            if (on && state !== 'on') { clearTimeout(offT); state = 'on'; pill.classList.remove('is-off'); pill.classList.remove('is-on'); void pill.offsetWidth; pill.classList.add('is-on'); }
+            if (on && state !== 'on') { clearTimeout(offT); state = 'on'; pill.classList.remove('is-off'); pill.classList.remove('is-on'); void pill.offsetWidth; pill.classList.add('is-on'); try { window.dispatchEvent(new CustomEvent('p1:hdr-shortcuts', { detail: { on: true } })); } catch (e) {} }
             else if (!on && state === 'on') {
                 state = 'off'; pill.classList.remove('is-on');
                 if (reduced()) { pill.classList.remove('is-off'); return; }
@@ -72120,7 +72684,7 @@ html[data-theme="pastel"] .train-cl-status-option.p1-tl-tour:hover { background:
             }
         }
         var ticking = false;
-        function update() { ticking = false; setState(want()); }
+        function update() { ticking = false; setState(want()); moveInd(); }
         function sched() { if (!ticking) { ticking = true; requestAnimationFrame(update); } }
         window.addEventListener('scroll', sched, { passive: true });
         window.addEventListener('resize', sched);
@@ -72130,6 +72694,49 @@ html[data-theme="pastel"] .train-cl-status-option.p1-tl-tour:hover { background:
         watchJ(); setTimeout(watchJ, 1500); setTimeout(watchJ, 4000);   /* le bouton J peut être créé après le chargement */
         update(); setTimeout(update, 300); setTimeout(update, 1200); window.addEventListener('load', sched);
         window.p1HdrShortcutsUpdate = update;
+        window.p1HdrShortcutsOn = function () { return state === 'on'; };
+    })();
+    /* ═══ 6b. Salutation éphémère dans le header ═══
+       Le message de bienvenue (masqué dans le bandeau) reste rempli par le code existant ; son texte, sans le « ! » final, s'affiche une fois par connexion
+       en petite pastille. Elle disparaît d'elle-même, ou tout de suite si la barre de raccourcis s'affiche. */
+    (function headerGreeting() {
+        var header = document.getElementById('header'), welcome = document.getElementById('welcome-message'), host = document.getElementById('p1-greet');
+        if (!header || !welcome || !host) { setTimeout(headerGreeting, 500); return; }
+        var phoneMq = window.matchMedia ? window.matchMedia('(max-width: 600px)') : { matches: false };
+        var greeted = false, pill = null, endT = null;
+        function textNow() { return (welcome.textContent || '').replace(/\s+/g, ' ').trim().replace(/\s*!\s*$/, ''); }
+        function clear() { clearTimeout(endT); endT = null; if (pill && pill.parentNode) pill.parentNode.removeChild(pill); pill = null; }
+        function place() {
+            if (!pill) return;
+            var logo = header.querySelector('.logo'), right = header.querySelector('nav.nav, .nav');
+            pill.classList.remove('is-below'); host.style.left = '';
+            if (!phoneMq.matches && logo && right) {
+                var lr = logo.getBoundingClientRect().right, rl = right.getBoundingClientRect().left;
+                if (rl - lr >= pill.offsetWidth + 24) { host.style.left = Math.round((lr + rl) / 2) + 'px'; return; }   /* centrée entre le logo et les menus de droite */
+            }
+            pill.classList.add('is-below');   /* pas la place dans le header : juste dessous, centrée */
+        }
+        function show(txt) {
+            clear();
+            pill = document.createElement('div'); pill.className = 'p1-greet-pill'; pill.textContent = txt;
+            host.appendChild(pill); place();
+            var mine = pill;
+            mine.addEventListener('animationend', function () { if (pill === mine) clear(); });
+            endT = setTimeout(function () { if (pill === mine) clear(); }, 3100);
+        }
+        function sync() {
+            var t = textNow();
+            if (!t) { greeted = false; clear(); return; }                       /* déconnexion : la prochaine connexion salue de nouveau */
+            if (pill) { pill.textContent = t; place(); return; }                /* nom remis en forme pendant l'affichage */
+            if (greeted) return;
+            greeted = true;
+            if (typeof window.p1HdrShortcutsOn === 'function' && window.p1HdrShortcutsOn()) return;   /* raccourcis déjà visibles : rien */
+            show(t);
+        }
+        new MutationObserver(sync).observe(welcome, { childList: true, characterData: true, subtree: true });
+        window.addEventListener('p1:hdr-shortcuts', function (e) { if (e && e.detail && e.detail.on) clear(); });
+        window.addEventListener('resize', place);
+        sync();
     })();
     /* ═══ 1b. Paramètres en deux colonnes ═══
        Le corps de la fenêtre est enveloppé dans une rangée flexible ; le sommaire est à gauche ; les cartes ne sont pas touchées :
@@ -72356,6 +72963,7 @@ html[data-theme="pastel"] .train-cl-status-option.p1-tl-tour:hover { background:
             }).catch(function () { caught = false; if (++tries < 6) setTimeout(catchUp, 2500); }).then(function () { busy = false; });
         }
         window.p1FlashPause = {
+            persist: persist,
             isPaused: isPaused,
             notice: function () {
                 if (typeof window.showCustomAlert === 'function') window.showCustomAlert({ title: 'Révisions en pause', message: 'Tes révisions sont en pause (Paramètres → Flashcards). Réactive-les pour reprendre.', type: 'warning', icon: 'pause' });
@@ -72375,6 +72983,423 @@ html[data-theme="pastel"] .train-cl-status-option.p1-tl-tour:hover { background:
         if (window._p1FlashSettingsRaw) window.p1FlashPause.apply(window._p1FlashSettingsRaw); else render(false);
     })();
     /*@@EVOL-JS-END@@*/
+})();
+</script>
+<script id="p1-fc-script">
+(function () {
+  'use strict';
+  if (window.P1FlashAlgo) return;
+  var APP = 'p1planner';
+  var DEF = { mode: 'simple', retention: 0.9, newPerDay: 30, maxIvl: 365, order: 'mixed', easy: false };
+  var LS = 'p1_fc_settings_v1';
+  var DAY = 86400000, RELEARN_MIN = 10;
+  var W = [0.40255, 1.18385, 3.173, 15.69105, 7.1949, 0.5345, 1.4604, 0.0046, 1.54575, 0.1192, 1.01925, 1.9395, 0.11, 0.29605, 2.2698, 0.2315, 2.9898, 0.51655, 0.6621];
+  var DECAY = -0.5, FACTOR = 19 / 81;
+  var G = { fail: 1, hesitant: 2, know: 3, easy: 4 };
+  var FLAGS = { important: 'Important', difficile: 'Difficile', corriger: 'À corriger' };
+  var uid = null, S = clone(DEF), lastLocalSet = 0, saveT = null, pend = {}, curDec = null, ed = { isNew: true, initial: null, val: null };
+
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+  function num(v, d) { v = Number(v); return isFinite(v) ? v : d; }
+  function clean(o) {
+    o = o || {};
+    var r = clone(DEF);
+    if (o.mode === 'anki' || o.mode === 'fsrs' || o.mode === 'simple') r.mode = o.mode;
+    r.retention = Math.round(Math.min(0.95, Math.max(0.8, num(o.retention, DEF.retention))) * 100) / 100;
+    r.newPerDay = Math.round(Math.min(200, Math.max(0, num(o.newPerDay, DEF.newPerDay))));
+    r.maxIvl = [180, 365, 730].indexOf(num(o.maxIvl, 0)) >= 0 ? num(o.maxIvl, 365) : DEF.maxIvl;
+    if (o.order === 'matiere' || o.order === 'echeance' || o.order === 'mixed') r.order = o.order;
+    r.easy = o.easy === true;
+    return r;
+  }
+  try { var c0 = JSON.parse(localStorage.getItem(LS) || 'null'); if (c0 && c0.s) { S = clean(c0.s); uid = c0.uid || null; } } catch (e) {}
+  function cache() { try { localStorage.setItem(LS, JSON.stringify({ uid: uid, s: S })); } catch (e) {} }
+  function setRemote(fs, u) {
+    if (u && uid && u !== uid) { S = clone(DEF); lastLocalSet = 0; }
+    if (u) uid = u;
+    if (Date.now() - lastLocalSet < 2500) return;
+    S = clean(fs); cache(); syncUI();
+  }
+  function persist(fields) {
+    var P = window.p1FlashPause;
+    if (!P || typeof P.persist !== 'function') return Promise.reject(new Error('indisponible'));
+    return P.persist(fields);
+  }
+  function set(patch) {
+    S = clean(Object.assign({}, S, patch)); lastLocalSet = Date.now(); cache(); syncUI();
+    Object.keys(patch).forEach(function (k) { pend[k] = S[k]; });
+    clearTimeout(saveT);
+    saveT = setTimeout(function () {
+      var fields = pend; pend = {};
+      Promise.resolve(persist(fields)).catch(function () { toast('Réglages non enregistrés en ligne : vérifie ta connexion.'); });
+    }, 600);
+  }
+
+  function paused() { return !!(window.p1FlashPause && window.p1FlashPause.isPaused()); }
+  function refreshDue() { if (typeof window._flashAfterCardChange === 'function') try { window._flashAfterCardChange(null); } catch (e) {} }
+
+  function iso(t) { return new Date(t).toISOString(); }
+  function inDays(now, d) { var nr = new Date(now); nr.setDate(nr.getDate() + d); return nr.toISOString(); }
+  function cap(d) { return Math.min(S.maxIvl, Math.max(1, Math.round(d))); }
+  function clampD(d) { return Math.min(10, Math.max(1, d)); }
+  function d0(g) { return clampD(W[4] - Math.exp(W[5] * (g - 1)) + 1); }
+  function recall(t, s) { return Math.pow(1 + FACTOR * t / s, DECAY); }
+  function ivlFromS(s) { return cap(s / FACTOR * (Math.pow(S.retention, 1 / DECAY) - 1)); }
+  function elapsed(card, now) { var t = card.lastReview ? Date.parse(card.lastReview) : NaN; return isFinite(t) ? Math.max(0, (now - t) / DAY) : 0; }
+  function fsrsState(card, now) {
+    if (typeof card.stability === 'number' && card.stability > 0 && typeof card.difficulty === 'number') return { s: card.stability, d: clampD(card.difficulty), t: elapsed(card, now) };
+    if (card.lastReview) return { s: Math.max(0.5, num(card.interval, 0) || 1), d: 5, t: elapsed(card, now) };
+    return null;
+  }
+  function fsrsNext(st, g) {
+    if (!st) return { s: W[g - 1], d: d0(g) };
+    var d = st.d, s;
+    var nd = d + (-W[6] * (g - 3)) * (10 - d) / 9;
+    nd = clampD(W[7] * d0(4) + (1 - W[7]) * nd);
+    if (st.t < 1) s = st.s * Math.exp(W[17] * (g - 3 + W[18]));
+    else {
+      var r = recall(st.t, st.s);
+      if (g === 1) s = Math.min(st.s, W[11] * Math.pow(d, -W[12]) * (Math.pow(st.s + 1, W[13]) - 1) * Math.exp(W[14] * (1 - r)));
+      else s = st.s * (1 + Math.exp(W[8]) * (11 - d) * Math.pow(st.s, -W[9]) * (Math.exp(W[10] * (1 - r)) - 1) * (g === 2 ? W[15] : 1) * (g === 4 ? W[16] : 1));
+    }
+    return { s: Math.min(36500, Math.max(0.1, s)), d: nd };
+  }
+  function ordered(iv) { iv[2] = Math.min(iv[2], iv[3]); iv[3] = Math.max(iv[3], iv[2] + 1); iv[4] = Math.max(iv[4], iv[3] + 1); [2, 3, 4].forEach(function (g) { iv[g] = Math.min(S.maxIvl, iv[g]); }); return iv; }
+  /* révision calculée : { upd: champs enregistrés, mins | days } ; null en mode Simple */
+  function compute(card, rating) {
+    if (S.mode === 'simple') return null;
+    var now = Date.now(), g = G[rating] || 3;
+    var upd = { lastReview: iso(now), reps: num(card.reps, 0) + 1, lapses: num(card.lapses, 0) + (g === 1 ? 1 : 0), algo: S.mode };
+    var days = 0;
+    if (S.mode === 'anki') {
+      var ease = typeof card.ease === 'number' ? card.ease : 2.5, ivl = (card.lastReview && num(card.interval, 0) > 0) ? num(card.interval, 0) : 0, iv = {};
+      if (ivl === 0) { iv[2] = 1; iv[3] = 2; iv[4] = 4; }
+      else { iv[2] = Math.max(ivl + 1, Math.round(ivl * 1.2)); iv[3] = Math.max(iv[2] + 1, Math.round(ivl * ease)); iv[4] = Math.max(iv[3] + 1, Math.round(ivl * ease * 1.3)); }
+      [2, 3, 4].forEach(function (k) { iv[k] = cap(iv[k]); });
+      upd.ease = Math.round(Math.min(5, Math.max(1.3, ease + ({ 1: -0.2, 2: -0.15, 3: 0, 4: 0.15 })[g])) * 100) / 100;
+      if (g > 1) days = iv[g];
+    } else {
+      var st = fsrsState(card, now), nx = {}, ivf = {};
+      [1, 2, 3, 4].forEach(function (k) { nx[k] = fsrsNext(st, k); if (k > 1) ivf[k] = ivlFromS(nx[k].s); });
+      ordered(ivf);
+      upd.stability = Math.round(nx[g].s * 10000) / 10000; upd.difficulty = Math.round(nx[g].d * 10000) / 10000;
+      if (g > 1) days = ivf[g];
+    }
+    if (g === 1) { upd.interval = 0; upd.nextReview = iso(now + RELEARN_MIN * 60000); return { upd: upd, mins: RELEARN_MIN }; }
+    upd.interval = days; upd.nextReview = inDays(now, days);
+    return { upd: upd, days: days };
+  }
+  function schedule(card, rating) { var x = compute(card, rating); return x ? x.upd : null; }
+  function label(card, rating) {
+    var x = compute(card, rating); if (!x) return null;
+    if (x.mins) return 'Dans ' + x.mins + ' min';
+    var d = x.days;
+    if (d <= 1) return 'Demain';
+    if (d >= 60) return 'Dans ' + Math.round(d / 30) + ' mois';
+    return 'Dans ' + d + 'j';
+  }
+
+  function ymd() { var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+  function newKey() { return 'p1_fc_new_' + (uid || 'x') + '_' + ymd(); }
+  function newCount() { try { return parseInt(localStorage.getItem(newKey()) || '0', 10) || 0; } catch (e) { return 0; } }
+  function bumpNew() { try { localStorage.setItem(newKey(), String(newCount() + 1)); } catch (e) {} }
+
+  function prepareSession(cards, opts) {
+    if (paused()) { window.p1FlashPause.notice(); return null; }
+    var list = (cards || []).filter(function (c) { return c && !c.suspended; });
+    if (!list.length) { toast('Ces cartes sont suspendues. Réactive-les depuis la liste des cartes.'); return null; }
+    if (S.mode !== 'simple') {
+      var left = Math.max(0, S.newPerDay - newCount()), keep = [], dropped = 0;
+      list.forEach(function (c) { if (!c.lastReview) { if (left > 0) { left--; keep.push(c); } else dropped++; } else keep.push(c); });
+      if (!keep.length) { toast('Limite de ' + S.newPerDay + ' nouvelles cartes par jour atteinte. Reviens demain, ou augmente-la dans les Paramètres.'); return null; }
+      if (dropped) toast(dropped + ' nouvelle' + (dropped > 1 ? 's cartes gardées' : ' carte gardée') + ' pour les jours suivants (limite de ' + S.newPerDay + ' par jour).');
+      list = keep;
+    }
+    if (opts && opts.shuffle !== false) {
+      if (S.order === 'matiere') { opts.shuffle = false; list = list.slice().sort(function (a, b) { return String(a.speId || '').localeCompare(String(b.speId || '')) || String(a.itemId || '').localeCompare(String(b.itemId || ''), undefined, { numeric: true }); }); }
+      else if (S.order === 'echeance') { opts.shuffle = false; list = list.slice().sort(function (a, b) { return (Date.parse(a.nextReview) || 0) - (Date.parse(b.nextReview) || 0); }); }
+    }
+    return list;
+  }
+  function onEval(s, card, rating) {
+    if (!s._fcSeen) s._fcSeen = [];
+    if (s._fcSeen.indexOf(card) < 0) { s._fcSeen.push(card); var k = rating === 'easy' ? 'know' : rating; if (s.results[k]) s.results[k].push(card); }
+    if (S.mode === 'simple') { if (rating === 'fail') setTimeout(function () { card.lapses = num(card.lapses, 0) + 1; }, 0); return; }
+    var x = compute(card, rating); if (!x) return;
+    if (!card.lastReview) bumpNew();
+    setTimeout(function () { Object.assign(card, x.upd); }, 0);
+    if (rating === 'fail' && num(card._fcRq, 0) < 2) { card._fcRq = num(card._fcRq, 0) + 1; s.cards.push(card); }
+  }
+  function esc(t) { var d = document.createElement('div'); d.textContent = String(t == null ? '' : t); return d.innerHTML; }
+  function badgesHtml(card) {
+    var h = '';
+    if (FLAGS[card.flag]) h += '<span class="p1fc-flag-badge f-' + card.flag + '" aria-label="Drapeau ' + FLAGS[card.flag] + '"><i class="fas fa-flag"></i><span class="p1fc-long">' + FLAGS[card.flag] + '</span></span>';
+    return h;
+  }
+  function paint(cont, card) {
+    var b = cont.querySelector('.p1fc-badges'); if (b) b.innerHTML = badgesHtml(card);
+    var f = cont.querySelector('.p1fc-tool.flag');
+    if (f) { f.className = 'p1fc-tool flag' + (FLAGS[card.flag] ? ' f-' + card.flag : ''); f.setAttribute('aria-label', FLAGS[card.flag] ? 'Drapeau : ' + FLAGS[card.flag] : 'Ajouter un drapeau'); }
+  }
+  function closeMenu(cont) { var m = cont.querySelector('.p1fc-flag-menu'); if (m) m.remove(); var f = cont.querySelector('.p1fc-tool.flag'); if (f) f.classList.remove('is-open'); }
+  function write(card, fields) {
+    if (typeof window._flashSetCardFields !== 'function' || !card.id) return Promise.resolve(false);
+    return Promise.resolve(window._flashSetCardFields(card.id, fields)).then(function () { return true; }, function () { return false; });
+  }
+  function btnState(b, kind, ms) {
+    if (!b) return; var ic = b.querySelector('i');
+    if (!b._fcIcon && ic) b._fcIcon = ic.className;
+    b.classList.remove('p1fc-pend', 'p1fc-ok', 'p1fc-err'); clearTimeout(b._fcT);
+    if (!kind) { b.classList.remove('p1fc-busy'); if (ic && b._fcIcon) ic.className = b._fcIcon; b._fcIcon = null; return; }
+    b.classList.add('p1fc-busy', 'p1fc-' + kind);
+    if (ic) ic.className = 'fas ' + (kind === 'ok' ? 'fa-check' : kind === 'err' ? 'fa-xmark' : 'fa-pause');
+    if (ms) b._fcT = setTimeout(function () { btnState(b, null); }, ms);
+  }
+  function decorate(stage, card, s) {
+    try {
+      var right = document.querySelector('#flashSessionOverlay .flash-session-topbar-right');
+      if (right) {
+        var chip = right.querySelector('.p1fc-mode-chip');
+        if (S.mode === 'simple') { if (chip) chip.remove(); }
+        else {
+          if (!chip) { chip = document.createElement('span'); right.insertBefore(chip, right.firstChild); }
+          chip.className = 'p1fc-mode-chip' + (S.mode === 'anki' ? ' anki' : '') + (s && s.multi ? ' is-multi' : '');
+          chip.innerHTML = S.mode === 'fsrs' ? '<i class="fas fa-brain"></i>FSRS · ' + Math.round(S.retention * 100) + ' %' : '<i class="fas fa-clock-rotate-left"></i>Anki';
+        }
+      }
+      var cont = stage && stage.querySelector('.flash-card-container'); if (!cont || !card) return;
+      cont.classList.add('p1fc-dec'); curDec = { card: card, cont: cont };
+      cont.insertAdjacentHTML('afterbegin', '<div class="p1fc-badges"></div><div class="p1fc-tools' + (cont.querySelector('#flashSessEditBtn') ? ' with-edit' : '') + '">' +
+        '<button type="button" class="p1fc-tool flag"><i class="fas fa-flag"></i><span class="p1fc-tool-label">Drapeau</span></button>' +
+        '<button type="button" class="p1fc-tool pause" aria-label="Suspendre cette carte"><i class="fas fa-pause"></i><span class="p1fc-tool-label">Suspendre</span></button></div>');
+      paint(cont, card);
+      var eb = cont.querySelector('#flashSessEditBtn'), tl = cont.querySelector('.p1fc-tools');
+      if (eb && tl) { var syncEd = function () { var on = eb.style.display !== 'none' && getComputedStyle(eb).display !== 'none'; if (on && !tl.classList.contains('edit-on')) { eb.classList.remove('p1fc-reveal'); void eb.offsetWidth; eb.classList.add('p1fc-reveal'); } tl.classList.toggle('edit-on', on); };
+        syncEd(); new MutationObserver(syncEd).observe(eb, { attributes: true, attributeFilter: ['style'] }); }
+      if (eb && !eb._fcW) {
+        eb._fcW = 1;
+        eb.addEventListener('mouseenter', function () { var lb = eb.querySelector('.flash-session-edit-label'), ic = eb.querySelector('i'), c = eb.closest('.flash-card-container');
+          if (lb && c) c.style.setProperty('--p1fc-edit-w', Math.ceil(9 + (ic ? ic.getBoundingClientRect().width : 14) + 6 + lb.scrollWidth + 12) + 'px'); });
+      }
+      cont.querySelector('.p1fc-tool.flag').addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        if (cont.querySelector('.p1fc-flag-menu')) { closeMenu(cont); return; }
+        var m = document.createElement('div'); m.className = 'p1fc-flag-menu'; m.setAttribute('role', 'menu');
+        m.innerHTML = Object.keys(FLAGS).map(function (k) { return '<button type="button" role="menuitem" data-f="' + k + '"' + (card.flag === k ? ' class="is-on"' : '') + '><span class="p1fc-dot f-' + k + '"></span>' + FLAGS[k] + (card.flag === k ? '<i class="fas fa-check" style="margin-left:auto"></i>' : '') + '</button>'; }).join('') +
+          '<div class="p1fc-sep"></div><button type="button" role="menuitem" data-f=""><span class="p1fc-dot f-none"></span>Aucun drapeau</button>';
+        var tools = cont.querySelector('.p1fc-tools'); m.style.right = tools.classList.contains('edit-on') ? '52px' : '10px';
+        cont.appendChild(m); this.classList.add('is-open');
+        m.addEventListener('click', function (e2) {
+          e2.stopPropagation();
+          var bt = e2.target.closest('button[data-f]'); if (!bt) return;
+          var f = bt.getAttribute('data-f') || null; closeMenu(cont);
+          if ((card.flag || null) === f) return;
+          var prev = card.flag || null; card.flag = f; paint(cont, card);
+          write(card, { flag: f }).then(function (ok) { var fb = cont.querySelector('.p1fc-tool.flag');
+            if (!ok) { card.flag = prev; paint(cont, card); btnState(fb, 'err', 1300); return; }
+            btnState(fb, 'ok', 1000);
+            if (typeof window._flashAfterCardChange === 'function') window._flashAfterCardChange(card.speId, true); });
+        });
+        setTimeout(function () { document.addEventListener('click', function off(e3) { if (!m.contains(e3.target)) { closeMenu(cont); document.removeEventListener('click', off, true); } }, true); }, 0);
+      });
+      cont.querySelector('.p1fc-tool.pause').addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        var pb = this; if (pb.classList.contains('p1fc-busy')) return;
+        btnState(pb, 'pend', 0);
+        var t0 = Date.now();
+        write(card, { suspended: true }).then(function (ok) {
+          if (!ok) { btnState(pb, 'err', 1400); return; }
+          setTimeout(function () { next(); }, Math.max(0, 1200 - (Date.now() - t0)));
+        });
+        function next() {
+          card.suspended = true;
+          var i = s.cards.indexOf(card); while (i >= 0) { s.cards.splice(i, 1); if (i < s.idx) s.idx--; i = s.cards.indexOf(card); }
+          if (typeof window._flashShowCard === 'function') window._flashShowCard(s.idx);
+          if (typeof window._flashAfterCardChange === 'function') window._flashAfterCardChange(card.speId, true);
+        }
+      });
+      var btns = stage.querySelector('.flash-eval-btns');
+      if (btns && S.mode !== 'simple' && S.easy && !btns.querySelector('.easy')) {
+        btns.insertAdjacentHTML('beforeend', '<button class="flash-eval-btn easy" onclick="window._flashEval(\'easy\')">🔵 Facile<span class="flash-eval-btn-sub">' + esc(label(card, 'easy')) + '</span></button>');
+      }
+      if (typeof window._flashSizeReveal === 'function') window._flashSizeReveal();
+    } catch (e) { if (window.console) console.warn('[flashcards]', e); }
+  }
+  function paintEd() {
+    var row = document.getElementById('p1fcEditFlag'); if (!row) return;
+    row.querySelectorAll('button[data-f]').forEach(function (b) { var on = (b.getAttribute('data-f') || null) === ed.val; b.classList.toggle('is-on', on); b.setAttribute('aria-checked', on ? 'true' : 'false'); });
+  }
+  function editorOpen(card) {
+    try {
+      var body = document.querySelector('#flashEditOverlay .flash-edit-body'); if (!body) return;
+      var row = document.getElementById('p1fcEditFlag');
+      if (!row) {
+        row = document.createElement('div'); row.id = 'p1fcEditFlag'; row.className = 'p1fc-edit-flag';
+        row.innerHTML = '<div class="flash-rt-label"><i class="fas fa-flag"></i> Drapeau</div><div class="p1fc-edit-chips" role="radiogroup" aria-label="Drapeau">' +
+          '<button type="button" role="radio" data-f=""><span class="p1fc-dot f-none"></span>Aucun</button>' +
+          Object.keys(FLAGS).map(function (k) { return '<button type="button" role="radio" data-f="' + k + '" class="f-' + k + '"><span class="p1fc-dot f-' + k + '"></span>' + FLAGS[k] + '</button>'; }).join('') + '</div>';
+        body.insertBefore(row, body.querySelector('.flash-rt-field'));
+        row.addEventListener('click', function (e) { var b = e.target.closest('button[data-f]'); if (!b) return; ed.val = b.getAttribute('data-f') || null; paintEd(); });
+      }
+      ed.isNew = !card; ed.initial = (card && FLAGS[card.flag]) ? card.flag : null; ed.val = ed.initial; paintEd();
+    } catch (e) { if (window.console) console.warn('[flashcards]', e); }
+  }
+  function editorApply(card) {
+    if (!document.getElementById('p1fcEditFlag')) return;
+    if (ed.isNew ? !!ed.val : ed.val !== ed.initial) card.flag = ed.val;
+    if ('flag' in card && curDec && curDec.card && card.id && curDec.card.id === card.id && curDec.cont.isConnected) { curDec.card.flag = card.flag; paint(curDec.cont, curDec.card); }
+  }
+  function rowBadges(c) {
+    var h = '';
+    if (FLAGS[c.flag]) h += '<span class="p1fc-row-flag f-' + c.flag + '" role="img" aria-label="Drapeau ' + FLAGS[c.flag] + '"></span>';
+    if (c.suspended) h += '<button type="button" class="p1fc-row-resume" onclick="event.stopPropagation();window.P1FlashAlgo.resume(\'' + String(c.id).replace(/[^A-Za-z0-9_-]/g, '') + '\',\'' + String(c.speId || '').replace(/[^A-Za-z0-9_-]/g, '') + '\',this)">Réactiver</button>';
+    return h ? '<span class="p1fc-row-badges">' + h + '</span>' : '';
+  }
+  function resume(id, speId, b) {
+    if (b && b.classList.contains('p1fc-ok')) return;
+    write({ id: id }, { suspended: false }).then(function (ok) {
+      if (!ok) { if (b) { b.classList.add('p1fc-err'); setTimeout(function () { b.classList.remove('p1fc-err'); }, 1400); } return; }
+      if (b) { b.classList.add('p1fc-ok'); b.innerHTML = '<i class="fas fa-check"></i> Réactivée'; }
+      setTimeout(function () { if (typeof window._flashAfterCardChange === 'function') window._flashAfterCardChange(speId || null); }, b ? 800 : 0);
+    });
+  }
+  var toastT = null;
+  function toast(msg) {
+    var t = document.getElementById('p1fc-toast');
+    if (!t) { t = document.createElement('div'); t.id = 'p1fc-toast'; t.className = 'p1fc-toast'; t.setAttribute('role', 'status'); t.setAttribute('aria-live', 'polite'); document.body.appendChild(t); }
+    t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(function () { t.classList.remove('show'); }, 3800);
+  }
+
+  var MORE = {
+    anki: '« Raté » fait revenir la carte dans la session, puis le lendemain, et baisse sa facilité. « Hésitant » allonge un peu l\'intervalle. « Su » le multiplie par la facilité de la carte. « Facile » l\'allonge davantage et augmente sa facilité.',
+    fsrs: 'Plus l\'objectif est élevé, plus tu révises souvent : au-delà de 90 %, le nombre de révisions augmente fortement pour un gain faible. Sois honnête : réponds « Raté » quand tu as oublié, plutôt que « Hésitant ». Tes cartes actuelles gardent leur date et sont recalculées à leur prochaine révision.'
+  };
+  function bodyHtml() {
+    return '<div class="p1fc-body">' +
+      '<div class="p1fc-modes" role="radiogroup" aria-label="Mode de programmation">' +
+        '<button type="button" class="p1fc-mode" role="radio" data-m="simple"><span class="p1fc-mode-check"><i class="fas fa-check"></i></span><span class="p1fc-mode-ico simple"><i class="fas fa-seedling"></i></span><span class="p1fc-mode-name">Simple</span><span class="p1fc-mode-desc">Le fonctionnement actuel : trois réponses, des intervalles fixes, aucun réglage.</span></button>' +
+        '<button type="button" class="p1fc-mode" role="radio" data-m="anki"><span class="p1fc-mode-check"><i class="fas fa-check"></i></span><span class="p1fc-mode-ico anki"><i class="fas fa-clock-rotate-left"></i></span><span class="p1fc-mode-name">Anki classique</span><span class="p1fc-mode-desc">Chaque carte a sa propre facilité, qui évolue avec tes réponses. Une carte ratée revient dans la session.</span></button>' +
+        '<button type="button" class="p1fc-mode" role="radio" data-m="fsrs"><span class="p1fc-mode-check"><i class="fas fa-check"></i></span><span class="p1fc-mode-ico fsrs"><i class="fas fa-brain"></i></span><span class="p1fc-mode-name">FSRS <span class="p1fc-pill">Plus efficace</span></span><span class="p1fc-mode-desc">Tu fixes un objectif de mémorisation, l\'algorithme s\'adapte à ta façon d\'apprendre.</span></button>' +
+      '</div>' +
+      '<div class="p1fc-explain" data-for="simple"><span class="p1fc-explain-ico simple"><i class="fas fa-circle-info"></i></span><div><strong>Le mode Simple</strong><span>Raté : demain. Hésitant : un peu plus tard (21 jours au plus). Su : beaucoup plus tard (60 jours au plus). Idéal pour commencer sans se poser de questions.</span></div></div>' +
+      '<div class="p1fc-explain" data-for="anki"><span class="p1fc-explain-ico anki"><i class="fas fa-circle-info"></i></span><div><strong>Comment fonctionne Anki classique ?</strong><span>L\'intervalle avant la prochaine révision est multiplié par la facilité de la carte : elle augmente quand tu réponds « Su », baisse quand tu hésites ou rates. C\'est l\'algorithme historique d\'Anki.</span><p hidden>' + MORE.anki + '</p><button type="button" class="p1fc-more" aria-expanded="false">En savoir plus <i class="fas fa-chevron-down"></i></button></div></div>' +
+      '<div class="p1fc-explain" data-for="fsrs"><span class="p1fc-explain-ico fsrs"><i class="fas fa-circle-info"></i></span><div><strong>Comment fonctionne FSRS ?</strong><span>Pour chaque carte, l\'algorithme estime la probabilité que tu t\'en souviennes, et te la représente juste avant que tu ne l\'oublies. Moins de révisions inutiles : tu ne règles qu\'une chose, ton objectif.</span><p hidden>' + MORE.fsrs + '</p><button type="button" class="p1fc-more" aria-expanded="false">En savoir plus <i class="fas fa-chevron-down"></i></button></div></div>' +
+      '<div class="p1fc-goal" data-for="fsrs"><div class="p1fc-row-head"><span class="p1fc-row-label"><i class="fas fa-bullseye"></i>Objectif de mémorisation</span><span class="p1fc-goal-val">90 %</span></div>' +
+        '<input type="range" class="p1fc-range" min="80" max="95" step="1" value="90" aria-label="Objectif de mémorisation">' +
+        '<div class="p1fc-range-scale"><span>80 % · léger</span><span>90 % · conseillé</span><span>95 % · exigeant</span></div>' +
+        '<div class="p1fc-goal-est"><i class="fas fa-chart-line"></i><span class="p1fc-goal-txt"></span></div></div>' +
+      '<div class="p1fc-rows">' +
+        '<div class="p1fc-row" data-adv="1"><div class="p1fc-row-txt"><div class="p1fc-row-label"><i class="fas fa-sun"></i>Nouvelles cartes par jour</div><div class="p1fc-row-sub">Cartes jamais vues présentées chaque jour. Entre 30 et 50 conseillé.</div></div>' +
+          '<div class="p1fc-step" data-k="newPerDay"><button type="button" data-d="-5" aria-label="Moins de nouvelles cartes"><i class="fas fa-minus"></i></button><span></span><button type="button" data-d="5" aria-label="Plus de nouvelles cartes"><i class="fas fa-plus"></i></button></div></div>' +
+        '<div class="p1fc-row" data-adv="1"><div class="p1fc-row-txt"><div class="p1fc-row-label"><i class="fas fa-hourglass-half"></i>Intervalle maximal</div><div class="p1fc-row-sub">Tu reverras chaque carte au moins une fois sur cette période.</div></div>' +
+          '<div class="p1fc-chips" data-k="maxIvl"><button type="button" data-v="180">6 mois</button><button type="button" data-v="365">1 an</button><button type="button" data-v="730">2 ans</button></div></div>' +
+        '<div class="p1fc-row"><div class="p1fc-row-txt"><div class="p1fc-row-label"><i class="fas fa-shuffle"></i>Ordre des cartes</div><div class="p1fc-row-sub">Ordre de présentation pendant une session.</div></div>' +
+          '<div class="p1fc-seg" data-k="order"><button type="button" data-v="mixed">Mélangé</button><button type="button" data-v="matiere">Par matière</button><button type="button" data-v="echeance">Par échéance</button></div></div>' +
+        '<div class="p1fc-row" data-adv="1"><div class="p1fc-row-txt"><div class="p1fc-row-label"><i class="fas fa-feather"></i>Bouton « Facile »</div><div class="p1fc-row-sub">Ajoute un 4e bouton pour les cartes évidentes, qui reviennent beaucoup plus tard.</div></div>' +
+          '<button type="button" class="p1fc-toggle" role="switch" aria-checked="false" aria-label="Bouton Facile" data-k="easy"></button></div>' +
+        '<div class="p1fc-row-note" data-simple-note="1"><i class="fas fa-circle-info"></i><span>Nouvelles cartes par jour, intervalle maximal et bouton « Facile » s\'activent avec Anki classique ou FSRS.</span></div>' +
+      '</div></div>';
+  }
+  function goalText(p) {
+    if (p === 90) return 'Le meilleur équilibre entre mémorisation et charge de travail.';
+    var r = p / 100, load = (Math.pow(0.9, 1 / DECAY) - 1) / (Math.pow(r, 1 / DECAY) - 1), pct = Math.round(Math.abs(load - 1) * 100);
+    return load < 1 ? 'Environ ' + pct + ' % de révisions en moins qu\'à 90 %, mais davantage d\'oublis.' : 'Environ ' + pct + ' % de révisions en plus qu\'à 90 %, pour peu d\'oublis en moins.';
+  }
+  function paintGoal(card, p) {
+    card.querySelector('.p1fc-goal-val').textContent = p + ' %';
+    card.querySelector('.p1fc-range').style.setProperty('--p1fc-fill', ((p - 80) / 15 * 100) + '%');
+    card.querySelector('.p1fc-goal-txt').textContent = goalText(p);
+  }
+  function slide(card) {
+    card.querySelectorAll('.p1fc-chips, .p1fc-seg').forEach(function (g) {
+      var b = g.querySelector('button.is-on');
+      if (!b || !b.offsetWidth) g.classList.remove('p1fc-slide');
+      else { g.style.setProperty('--p1fc-x', b.offsetLeft + 'px'); g.style.setProperty('--p1fc-w', b.offsetWidth + 'px'); g.classList.add('p1fc-slide'); }
+      if (!g._fcRO && window.ResizeObserver) { g._fcRO = new ResizeObserver(function () { slide(card); }); g._fcRO.observe(g); }
+    });
+  }
+  function cardEl() { return document.querySelector('#settings-modal-inner .settings-card[data-setting="p1-flash"]'); }
+  function syncUI() {
+    var card = cardEl(); if (!card || !card.querySelector('.p1fc-body')) return;
+    card.querySelectorAll('.p1fc-mode').forEach(function (b) { var on = b.dataset.m === S.mode; b.classList.toggle('is-active', on); b.setAttribute('aria-checked', on ? 'true' : 'false'); });
+    card.querySelectorAll('[data-for]').forEach(function (e) { e.hidden = e.dataset.for !== S.mode; });
+    card.querySelectorAll('[data-adv]').forEach(function (e) { e.hidden = S.mode === 'simple'; });
+    var note = card.querySelector('[data-simple-note]'); if (note) note.hidden = S.mode !== 'simple';
+    var rg = card.querySelector('.p1fc-range'), p = Math.round(S.retention * 100);
+    if (document.activeElement !== rg) rg.value = p;
+    paintGoal(card, document.activeElement === rg ? Number(rg.value) : p);
+    card.querySelectorAll('.p1fc-step').forEach(function (st) {
+      var k = st.dataset.k, v = S[k]; st.querySelector('span').textContent = v;
+      st.querySelector('[data-d^="-"]').disabled = v <= 0;
+      st.querySelector('[data-d]:not([data-d^="-"])').disabled = v >= 200;
+    });
+    card.querySelectorAll('.p1fc-chips, .p1fc-seg').forEach(function (g) { g.querySelectorAll('button').forEach(function (b) { var on = String(S[g.dataset.k]) === b.dataset.v; b.classList.toggle('is-on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); }); });
+    slide(card);
+    var tg = card.querySelector('.p1fc-toggle[data-k="easy"]'); tg.classList.toggle('is-on', S.easy); tg.setAttribute('aria-checked', S.easy ? 'true' : 'false');
+  }
+  function wire(card) {
+    card.addEventListener('click', function (e) {
+      var m = e.target.closest('.p1fc-mode'); if (m) { set({ mode: m.dataset.m }); return; }
+      var more = e.target.closest('.p1fc-more'); if (more) { var p = more.parentNode.querySelector('p'); var open = more.getAttribute('aria-expanded') !== 'true'; p.hidden = !open; more.setAttribute('aria-expanded', open ? 'true' : 'false'); more.firstChild.textContent = open ? 'Moins de détails ' : 'En savoir plus '; return; }
+      var sb = e.target.closest('.p1fc-step button'); if (sb) { var k = sb.parentNode.dataset.k, patch = {}; patch[k] = S[k] + Number(sb.dataset.d); set(patch); return; }
+      var cb = e.target.closest('.p1fc-chips button, .p1fc-seg button'); if (cb) { var g = cb.parentNode.dataset.k, p2 = {}; p2[g] = g === 'maxIvl' ? Number(cb.dataset.v) : cb.dataset.v; set(p2); return; }
+      var tgb = e.target.closest('.p1fc-toggle'); if (!tgb) return;
+      set({ easy: !S.easy });
+    });
+    var rg = card.querySelector('.p1fc-range');
+    rg.addEventListener('input', function () { paintGoal(card, Number(rg.value)); });
+    rg.addEventListener('change', function () { set({ retention: Number(rg.value) / 100 }); });
+  }
+  function ensureCard() {
+    var card = cardEl(); if (!card) { setTimeout(ensureCard, 400); return; }
+    if (!card.querySelector('.p1fc-body')) {
+      card.classList.add('p1fc-set');
+      var anchor = card.querySelector('#p1-pause-row') || card.querySelector('.settings-card-head');
+      anchor.insertAdjacentHTML('afterend', bodyHtml());
+      wire(card);
+    }
+    syncUI();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ensureCard); else ensureCard();
+
+  var tip = { el: null, cur: null, downAt: null };
+  function tipEl() { if (!tip.el) { tip.el = document.createElement('div'); tip.el.id = 'p1-tip'; tip.el.setAttribute('role', 'tooltip'); document.body.appendChild(tip.el); } return tip.el; }
+  function showTip(t) {
+    var text = t && t.getAttribute('data-p1-tip'); if (!text) return;
+    var el = tipEl(); tip.cur = t; el.textContent = text; el.classList.remove('is-below', 'is-wrap', 'visible'); el.style.left = '-9999px'; el.style.top = '-9999px';
+    if (el.offsetWidth >= 238) el.classList.add('is-wrap');
+    var r = t.getBoundingClientRect(), tw = el.offsetWidth, th = el.offsetHeight, gap = 8, cx = r.left + r.width / 2;
+    var left = Math.max(gap, Math.min(cx - tw / 2, window.innerWidth - tw - gap)), top = r.top - th - 5 - gap, below = false;
+    if (top < gap) { top = r.bottom + 5 + gap; below = true; }
+    if (below) el.classList.add('is-below');
+    el.style.setProperty('--p1-tip-arrow', Math.max(10, Math.min(tw - 10, cx - left)) + 'px'); el.style.left = left + 'px'; el.style.top = top + 'px'; el.classList.add('visible');
+  }
+  function hideTip() { tip.cur = null; if (tip.el) tip.el.classList.remove('visible'); }
+  function tipTarget(n) { return n && n.closest ? n.closest('[data-p1-tip]') : null; }
+  (function bindTips() {
+    var canHover = true; try { canHover = !window.matchMedia || window.matchMedia('(hover: hover)').matches; } catch (e) {}
+    document.addEventListener('mouseover', function (e) {
+      if (!canHover) return;
+      if (tip.downAt && Math.abs(e.clientX - tip.downAt.x) < 4 && Math.abs(e.clientY - tip.downAt.y) < 4) return;
+      tip.downAt = null;
+      var t = tipTarget(e.target); if (t === tip.cur) return;
+      if (!t) { if (tip.cur) hideTip(); return; }
+      showTip(t);
+    });
+    document.addEventListener('mouseout', function (e) { var t = tipTarget(e.target); if (t && t === tip.cur && !(e.relatedTarget && t.contains(e.relatedTarget))) hideTip(); });
+    document.addEventListener('focusin', function (e) { var t = tipTarget(e.target); try { if (t && t === e.target && t.matches(':focus-visible')) showTip(t); } catch (err) {} });
+    document.addEventListener('focusout', function (e) { if (tip.cur && tip.cur === e.target) hideTip(); });
+    document.addEventListener('mousedown', function (e) { var k = tipTarget(e.target); if (k && k.hasAttribute('data-p1-tip-keep')) return; tip.downAt = { x: e.clientX, y: e.clientY }; hideTip(); }, true);
+    window.addEventListener('scroll', hideTip, true); window.addEventListener('resize', hideTip);
+    window.addEventListener('keydown', function (e) { if (e.key === 'Escape') hideTip(); }, true);
+  })();
+
+  window.P1FlashAlgo = {
+    get: function () { return clone(S); }, set: set, setRemote: setRemote, defaults: function () { return clone(DEF); },
+    schedule: schedule, label: label, compute: compute, paused: paused,
+    prepareSession: prepareSession, onEval: onEval, decorate: decorate, rowBadges: rowBadges, resume: resume, toast: toast, editorOpen: editorOpen, editorApply: editorApply,
+    flags: function () { return clone(FLAGS); }, _newCount: newCount, _fsrs: { W: W, recall: recall, next: fsrsNext, ivl: ivlFromS }, refreshDue: refreshDue
+  };
 })();
 </script>
 
