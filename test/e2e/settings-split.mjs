@@ -139,7 +139,7 @@ try {
       assert(B.t === "Menu" && B.aria === "Revenir au menu des réglages" && B.ch && B.chFirst, "libellé : " + JSON.stringify(B));
       assert(parseFloat(B.rad) >= 100 && B.pad === "8px 16px 8px 12px" && B.pos === "sticky" && B.w < B.bw - 100 && B.fw >= "700", "forme : " + JSON.stringify(B));
       if (theme === "light") assert(rgb(B.bg).join() === "239,246,255" && /rgba\(59, 130, 246, 0\.28\)/.test(B.bd) && /rgba\(15, 23, 42, 0\.08\)/.test(B.sh), "couleurs claires : " + JSON.stringify(B));
-      else assert(/rgba\(59, 130, 246, 0\.16\)/.test(B.bg) && /rgba\(147, 197, 253, 0\.3\)/.test(B.bd) && rgb(B.fg).join() === "147,197,253", "couleurs sombres : " + JSON.stringify(B));
+      else assert(/^rgb\(/.test(B.bg) && rgb(B.bg).join() === "35,55,89" && /rgba\(147, 197, 253, 0\.3\)/.test(B.bd) && rgb(B.fg).join() === "147,197,253", "couleurs sombres (fond opaque, le contenu ne doit pas transparaître) : " + JSON.stringify(B));
       /* collée en haut pendant le défilement */
       const t0 = await page.evaluate(() => document.querySelector(".p1-set-back").getBoundingClientRect().top);
       await page.evaluate(() => { document.querySelector(".settings-modal-body").scrollTop = 400; }); await sleep(300);

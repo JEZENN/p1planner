@@ -1561,3 +1561,6 @@ noms de filleuls lisent Firestore. Correctif (option 1 choisie par Jean, pas de 
 5. **Emplacement** : au-dessus de 600 px, centrée entre le logo et les menus de droite quand la place le permet, sinon juste sous le header ; à 600 px et moins, toujours juste sous le header, centrée et entièrement dans l'écran (elle peut recouvrir le haut de la barre d'onglets pendant ces ~2,8 s, volontairement). Jamais de chevauchement avec le logo, les menus, l'avatar ou le bouton de menu.
 6. **Accessibilité** : zone `role="status"` `aria-live="polite"` ; avec « réduire les animations », fondu seul, sans mouvement. Thèmes clair, sombre et pastel par les variables de couleur habituelles.
 7. Aucune règle Firestore, aucune donnée de production ni aucun réglage utilisateur touchés.
+
+## Paramètres sur téléphone, thème sombre : pastille « Menu » opaque (2026-11-08)
+La pastille « ‹ Menu » (collée en haut pendant le défilement d'une rubrique) avait en thème sombre un fond translucide (bleu à 16 % d'opacité) : le contenu défilait visiblement à travers. Fond opaque `#233759` (le même rendu que l'ancien fond posé sur la fenêtre `#1e293b`), bordure, couleur du texte, ombre et survol inchangés. Thèmes clair et pastel : fond déjà opaque, non modifiés.

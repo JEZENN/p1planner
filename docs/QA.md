@@ -929,3 +929,7 @@ Exécuté pour de vrai (vraie page, émulateurs Auth+Firestore, Chrome headless 
 - [x] Régression complète (une suite à la fois) : suites vertes du premier coup ou rejouées seules vertes : `caret`, `catalog-titles`, `course-add`, `data-durability`, `perso-fx`, `flashcards-v2`, `perso-retouches-22-10`, `nav-matiere`, `evol-31-10` (après correction du test), toutes les autres. Les émulateurs s'étaient arrêtés en cours de lot : les échecs « Connection closed » et les arrêts à 127 venaient de là.
 - [ ] Échecs restants, **identiques sur la copie d'avant** (donc sans lien avec ce travail) : `train-score` TH5 (en-tête du cahier à 375 px), `work-sessions` T1 (fond blanc du sélecteur de mode des tours), `work-ui` S6 / H-B / P1-light / P1-dark / P3, `referral-ui` R3. Des échecs isolés et variables d'une exécution à l'autre (`train-score` TH10-rm, `work-ui` H-A) ne se sont pas reproduits.
 - [ ] Jamais testé : iPhone / iPad réels, Safari ; lecteur d'écran réel (seul `role="status"` / `aria-live` est vérifié dans le DOM) ; un rechargement de page salue de nouveau (choix voulu, état en mémoire).
+
+### Paramètres téléphone, sombre : pastille « Menu » opaque (2026-11-08)
+- [x] `test/e2e/settings-split.mjs` SP2-dark : le fond de la pastille doit être opaque (`rgb(35, 55, 89)`, pas de transparence) ; ÉCHEC sur la version d'avant, vert après (12 / 12). `theme-settings` et `settings-persist` rejoués verts. Capture : `docs/captures-15-10/parametres-tel-rubrique-dark.png` (contenu masqué derrière la pastille après défilement).
+- [ ] Non testé : iPhone réel, Safari.
