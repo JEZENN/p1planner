@@ -1,0 +1,22 @@
+{
+  "_aide": "Copiez ce fichier en config.json puis adaptez. METTRE-EN-PLACE.cmd le fait tout seul. Voir LISEZMOI.md.",
+  "projet": "p1planner",
+  "bucket": "p1planner.firebasestorage.app",
+  "cle": "%USERPROFILE%\\.p1planner-sauvegarde\\cle-lecture-seule.json",
+  "cleRestauration": "%USERPROFILE%\\.p1planner-sauvegarde\\cle-restauration.json",
+  "_cleRestauration": "Clé AVEC droit d'écriture, utilisée seulement par RESTAURER.cmd. La sauvegarde automatique n'utilise que « cle » (lecture seule).",
+  "destination": "C:\\P1Planner-Sauvegardes",
+  "copies": [],
+  "_copies": "Facultatif : copie automatique vers un disque externe quand il est branché, ex. [\"E:\\\\P1Planner-Sauvegardes\"]",
+  "garderQuotidien": 3,
+  "_garder": "Sauvegarde chaque jour. Gardées : la dernière de chacun des 3 derniers jours, + la dernière de chacune des 8 dernières semaines (lundi au dimanche), + la dernière de chacun des 12 derniers mois (une sauvegarde peut compter plusieurs fois). Les fichiers Storage sont communs à toutes les sauvegardes : chaque sauvegarde en plus ne coûte que le poids de la base compressée. Pour ne garder QUE 3 jours : garderHebdo et garderMensuel à 0.",
+  "garderHebdo": 8,
+  "garderMensuel": 12,
+  "seuilRetardHeures": 20,
+  "_seuilRetardHeures": "Rattrapage : si le PC était éteint à l'heure prévue, la sauvegarde se fait dès qu'il est disponible, à condition que la dernière date de plus de 20 h.",
+  "images": true,
+  "auth": true,
+  "regles": true,
+  "alerteDossier": null,
+  "_alerteDossier": "null = le Bureau. En cas d'échec, un fichier « SAUVEGARDE P1PLANNER EN ECHEC.txt » y apparaît."
+}

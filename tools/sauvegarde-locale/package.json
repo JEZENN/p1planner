@@ -1,0 +1,16 @@
+{
+  "name": "p1planner-sauvegarde-locale",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sauvegarde quotidienne complete (Firestore, Storage, Auth) du projet p1planner vers un disque local, et restauration guidee",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node tests/lancer-tests.js"
+  },
+  "dependencies": {
+    "firebase-admin": "14.5.0"
+  }
+}

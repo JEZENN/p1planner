@@ -1,0 +1,10 @@
+rules_version = '2';
+
+// Émulateur de test de l'outil de sauvegarde uniquement. L'outil passe par le SDK d'administration, qui ignore les règles.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mise en place de la sauvegarde P1Planner</title>
+<style>
+  :root { --fond: #f8fafc; --carte: #ffffff; --texte: #0f172a; --doux: #475569; --trait: #e2e8f0; --bleu: #2563eb; --code: #0f172a; --code-texte: #e2e8f0; --vert: #15803d; --vert-fond: #f0fdf4; --ambre: #92400e; --ambre-fond: #fffbeb; }
+  @media (prefers-color-scheme: dark) { :root { --fond: #0f172a; --carte: #1e293b; --texte: #f1f5f9; --doux: #cbd5e1; --trait: #334155; --bleu: #60a5fa; --code: #020617; --code-texte: #e2e8f0; --vert: #86efac; --vert-fond: #052e16; --ambre: #fcd34d; --ambre-fond: #422006; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--fond); color: var(--texte); font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 28px; line-height: 1.25; margin: 0 0 8px; }
+  h2 { font-size: 21px; margin: 40px 0 12px; }
+  h3 { font-size: 17px; margin: 0 0 8px; }
+  p { margin: 0 0 12px; }
+  ol, ul { margin: 0 0 12px; padding-left: 22px; }
+  li { margin: 4px 0; }
+  a { color: var(--bleu); }
+  .intro { color: var(--doux); font-size: 17px; }
+  .etape { background: var(--carte); border: 1px solid var(--trait); border-radius: 10px; padding: 18px 20px; margin: 14px 0; }
+  .note { border-radius: 10px; padding: 14px 18px; margin: 14px 0; }
+  .sur { background: var(--vert-fond); }
+  .sur strong:first-child { color: var(--vert); }
+  .att { background: var(--ambre-fond); }
+  .att strong:first-child { color: var(--ambre); }
+  .bloc { position: relative; margin: 10px 0 12px; }
+  pre { margin: 0; background: var(--code); color: var(--code-texte); border-radius: 8px; padding: 42px 14px 14px; font: 13px/1.5 Consolas, Menlo, monospace; white-space: pre-wrap; word-break: break-all; max-height: 150px; overflow-y: auto; }
+  button { position: absolute; top: 7px; right: 7px; font: 600 13px system-ui, "Segoe UI", sans-serif; border: 0; border-radius: 6px; padding: 5px 12px; background: var(--bleu); color: #fff; cursor: pointer; }
+  @media (prefers-color-scheme: dark) { button { color: #0f172a; } }
+  code { font: 14px Consolas, Menlo, monospace; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Mise en place de la sauvegarde P1Planner</h1>
+  <p class="intro">Deux actions dans Google Cloud Shell, puis un double-clic. Une seule fois. Comptez 10 minutes, plus le temps de la première sauvegarde.</p>
+
+  <div class="note sur">
+    <p><strong>Aucun risque pour la base.</strong></p>
+    <ul>
+      <li>La clé créée ici est en <strong>lecture seule</strong>. Même en cas de bug ou de vol de la clé, Google refuse toute écriture et toute suppression.</li>
+      <li>Le programme de sauvegarde ne contient aucune commande d'écriture ni de suppression sur Firebase.</li>
+      <li>La mise en place n'ajoute qu'un compte de lecture. Rien d'existant n'est modifié.</li>
+      <li>Le script refuse toute autre clé : il faut exactement la clé du compte <code>sauvegarde-locale@p1planner.iam.gserviceaccount.com</code>, par exemple pas une clé administrateur.</li>
+      <li>Aucune clé capable d'écrire n'est créée pour l'instant : elle ne sera créée que le jour où vous devez restaurer.</li>
+    </ul>
+  </div>
+
+  <h2>Mise en place</h2>
+
+  <div class="etape">
+    <h3>1. Créer la clé en lecture seule</h3>
+    <ol>
+      <li>Ouvrez <a href="https://console.cloud.google.com/?cloudshell=true&amp;project=p1planner" target="_blank" rel="noopener">Google Cloud Shell</a>, avec le compte Google du projet Firebase <code>p1planner</code>. Une console noire s'ouvre en bas de la page, après quelques secondes.</li>
+      <li>Si une fenêtre de conditions d'utilisation apparaît, acceptez-la.</li>
+      <li>Copiez la commande ci-dessous, collez-la dans la console noire, puis appuyez sur Entrée.</li>
+      <li>Si Google demande « Autoriser », cliquez dessus. S'il pose une question terminée par <code>(y/N)</code>, tapez <code>y</code> puis Entrée.</li>
+      <li>Quand le navigateur propose de télécharger <code>cle-lecture-seule.json</code>, acceptez.</li>
+    </ol>
+    <div class="bloc"><button type="button">Copier</button><pre>( set -e; P=p1planner; C=sauvegarde-locale@$P.iam.gserviceaccount.com; gcloud config set project $P; gcloud iam service-accounts describe $C >/dev/null 2>&amp;1 || { gcloud iam service-accounts create sauvegarde-locale --display-name="Sauvegarde locale (lecture seule)"; sleep 20; }; for R in datastore.viewer storage.objectViewer firebaseauth.viewer firebaserules.viewer; do gcloud projects add-iam-policy-binding $P --member="serviceAccount:$C" --role="roles/$R" --condition=None --format=none; done; gcloud iam service-accounts keys create ~/cle-lecture-seule.json --iam-account=$C; cloudshell download ~/cle-lecture-seule.json; echo; echo "TERMINE : acceptez le telechargement du fichier." )</pre></div>
+    <p>La commande crée le compte <code>sauvegarde-locale</code>, lui donne 4 droits de lecture (Firestore, Storage, comptes, règles), puis télécharge sa clé. Vous devez voir <code>TERMINE</code> à la fin.</p>
+  </div>
+
+  <div class="etape">
+    <h3>2. Effacer la copie restée chez Google</h3>
+    <p>Une fois le fichier téléchargé, collez cette commande dans la même console, puis appuyez sur Entrée. Vous pouvez ensuite fermer la page.</p>
+    <div class="bloc"><button type="button">Copier</button><pre>rm ~/cle-lecture-seule.json &amp;&amp; echo "Copie effacee"</pre></div>
+  </div>
+
+  <div class="etape">
+    <h3>3. Double-cliquer sur METTRE-EN-PLACE.cmd</h3>
+    <p>Ce fichier est dans le même dossier que ce guide. Si Windows affiche un avertissement, cliquez sur « Informations complémentaires », puis « Exécuter quand même ». Il fait tout seul :</p>
+    <ol>
+      <li>il range la clé au bon endroit, hors de OneDrive, et la retire de vos Téléchargements ;</li>
+      <li>il installe les dépendances (une seule fois, internet requis) ;</li>
+      <li>il vérifie l'accès et mesure la taille ;</li>
+      <li>il fait la première sauvegarde, de quelques minutes à une heure : <strong>gardez le PC branché et ouvert</strong> ;</li>
+      <li>il programme la sauvegarde automatique.</li>
+    </ol>
+    <p>C'est fini quand vous lisez <strong>TOUT EST EN PLACE</strong>.</p>
+    <p>Si un message parle de permission, attendez 2 minutes et double-cliquez à nouveau. Si le message dit que le fichier n'est pas la clé attendue, refaites l'étape 1 sans changer la commande.</p>
+  </div>
+
+  <h2>Ensuite, au quotidien</h2>
+  <p>Vous n'avez rien à faire.</p>
+  <ul>
+    <li>La sauvegarde se lance chaque jour à 23 h. Si le PC n'est pas disponible à cette heure, elle se fait dès qu'il l'est (session Windows ouverte, internet) : la dernière sauvegarde doit dater de plus de 20 h.</li>
+    <li>En cas d'échec, un fichier <code>SAUVEGARDE P1PLANNER EN ECHEC.txt</code> apparaît sur votre Bureau.</li>
+    <li>Le résumé de la dernière sauvegarde est dans <code>C:\P1Planner-Sauvegardes\DERNIERE-SAUVEGARDE.txt</code>.</li>
+    <li>Sont gardées : la dernière sauvegarde de chacun des 3 derniers jours, de chacune des 8 dernières semaines et de chacun des 12 derniers mois.</li>
+  </ul>
+
+  <h2>Le jour où il faut restaurer</h2>
+  <p>Cette partie ne sert que si des données ont été perdues. Vous aurez besoin du <strong>double-clic sur RESTAURER.cmd</strong>, et d'une clé qui a le droit d'écrire, créée seulement ce jour-là.</p>
+
+  <div class="etape">
+    <h3>1. Créer la clé de restauration</h3>
+    <p>Dans <a href="https://console.cloud.google.com/?cloudshell=true&amp;project=p1planner" target="_blank" rel="noopener">Cloud Shell</a>, collez cette commande et acceptez le téléchargement de <code>cle-restauration.json</code>.</p>
+    <div class="bloc"><button type="button">Copier</button><pre>( set -e; P=p1planner; C=restauration@$P.iam.gserviceaccount.com; gcloud config set project $P; gcloud iam service-accounts describe $C >/dev/null 2>&amp;1 || { gcloud iam service-accounts create restauration --display-name="Restauration (temporaire)"; sleep 20; }; for R in datastore.user storage.objectAdmin firebaseauth.admin; do gcloud projects add-iam-policy-binding $P --member="serviceAccount:$C" --role="roles/$R" --condition=None --format=none; done; gcloud iam service-accounts keys create ~/cle-restauration.json --iam-account=$C; cloudshell download ~/cle-restauration.json; echo; echo "TERMINE : acceptez le telechargement du fichier." )</pre></div>
+    <p>Une fois le fichier téléchargé :</p>
+    <div class="bloc"><button type="button">Copier</button><pre>rm ~/cle-restauration.json &amp;&amp; echo "Copie effacee"</pre></div>
+  </div>
+
+  <div class="etape">
+    <h3>2. Double-cliquer sur ACTIVER-RESTAURATION.cmd</h3>
+    <p>La clé est rangée et l'assistant s'ouvre. Les fois suivantes, <code>RESTAURER.cmd</code> suffit. Choisissez :</p>
+    <ul>
+      <li><strong>1</strong> pour un seul utilisateur : collez son <strong>UID</strong>, visible dans Firebase, rubrique Authentication (son e-mail marche aussi) ;</li>
+      <li><strong>2</strong> pour tout le monde, en cas de panne ou de perte massive ;</li>
+      <li><strong>3</strong> pour voir ce qu'un utilisateur avait, sans rien modifier ;</li>
+      <li><strong>4</strong> pour annuler une restauration.</li>
+    </ul>
+    <p>L'assistant demande la date de la sauvegarde, montre ce qui manque sans rien écrire, puis demande votre choix. Prenez <strong>1 = remettre seulement ce qui manque</strong>. Rien ne s'écrit sans une confirmation tapée.</p>
+    <p>La restauration remet des données et ne supprime rien. Seul le menu 4 retire ce qu'une restauration avait ajouté, et jamais ce que l'utilisateur a modifié depuis.</p>
+  </div>
+
+  <div class="etape">
+    <h3>3. Quand tout est bon, désactiver cette clé</h3>
+    <p>Attendez quelques jours : le menu 4 a besoin de la clé. Ensuite, dans Cloud Shell, collez cette commande et répondez <code>y</code>. Elle supprime uniquement le compte <code>restauration</code>, et sa clé ne marche plus.</p>
+    <div class="bloc"><button type="button">Copier</button><pre>gcloud iam service-accounts delete restauration@p1planner.iam.gserviceaccount.com --project p1planner</pre></div>
+  </div>
+
+  <div class="note att">
+    <p><strong>À savoir.</strong> Une clé de compte de service ne doit jamais être déposée dans le dépôt GitHub (il est public), ni dans OneDrive. L'outil refuse d'ailleurs toute clé rangée dans OneDrive.</p>
+  </div>
+</main>
+<script>
+  document.querySelectorAll('.bloc button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var texte = b.parentNode.querySelector('pre').textContent;
+      var fini = function () { b.textContent = 'Copié'; setTimeout(function () { b.textContent = 'Copier'; }, 1800); };
+      var secours = function () {
+        var z = document.createElement('textarea');
+        z.value = texte; document.body.appendChild(z); z.select();
+        try { document.execCommand('copy'); fini(); } catch (e) {}
+        z.remove();
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(texte).then(fini, secours); else secours();
+    });
+  });
+</script>
+</body>
+</html>

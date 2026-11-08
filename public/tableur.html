@@ -15246,6 +15246,7 @@ window.TPXNotesPending = {
     return 'notes_pending_' + u + '_' + itemKey;
   },
   save: function (itemKey, html) {
+    if (window.p1HtmlPasNote && window.p1HtmlPasNote(html)) return false;   // contenu de chargement : jamais mis en brouillon
     try {
       return !!window.TPXSafeStore.set(this.key(itemKey),
         JSON.stringify({ html: html, savedAt: Date.now() }));
@@ -15254,7 +15255,9 @@ window.TPXNotesPending = {
   read: function (itemKey) {
     try {
       var raw = window.localStorage.getItem(this.key(itemKey));
-      return raw ? JSON.parse(raw) : null;
+      var obj = raw ? JSON.parse(raw) : null;
+      if (obj && window.p1HtmlPasNote && window.p1HtmlPasNote(obj.html)) { this.clear(itemKey); return null; }   // brouillon qui contient un squelette : ignoré et retiré
+      return obj;
     } catch (e) { return null; }
   },
   clear: function (itemKey) {
@@ -17355,6 +17358,23 @@ window.p1SkelHTML = function (kind) {
         ['86%', '70%', '78%', '60%'].forEach(function (w) { out += sk('p1-skl-line', w); });
     }
     return '<div class="p1-skl p1-skl-' + kind + '" contenteditable="false" aria-busy="true" aria-label="Chargement">' + out + '</div>';
+};
+/* Contenu provisoire d'un éditeur (squelette de chargement, ou message d'échec de chargement) : ce n'est jamais le texte de la note,
+   il ne doit donc jamais être enregistré, ni en ligne ni dans un brouillon local. */
+window.p1HtmlPasNote = function (html) {
+    return typeof html === 'string' && (html.indexOf('p1-skl') !== -1 || /fa-cloud-arrow-down[^>]*><\/i>\s*Cette note n['\u2019]a pas pu être chargée/.test(html));
+};
+/* Retire d'un contenu déjà enregistré les blocs provisoires (squelette complet, message d'échec de chargement) ; le reste est conservé tel quel. */
+window.p1RetirerSquelette = function (html) {
+    if (!window.p1HtmlPasNote(html)) return html;
+    var t = document.createElement('template');
+    t.innerHTML = html;
+    Array.prototype.forEach.call(t.content.querySelectorAll('.p1-skl'), function (b) { if (b.parentNode) b.parentNode.removeChild(b); });
+    Array.prototype.forEach.call(t.content.querySelectorAll('i.fa-cloud-arrow-down'), function (i) {
+        var p = i.parentNode;
+        if (p && p.nodeType === 1 && /Cette note n['\u2019]a pas pu être chargée/.test(p.textContent || '')) p.parentNode.removeChild(p);
+    });
+    return t.innerHTML;
 };
 </script>
 
@@ -25168,6 +25188,7 @@ window.addEventListener('pagehide', function() {
 
     var editor = document.getElementById('trainNotesEditor');
     if (!editor) return;
+    if (window.p1HtmlPasNote && window.p1HtmlPasNote(editor.innerHTML)) return;   // éditeur encore en chargement : rien à mettre à l'abri
 
     // Étape 1 : écriture synchrone en localStorage (garantie même si la page se ferme)
     try {
@@ -27378,6 +27399,7 @@ async function performRestoreFirebase() {
                 const batch = writeBatch(db);
                 Object.entries(restoredNotes).forEach(function([trainId, noteData]) {
                     const ref = doc(db, 'users', currentUser.uid, 'notesEntrainements', String(trainId));
+                    if (noteData && typeof noteData.html === 'string' && window.p1RetirerSquelette) noteData = Object.assign({}, noteData, { html: window.p1RetirerSquelette(noteData.html) });
                     batch.set(ref, noteData);
                 });
                 try {
@@ -27395,6 +27417,7 @@ async function performRestoreFirebase() {
                 const speBatch = writeBatch(db);
                 Object.entries(restoredSpeNotes).forEach(function([speId, noteData]) {
                     const ref = doc(db, 'users', currentUser.uid, TPXC('ErreurSpe'), String(speId));
+                    if (noteData && typeof noteData.html === 'string' && window.p1RetirerSquelette) noteData = Object.assign({}, noteData, { html: window.p1RetirerSquelette(noteData.html) });
                     speBatch.set(ref, noteData);
                 });
                 try {
@@ -35628,7 +35651,7 @@ async function loadTrainNoteFromFirestore(trainId) {
             const raw = localStorage.getItem(_lsKey);
             if (!raw) return null;
             const obj = JSON.parse(raw);
-            return (obj && typeof obj.html === 'string') ? obj : null;
+            return (obj && typeof obj.html === 'string' && !(window.p1HtmlPasNote && window.p1HtmlPasNote(obj.html))) ? obj : null;   // un brouillon qui contient un squelette est ignoré
         } catch (e) { return null; }
     }
 
@@ -35639,7 +35662,7 @@ async function loadTrainNoteFromFirestore(trainId) {
         const ref  = doc(db, 'users', currentUser.uid, 'notesEntrainements', String(trainId));
         const snap = await getDoc(ref);
         if (snap.exists()) {
-            firestoreHtml = snap.data().html || '';
+            firestoreHtml = window.p1RetirerSquelette ? window.p1RetirerSquelette(snap.data().html || '') : (snap.data().html || '');
             const upd = snap.data().updatedAt;
             firestoreTime = upd ? (upd.toDate ? upd.toDate().getTime() : new Date(upd).getTime()) : 0;
         }
@@ -35675,6 +35698,7 @@ async function loadTrainNoteFromFirestore(trainId) {
 }
 
 async function saveTrainNoteFromFirestore(trainId, html) {
+    if (window.p1HtmlPasNote && window.p1HtmlPasNote(html)) { console.warn('[TrainNotes] Contenu de chargement ignoré : rien n\'est enregistré'); return false; }
     if (!currentUser || !trainId) {
         console.warn('[TrainNotes] Bloqué — currentUser:', !!currentUser, 'trainId:', trainId);
         return false;
@@ -35704,7 +35728,7 @@ async function loadSpeNoteFromFirestore(speId) {
             const raw = localStorage.getItem(_lsKey);
             if (!raw) return null;
             const obj = JSON.parse(raw);
-            return (obj && typeof obj.html === 'string') ? obj : null;
+            return (obj && typeof obj.html === 'string' && !(window.p1HtmlPasNote && window.p1HtmlPasNote(obj.html))) ? obj : null;   // un brouillon qui contient un squelette est ignoré
         } catch (e) { return null; }
     }
     let firestoreHtml = null, firestoreTime = 0, firestoreError = false;
@@ -35712,7 +35736,7 @@ async function loadSpeNoteFromFirestore(speId) {
         const ref  = doc(db, 'users', currentUser.uid, TPXC('ErreurSpe'), String(speId));
         const snap = await getDoc(ref);
         if (snap.exists()) {
-            firestoreHtml = snap.data().html || '';
+            firestoreHtml = window.p1RetirerSquelette ? window.p1RetirerSquelette(snap.data().html || '') : (snap.data().html || '');
             const upd = snap.data().updatedAt;
             firestoreTime = upd ? (upd.toDate ? upd.toDate().getTime() : new Date(upd).getTime()) : 0;
         }
@@ -35739,6 +35763,7 @@ async function loadSpeNoteFromFirestore(speId) {
 }
 
 async function saveSpeNoteFromFirestore(speId, html) {
+    if (window.p1HtmlPasNote && window.p1HtmlPasNote(html)) { console.warn('[SpeErr] Contenu de chargement ignoré : rien n\'est enregistré'); return false; }
     if (!currentUser || !speId) {
         console.warn('[SpeErr] Bloque - currentUser:', !!currentUser, 'speId:', speId);
         return false;
@@ -41192,7 +41217,7 @@ var _firestoreMissing = false;
         var noteRef = window._notesFirestore.doc(_db, 'users', _cu.uid, TPXC('notes'), itemKey);
         var snap    = await window._notesFirestore.getDoc(noteRef);
         if (snap.exists()) {
-            const html = snap.data().html || '';
+            const html = window.p1RetirerSquelette ? window.p1RetirerSquelette(snap.data().html || '') : (snap.data().html || '');
             return { html, source: 'firestore' };
         }
         // Firestore accessible mais aucun document pour cet utilisateur :
@@ -41227,6 +41252,7 @@ const _tpxEvicted = function (v) {
 // 1. Copie locale normale
 var lsHtml =
     _tpxEvicted(localStorage.getItem(lsKeyUid)) || '';
+if (window.p1HtmlPasNote && window.p1HtmlPasNote(lsHtml)) lsHtml = '';   // copie locale qui contient un squelette : ignorée
 
 if (lsHtml) {
     const lsHtmlSafe = notesSanitize(lsHtml);
@@ -41242,6 +41268,7 @@ if (lsHtml) {
 // 2. Ancienne copie sécurisée en quarantaine
 var quarantineHtml =
     _tpxEvicted(localStorage.getItem(quarantineKey)) || '';
+if (window.p1HtmlPasNote && window.p1HtmlPasNote(quarantineHtml)) quarantineHtml = '';   // copie locale qui contient un squelette : ignorée
 
 if (quarantineHtml) {
     const quarantineSafe =
@@ -41277,6 +41304,7 @@ async function saveNoteToFirestore(itemKey, html) {
     var _cu = window._notesFirestore.getCurrentUser();
     if (!_cu || !itemKey) return false;
     if (html === _notesLastHtml && itemKey === _notesKey) return false;
+    if (window.p1HtmlPasNote && window.p1HtmlPasNote(html)) return false;   // contenu de chargement : jamais enregistré
 
     // ✅ Clé avec UID pour éviter la contamination cross-user sur le même appareil
     var _errUid = (_cu && _cu.uid) ? _cu.uid + '__' : '';
@@ -41629,6 +41657,7 @@ window.addEventListener('pagehide', function() {
     if (!_notesKey || _notesLastHtml === null) return;
     var editor = document.getElementById('notesEditorArea');
     if (!editor) return;
+    if (window.p1HtmlPasNote && window.p1HtmlPasNote(editor.innerHTML)) return;   // éditeur encore en chargement : rien à mettre à l'abri
     try { window.TPXNotesPending.save(_notesKey, editor.innerHTML); } catch (e) {}
     try { saveNoteToFirestore(_notesKey, editor.innerHTML); } catch (e) {}
 });
@@ -41638,6 +41667,7 @@ function notesModalSave() {
     if (!_notesKey) return;
 
     var html  = document.getElementById('notesEditorArea').innerHTML;
+    if (window.p1HtmlPasNote && window.p1HtmlPasNote(html)) return;   // éditeur encore en chargement : rien à enregistrer
 
     // ✅ localStorage : toujours, sans condition (clé spécifique à l'utilisateur)
     var _lsUid = (window.currentUser && window.currentUser.uid) ? window.currentUser.uid : '';
@@ -41696,6 +41726,8 @@ function _cleanEditorIfEmpty(editorEl) {
 }
 
 function notesOnInput() {
+    var _ed0 = document.getElementById('notesEditorArea');
+    if (_ed0 && window.p1HtmlPasNote && window.p1HtmlPasNote(_ed0.innerHTML)) return;   // éditeur encore en chargement : ni brouillon ni enregistrement
     notesUpdateCharCount();
     _cleanEditorIfEmpty(document.getElementById('notesEditorArea'));
 
@@ -45921,6 +45953,7 @@ window.saveTrainNotes = function() {
   if (trainNotesCurrentId === null) return Promise.resolve();
   var noteId = trainNotesCurrentId; // Bug3 fix : capturer l'ID avant tout callback async
   var content = document.getElementById('trainNotesEditor').innerHTML;
+  if (window.p1HtmlPasNote && window.p1HtmlPasNote(content)) return Promise.resolve();   // éditeur encore en chargement : rien à enregistrer
 
   trainNotesSetAutosaveDot('saving');
 
@@ -45977,6 +46010,8 @@ window.saveTrainNotes = function() {
 };
 
 window.trainNotesAutoSave = function() {
+  var _ed0 = document.getElementById('trainNotesEditor');
+  if (_ed0 && window.p1HtmlPasNote && window.p1HtmlPasNote(_ed0.innerHTML)) return;   // éditeur encore en chargement : ni « modifié » ni brouillon
   trainNotesDirty = true;
   trainNotesUpdateCharCount();
   _cleanEditorIfEmpty(document.getElementById('trainNotesEditor'));
@@ -46689,6 +46724,7 @@ var _trainUserWatcher = setInterval(function() {
     if (window.speErrCurrentId === null) return Promise.resolve();
     var speId = window.speErrCurrentId;
     var content = document.getElementById('speNotesEditor').innerHTML;
+    if (window.p1HtmlPasNote && window.p1HtmlPasNote(content)) return Promise.resolve();   // éditeur encore en chargement : rien à enregistrer
 
     speErrSetAutosaveDot('saving');
 
@@ -46726,6 +46762,8 @@ var _trainUserWatcher = setInterval(function() {
 
   // ---- Autosave ----
   window.speErrAutoSave = function() {
+    var _ed0 = document.getElementById('speNotesEditor');
+    if (_ed0 && window.p1HtmlPasNote && window.p1HtmlPasNote(_ed0.innerHTML)) return;   // éditeur encore en chargement : ni « modifié » ni brouillon
     window.speErrDirty = true;
     speErrUpdateCharCount();
     if (typeof _cleanEditorIfEmpty === 'function') _cleanEditorIfEmpty(document.getElementById('speNotesEditor'));
