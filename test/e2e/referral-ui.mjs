@@ -301,17 +301,117 @@ try {
     assert(!bridge.calls.some((c) => c.fn === "referralCheckCode"), "aucun appel attendu pour un code incomplet");
   });
 
-  await S("R6", "connexion NON retardée par referralMarkActive (lente 6 s, puis en erreur)", async () => {
+  await S("R6", "connexion jamais bloquée par referralMarkActive : lente (6 s) -> redirection au plus tard vers 5 s ; en erreur -> redirection vers 1,5 s", async () => {
     const u = await mkUser();
     bridge.setDelay("referralMarkActive", 6000);
     const { page } = await newPage();
     const ms = await loginViaForm(page, u);
-    assert(ms < 4000, "redirection retardée par le parrainage : " + ms + " ms");
+    assert(ms >= 4500 && ms < 7500, "redirection attendue vers 5 s (plafond de l'attente du parrainage) : " + ms + " ms");
     bridge.reset(); bridge.setFail("referralMarkActive", true);
     const { page: page2 } = await newPage();
     const ms2 = await loginViaForm(page2, u);
     assert(ms2 < 4000, "redirection retardée par une erreur du parrainage : " + ms2 + " ms");
     bridge.reset();
+  });
+
+  // ── Comptage du filleul : connexion lente, session déjà ouverte, filet du tableur ─────────────────────────────
+  /* Filleul inscrit avec le code d'un parrain, e-mail vérifié, SANS être compté (referrals/{uid}.active === false). */
+  async function mkFilleulInactif(parrain) {
+    const u = await mkUser();
+    await callReferralInit(u.uid, { referredBy: parrain.code });
+    assert((await getReferral(u.uid)).active === false, "précondition : le filleul ne doit pas être compté");
+    return u;
+  }
+  const compteur = async (parrain) => ((await getEntitlement(parrain.uid)) || {}).referralActiveCount || 0;
+  const appelsMarkActive = (uid) => bridge.calls.filter((c) => c.fn === "referralMarkActive" && c.uid === uid).length;
+  const drapeau = (page, uid) => page.evaluate((u) => { try { return localStorage.getItem("p1_ref_actif_" + u); } catch (e) { return "illisible"; } }, uid);
+
+  await S("P1", "formulaire de connexion avec une fonction LENTE (3,5 s) : le filleul est compté AVANT la redirection, le parrain crédité, le drapeau posé", async () => {
+    const p = await mkParrain();
+    const f = await mkFilleulInactif(p);
+    bridge.reset(); bridge.setDelay("referralMarkActive", 3500);
+    const { page } = await newPage();
+    const ms = await loginViaForm(page, f, "/tableur.html");
+    const r = await getReferral(f.uid);
+    assert(ms >= 3400, "redirection avant la réponse du parrainage : " + ms + " ms");
+    assert(r.active === true, "filleul non compté au moment de la redirection (" + ms + " ms)");
+    assert((await compteur(p)) === 1, "compteur du parrain : " + (await compteur(p)));
+    assert((await drapeau(page, f.uid)) === "1", "drapeau local absent");
+    bridge.reset();
+  });
+
+  await S("P2", "session DÉJÀ OUVERTE à l'arrivée sur auth.html : l'appel (2 s) est attendu avant la redirection, le filleul est compté, le drapeau posé", async () => {
+    const p = await mkParrain();
+    const f = await mkFilleulInactif(p);
+    const { page } = await openPage(browser, f, { wait: false });   // session ouverte par l'API (aucune page de connexion), tableur chargé
+    bridge.reset(); bridge.setDelay("referralMarkActive", 2000);
+    const t0 = Date.now();
+    await page.goto(`${BASE}/auth.html?redirect=%2Fcomptepremium.html`, { waitUntil: "domcontentloaded" });
+    await page.waitForFunction(() => location.pathname.endsWith("comptepremium.html"), { timeout: 20000 });
+    const ms = Date.now() - t0;
+    const r = await getReferral(f.uid);
+    assert(ms >= 1900, "redirection avant la fin de l'appel : " + ms + " ms");
+    assert(r.active === true, "filleul non compté au moment de la redirection (" + ms + " ms)");
+    assert((await compteur(p)) === 1, "compteur du parrain : " + (await compteur(p)));
+    assert((await drapeau(page, f.uid)) === "1", "drapeau local absent");
+    bridge.reset();
+  });
+
+  await S("P3", "inscription par lien ?ref=, e-mail vérifié ensuite, session ouverte par l'API SANS formulaire de connexion, ouverture du tableur : filleul compté (~6 s), parrain à 1, drapeau posé ; un rechargement ne refait aucun appel", async () => {
+    const p = await mkParrain();
+    bridge.reset();
+    const { page } = await newPage();
+    const email = `e2e-${tag()}@test.fr`;
+    await page.goto(`${BASE}/auth.html?ref=${p.code}`, { waitUntil: "load" });
+    assert((await page.$eval("#signupReferralCode", (e) => e.value)).toUpperCase() === p.code, "le code du lien n'a pas rempli le champ");
+    await fillSignup(page, { email });
+    await page.click("#btnSignup");
+    assert(await waitFor(() => accountExists(email), { timeout: 20000 }), "compte non créé");
+    await page.waitForSelector("#verifyResendRow.is-visible", { timeout: 20000 });
+    const u = await verifyAndSeed(email);
+    const lien = await getReferral(u.uid);
+    assert(lien && lien.active === false && lien.referrerUid === p.uid, "lien de parrainage attendu, non compté : " + JSON.stringify(lien));
+    // session ouverte par l'API (aucune page de connexion), puis arrivée sur le tableur
+    const { page: tab } = await openPage(browser, u, { wait: false });
+    assert(await waitFor(async () => ((await getReferral(u.uid)) || {}).active === true, { timeout: 25000, every: 500 }), "filleul jamais compté après l'arrivée sur le tableur");
+    assert((await compteur(p)) === 1, "compteur du parrain : " + (await compteur(p)));
+    assert((await drapeau(tab, u.uid)) === "1", "drapeau local absent");
+    const avant = appelsMarkActive(u.uid);
+    assert(avant >= 1, "aucun appel referralMarkActive vu pour ce filleul");
+    await tab.reload({ waitUntil: "load" });
+    await sleep(9000);
+    assert(appelsMarkActive(u.uid) === avant, "nouvel appel après rechargement : " + avant + " -> " + appelsMarkActive(u.uid));
+    assert((await compteur(p)) === 1, "compteur modifié par le rechargement");
+  });
+
+  await S("P4", "filet du tableur : fonction en panne -> drapeau NON posé, filleul non compté ; chargement suivant (fonction rétablie) -> compté, drapeau posé", async () => {
+    const p = await mkParrain();
+    const f = await mkFilleulInactif(p);
+    bridge.reset(); bridge.setFail("referralMarkActive", true);
+    const { page: tab } = await openPage(browser, f, { wait: false });
+    await sleep(10000);
+    assert(bridge.calls.some((c) => c.fn === "referralMarkActive"), "le filet n'a fait aucun appel");   /* en panne simulée, le pont ne lit pas l'identité */
+    assert((await getReferral(f.uid)).active === false, "filleul compté malgré la panne");
+    assert((await drapeau(tab, f.uid)) === null, "drapeau posé malgré l'échec : " + (await drapeau(tab, f.uid)));
+    bridge.reset();
+    await tab.reload({ waitUntil: "load" });
+    assert(await waitFor(async () => ((await getReferral(f.uid)) || {}).active === true, { timeout: 25000, every: 500 }), "filleul jamais compté après le rétablissement");
+    assert((await drapeau(tab, f.uid)) === "1", "drapeau local absent après succès");
+    assert((await compteur(p)) === 1, "compteur du parrain : " + (await compteur(p)));
+  });
+
+  await S("P5", "filet de Compte Premium : connexion pendant une panne du parrainage (non compté), fonction rétablie, arrivée sur comptepremium.html -> compté environ 6 s plus tard, drapeau posé", async () => {
+    const p = await mkParrain();
+    const f = await mkFilleulInactif(p);
+    bridge.reset(); bridge.setFail("referralMarkActive", true);
+    const { page } = await newPage();
+    await loginViaForm(page, f, "/comptepremium.html");
+    bridge.reset();
+    assert((await getReferral(f.uid)).active === false, "filleul compté malgré la panne pendant la connexion");
+    assert((await drapeau(page, f.uid)) === null, "drapeau posé malgré l'échec");
+    assert(await waitFor(async () => ((await getReferral(f.uid)) || {}).active === true, { timeout: 25000, every: 500 }), "filleul jamais compté depuis Compte Premium");
+    assert((await drapeau(page, f.uid)) === "1", "drapeau local absent après succès");
+    assert((await compteur(p)) === 1, "compteur du parrain : " + (await compteur(p)));
   });
 
   // ── Notification « nouveau filleul » ──────────────────────────────────────────────────

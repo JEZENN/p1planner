@@ -1721,6 +1721,27 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
     $("activationBanner").style.display = "none";
   }
 
+  /* Parrainage : filet de sécurité du comptage des filleuls (même principe que dans le tableur) : une fois par compte et par appareil,
+     environ 6 s après l'arrivée, sans effet visible ni attente. Idempotent côté serveur ; en cas d'échec le drapeau n'est pas posé. */
+  var referralNetUid = null;
+  function referralSafetyNet(user) {
+    try {
+      if (!user || !user.emailVerified || !functions || referralNetUid === user.uid) return;
+      var key = "p1_ref_actif_" + user.uid;
+      try { if (window.localStorage.getItem(key) === "1") return; } catch (e) {}
+      referralNetUid = user.uid;
+      window.setTimeout(function () {
+        if (!auth || !auth.currentUser || auth.currentUser.uid !== user.uid) { referralNetUid = null; return; }
+        user.getIdTokenResult(true).then(function (r) {
+          if (!r || !r.claims || r.claims.email_verified !== true) { referralNetUid = null; return; }
+          return httpsCallable(functions, "referralMarkActive")().then(function () {
+            try { window.localStorage.setItem(key, "1"); } catch (e) {}
+          });
+        }).catch(function () { referralNetUid = null; });
+      }, 6000);
+    } catch (e) {}
+  }
+
   /* ============================================================
      BRANCHEMENT FIREBASE RÉEL
      ============================================================ */
@@ -1754,6 +1775,7 @@ if (firebaseConfig.projectId !== "p1planner" || /typixclin/i.test(firebaseConfig
         return;
       }
       showState("account");
+      referralSafetyNet(user);
       if (params.get("success") === "true") { startActivationPoll(user.uid); }
       referralUid = user.uid;
       loadReferralInfo();

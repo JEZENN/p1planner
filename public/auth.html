@@ -921,6 +921,22 @@ function sendPasswordResetEmailViaBrevo(email) {
     return sanitizeRedirect(params.get("redirect")) || "tableur.html";
   }
 
+  /* Parrainage : demande le comptage du filleul (référence idempotente côté serveur : rien sans parrain, rien pour un filleul déjà compté).
+     Ne rejette JAMAIS. Résout quand le délai minimal minMs est écoulé ET que la réponse est arrivée, sans dépasser maxMs au total pour
+     la réponse : la connexion ne dépend jamais du parrainage. Pose le drapeau local quand l'appel réussit. */
+  function markReferralActive(uid, minMs, maxMs) {
+    var wait = function (ms) { return new Promise(function (resolve) { window.setTimeout(resolve, ms); }); };
+    var response;
+    try {
+      response = functionsInstance
+        ? httpsCallable(functionsInstance, "referralMarkActive")().then(function () {
+            try { window.localStorage.setItem("p1_ref_actif_" + uid, "1"); } catch (e) {}
+          }, function (err) { console.warn("referralMarkActive a échoué (connexion non bloquée) :", err); })
+        : Promise.resolve();
+    } catch (err) { response = Promise.resolve(); }
+    return Promise.all([wait(minMs), Promise.race([response, wait(maxMs)])]).then(function () {}, function () {});
+  }
+
   /* ---------- Traduction des erreurs Firebase ---------- */
   function translateAuthError(err, context) {
     var code = err && err.code;
@@ -1012,16 +1028,10 @@ function sendPasswordResetEmailViaBrevo(email) {
         // silencieuse (sans parrain, ou filleul déjà comptabilisé, ne fait
         // rien) : ne doit JAMAIS bloquer ni retarder perceptiblement la
         // connexion en cas d'échec — best-effort strict.
-        // A3 : la connexion ne dépend JAMAIS du parrainage — appel non
-        // attendu (le SDK a un délai par défaut d'environ 70 s), redirection après
-        // un court délai fixe pour laisser partir la requête. Idempotent : le
-        // prochain login retente si elle n'a pas abouti.
-        if (functionsInstance) {
-          httpsCallable(functionsInstance, "referralMarkActive")().catch(function (err) {
-            console.warn("referralMarkActive a échoué (connexion non bloquée) :", err);
-          });
-        }
-        window.setTimeout(function () { window.location.href = getRedirectTarget(); }, 1500);
+        // La connexion ne dépend JAMAIS du parrainage : redirection quand le plus long de ces deux délais est passé,
+        // 1,5 s ou la réponse de l'appel (5 s au plus). Une panne ou une lenteur du parrainage ne bloque rien.
+        // Idempotent : une connexion ultérieure, ou le filet du tableur, retente si l'appel n'a pas abouti.
+        markReferralActive(cred.user.uid, 1500, 5000).then(function () { window.location.href = getRedirectTarget(); });
       })
       .catch(function (err) {
         showAlert("error", translateAuthError(err, "login"));
@@ -1225,16 +1235,9 @@ function sendPasswordResetEmailViaBrevo(email) {
       if (initialAuthCheckDone) return;
       initialAuthCheckDone = true;
       if (user && user.emailVerified) {
-        // PARRAINAGE — filet de sécurité : couvre le cas rare où la session
-        // était déjà persistée AVANT que l'email ne soit vérifié (vérifié
-        // dans un autre onglet/appareil, jamais repassé par formLogin
-        // ci-dessus). Idempotente, ne bloque JAMAIS la redirection — envoyée
-        // en tâche de fond, jamais attendue (la redirection ne doit pas être
-        // ralentie pour le cas courant, déjà couvert par formLogin).
-        if (functionsInstance) {
-          httpsCallable(functionsInstance, "referralMarkActive")().catch(function () {});
-        }
-        window.location.href = getRedirectTarget();
+        // PARRAINAGE — session déjà ouverte : l'appel est attendu 4 s au plus avant la redirection (une redirection immédiate
+        // coupe presque toujours la requête). Idempotent, ne bloque JAMAIS : au-delà de 4 s ou en cas d'erreur, on redirige.
+        markReferralActive(user.uid, 0, 4000).then(function () { window.location.href = getRedirectTarget(); });
       }
     });
   }

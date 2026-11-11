@@ -24525,9 +24525,32 @@ function stopInactivityTimer() {
 // FONCTION PRINCIPALE DE GESTION DE L'AUTHENTIFICATION
 // ═══════════════════════════════════════════════════════════
 
+/* Parrainage : filet de sécurité du comptage des filleuls. Un filleul qui valide son e-mail puis ouvre directement le tableur ne passe par
+   aucune page de connexion : le comptage est demandé ici, une fois par compte et par appareil (drapeau local), environ 6 s après l'arrivée,
+   sans aucun effet visible ni attente. Idempotent côté serveur ; en cas d'échec le drapeau n'est pas posé et le prochain chargement réessaie. */
+var _p1RefNetUid = null;
+function p1ReferralSafetyNet(user) {
+    try {
+        if (!user || !user.emailVerified || _p1RefNetUid === user.uid) return;
+        var cle = 'p1_ref_actif_' + user.uid;
+        try { if (window.localStorage.getItem(cle) === '1') return; } catch (e) {}
+        _p1RefNetUid = user.uid;
+        setTimeout(function () {
+            if (!auth.currentUser || auth.currentUser.uid !== user.uid || !window._p1Functions || !window._p1HttpsCallable) { _p1RefNetUid = null; return; }
+            user.getIdTokenResult(true).then(function (r) {
+                if (!r || !r.claims || r.claims.email_verified !== true) { _p1RefNetUid = null; return; }
+                return window._p1HttpsCallable(window._p1Functions, 'referralMarkActive')().then(function () {
+                    try { window.localStorage.setItem(cle, '1'); } catch (e) {}
+                });
+            }).catch(function () { _p1RefNetUid = null; });
+        }, 6000);
+    } catch (e) {}
+}
+
 async function updateUserUI(user) {
     if (user) {
         startInactivityTimer();
+        p1ReferralSafetyNet(user);
 		
 		if (_legacyMigrationAttemptedUid !== user.uid) {
     _legacyMigrationAttemptedUid = null;
