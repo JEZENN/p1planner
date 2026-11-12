@@ -17083,6 +17083,27 @@ html[data-theme="pastel"] .help-tip.help-tip-blue > .help-tip-icon {
 }
 .specialty-multi-option > .specialty-multi-option-icon { color: var(--primary); }
 .custom-select-option.selected > .option-icon { background: rgba(255, 255, 255, 0.22); }
+/* icône des boutons de liste déroulante : dans une petite case, comme celle de l'en-tête du menu (la case est portée par l'icône : elle disparaît avec son conteneur quand celui-ci est masqué) */
+.custom-dropdown-btn .custom-dropdown-icon > i {
+    width: 26px;
+    height: 26px;
+    margin: -4px 0;
+    border-radius: 8px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    line-height: 1;
+    color: var(--primary);
+    background: rgba(59, 130, 246, 0.14);
+    background: color-mix(in srgb, var(--primary) 14%, transparent);
+}
+[data-theme="dark"] .custom-dropdown-btn .custom-dropdown-icon > i {
+    color: #93c5fd;
+    background: rgba(96, 165, 250, 0.18);
+    box-shadow: 0 0 0 1px rgba(96, 165, 250, 0.25);
+}
 </style>
 </head>
 
@@ -17849,7 +17870,7 @@ window.p1RetirerSquelette = function (html) {
 							<!-- Dropdown Mois -->
 							<div class="custom-dropdown month-dropdown" id="month-dropdown">
 								<button class="custom-dropdown-btn" id="month-dropdown-btn">
-									<span class="custom-dropdown-icon"><i class="fas fa-calendar"></i></span>
+									<span class="custom-dropdown-icon"><i class="fas fa-calendar-alt"></i></span>
 									<span class="custom-dropdown-text" id="month-dropdown-text">Janvier</span>
 									<i class="fas fa-chevron-down"></i>
 								</button>
@@ -34348,8 +34369,9 @@ function showChecklistChoicePopup(itemId, event) {
     const popup = document.getElementById('checklist-choice-popup');
     if (!popup) return;
 
-    // Toggle : si déjà ouvert, fermer (évite la réouverture sur double-tap iOS)
-    if (popup.classList.contains('show')) {
+    // Toggle : si déjà ouvert sur la même tâche, fermer (évite la réouverture sur double-tap iOS).
+    // Sur une autre tâche, le popover se déplace vers elle.
+    if (popup.classList.contains('show') && popup.dataset.itemId === itemId) {
         _slideClosePopup(popup);
         return;
     }
@@ -34362,6 +34384,7 @@ function showChecklistChoicePopup(itemId, event) {
     popup.classList.remove('show');
     void popup.offsetWidth; // reflow
     popup.classList.add('show');
+    if (window.p1TodoMarquer) window.p1TodoMarquer(itemId);
 
     setTimeout(() => {
         document.addEventListener('click', closeChecklistPopupOutside);
@@ -34460,7 +34483,7 @@ function p1TodoInk(hex) {
     if (!m) return '#fff';
     var n = parseInt(m[1], 16), f = function (v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
     var L = 0.2126 * f(n >> 16 & 255) + 0.7152 * f(n >> 8 & 255) + 0.0722 * f(n & 255);
-    return 1.05 / (L + 0.05) >= (L + 0.05) / 0.05 ? '#fff' : '#111827';
+    return L > 0.4 ? '#111827' : '#fff';
 }
 function p1TodoEsc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 function p1TodoPrepare(itemId) {
@@ -34470,8 +34493,14 @@ function p1TodoPrepare(itemId) {
     var item = checklistData.find(function (i) { return i.id === itemId; }), c = p1TodoCourse(item);
     if (!c) { opt.style.display = 'none'; host.innerHTML = ''; return; }
     opt.style.display = '';
+    var popup = document.getElementById('checklist-choice-popup'), chev = opt.querySelector('.train-cl-chevron');
+    var detaille = (typeof window.getToursViewMode === 'function' ? window.getToursViewMode() : (document.body.classList.contains('tours-compact') ? 'compact' : 'classic')) !== 'compact';
+    if (popup) popup.setAttribute('data-p1-mode', detaille ? 'detail' : 'compact');
+    if (chev) chev.className = 'fas ' + (detaille ? 'fa-chevron-right' : 'fa-chevron-down') + ' train-cl-chevron';
+    if (detaille) { host.innerHTML = ''; return; }
     var scale = (typeof window.getConfidenceScale === 'function' && window.getConfidenceScale() === 10) ? 10 : 5;
-    var last = p1TodoLastLevel(c.sId, c.fc), color = c.spe.color || '#6366f1';
+    var cfgMat = window.SPECIALTY_CONFIG && window.SPECIALTY_CONFIG[c.sId];
+    var last = p1TodoLastLevel(c.sId, c.fc), color = (cfgMat && cfgMat.color) || item.specialtyColor || c.spe.color || '#6366f1';
     var name = c.spe.name || item.specialtyName || c.spe.short || '';
     function btn(v) { return '<button type="button" class="p1-tl-lv' + (v === last ? ' current' : '') + '" data-v="' + v + '" style="background:var(--confidence-' + v + ')" aria-label="Niveau ' + v + (v === last ? ' (niveau du dernier tour)' : '') + '">' + v + '</button>'; }
     var rows = '';
@@ -34479,15 +34508,21 @@ function p1TodoPrepare(itemId) {
     host.innerHTML = '<div class="p1-tl-subj" style="--c:' + p1TodoEsc(color) + ';--ink:' + p1TodoInk(color) + '"><i class="fas fa-check" aria-hidden="true"></i><span>' + p1TodoEsc(name) + '</span></div><div class="p1-tl-lvls">' + rows + '</div>';
 }
 function p1TodoPlace(popup, event) {
-    var anchor = event.target && event.target.closest ? event.target.closest('.checklist-item') : null;
-    var r = (anchor || event.target).getBoundingClientRect();
-    var W = 284, vw = window.innerWidth, vh = window.innerHeight, gap = 8;
-    var host = document.getElementById('p1-tl-expand');
+    var tg = event && event.target;
+    var anchor = tg && tg.closest ? tg.closest('.checklist-item') : null;
+    var box = anchor ? anchor.querySelector('.checklist-checkbox') : null;
+    var r = (anchor || tg).getBoundingClientRect();
+    var W = popup.offsetWidth || 284, vw = window.innerWidth, vh = window.innerHeight, gap = 13;
+    var host = popup.querySelector('.p1-tl-expand, .train-cl-statuts-expand');
     var need = (popup.offsetHeight || 112) + (host && host.scrollHeight ? host.scrollHeight + 8 : 0);
     var roomAbove = r.top - gap - 8, roomBelow = vh - r.bottom - gap - 8;
-    popup.style.left = Math.max(8, Math.min(r.left, vw - W - 8)) + 'px';
-    if (roomAbove >= need || roomAbove >= roomBelow) { popup.style.top = 'auto'; popup.style.bottom = (vh - r.top + gap) + 'px'; }
+    var left = Math.max(8, Math.min(r.left, vw - W - 8)), above = roomAbove >= need || roomAbove >= roomBelow;
+    popup.style.left = left + 'px';
+    if (above) { popup.style.top = 'auto'; popup.style.bottom = (vh - r.top + gap) + 'px'; }
     else { popup.style.bottom = 'auto'; popup.style.top = (r.bottom + gap) + 'px'; }
+    popup.setAttribute('data-side', above ? 'above' : 'below');
+    var cx = box ? box.getBoundingClientRect().left + box.offsetWidth / 2 : r.left + 20;
+    popup.style.setProperty('--p1-fx', Math.max(18, Math.min(cx - left, W - 18)) + 'px');
 }
 function p1TodoPick(v) {
     var popup = document.getElementById('checklist-choice-popup'), itemId = popup && popup.dataset.itemId;
@@ -34510,10 +34545,16 @@ function p1TodoPick(v) {
     var opt = document.getElementById('checklist-choice-tour'), host = document.getElementById('p1-tl-expand');
     if (!opt || !host) return;
     function setOpen(on) { opt.classList.toggle('expanded', on); opt.setAttribute('aria-expanded', on ? 'true' : 'false'); }
-    opt.addEventListener('click', function (e) { e.stopPropagation(); if (e.target.closest && e.target.closest('.p1-tl-lv')) return; setOpen(!opt.classList.contains('expanded')); });
+    function detail() { var p = document.getElementById('checklist-choice-popup'); return !!p && p.getAttribute('data-p1-mode') === 'detail'; }
+    opt.addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (e.target.closest && e.target.closest('.p1-tl-lv')) return;
+        if (detail()) { handleChecklistChoice(true); return; }
+        setOpen(!opt.classList.contains('expanded'));
+    });
     opt.addEventListener('keydown', function (e) {
         if (e.target !== opt) return;
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(!opt.classList.contains('expanded')); }
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (detail()) handleChecklistChoice(true); else setOpen(!opt.classList.contains('expanded')); }
     });
     host.addEventListener('click', function (e) {
         var b = e.target.closest && e.target.closest('.p1-tl-lv'); if (!b) return;
@@ -34547,8 +34588,9 @@ function showTrainChecklistPopup(itemId, event) {
     var popup = document.getElementById('train-checklist-popup');
     if (!popup) return;
 
-    // Toggle : si déjà ouvert, fermer (évite la réouverture sur double-tap iOS)
-    if (popup.classList.contains('show')) {
+    // Toggle : si déjà ouvert sur la même tâche, fermer (évite la réouverture sur double-tap iOS).
+    // Sur une autre tâche, le popover se déplace vers elle.
+    if (popup.classList.contains('show') && _trainCLPendingId === itemId) {
         _slideClosePopup(popup);
         _trainCLPendingId = null;
         return;
@@ -34561,18 +34603,13 @@ function showTrainChecklistPopup(itemId, event) {
     if (statusOption) statusOption.classList.remove('expanded');
 
     // Positionner avant d'afficher (opacity:0 le cache déjà)
-    var rect = event.target.getBoundingClientRect();
-    var top = rect.top - 130 - 10;
-    if (top < 10) top = rect.bottom + 10;
-    var left = rect.left;
-    if (left + 230 > window.innerWidth) left = window.innerWidth - 240;
-    popup.style.top  = top  + 'px';
-    popup.style.left = left + 'px';
+    p1TodoPlace(popup, event);
 
     // Forcer reflow puis ajouter .show pour l'animation
     popup.classList.remove('show');
     void popup.offsetWidth;
     popup.classList.add('show');
+    if (window.p1TodoMarquer) window.p1TodoMarquer(itemId);
 
     setTimeout(function() {
         document.addEventListener('click', _closeTrainCLPopupOutside);
@@ -34636,6 +34673,7 @@ function renderChecklist() {
         container.innerHTML = window.p1EmptyState
             ? '<div class="p1-todo-empty">' + window.p1EmptyState({ icon: 'fa-thumbtack', title: 'Aucune tâche pour le moment', text: 'Écris une tâche ci-dessus puis appuie sur Entrée, ou envoie un cours depuis la liste avec la flèche : il s\'affichera ici.' }) + '</div>'
             : '<div class="checklist-empty"><i class="fas fa-thumbtack"></i><p>Aucune tâche pour le moment</p></div>';
+        if (window.p1TodoSyncCible) window.p1TodoSyncCible();
         return;
     }
 
@@ -34689,6 +34727,7 @@ function renderChecklist() {
             </div>
         `;
     }).join('');
+    if (window.p1TodoSyncCible) window.p1TodoSyncCible();
 }
 
 function addItemFromTable(specialtyId, fc, itemNum, itemName, specialtyColor, specialtyName, extraProps) {
@@ -59935,6 +59974,7 @@ function closeDrawer() {
     overlay.classList.add('closing');
     overlay.setAttribute('aria-hidden', 'true');
     btn.setAttribute('aria-expanded', 'false');
+    if (window.p1TodoFermerPopups) window.p1TodoFermerPopups();
 
     document.removeEventListener('keydown', onKey);
 
@@ -65694,6 +65734,75 @@ window._todoValidateAnim = function (itemId, apply) {
         setTimeout(apply, 190);
     }, 620);
 };
+</script>
+<style id="p1-todo-cible">
+/* To-Do : la tâche dont le popover de validation est ouvert reste repérable (case violette, contour, flèche du popover) */
+.global-todo-body .checklist-item.p1-todo-cible {
+    background: #f5f3ff;
+    border-color: #7c3aed;
+    border-left-color: #7c3aed;
+    box-shadow: inset 0 0 0 1.5px #7c3aed, 0 6px 16px rgba(124, 58, 237, 0.18);
+}
+.global-todo-body .checklist-item.p1-todo-cible .checklist-checkbox {
+    background: #7c3aed;
+    border-color: #6d28d9;
+    box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.22);
+}
+[data-theme="dark"] .global-todo-body .checklist-item.p1-todo-cible {
+    background: #2b2650;
+    border-color: #a78bfa;
+    border-left-color: #a78bfa;
+    box-shadow: inset 0 0 0 1.5px #a78bfa, 0 6px 16px rgba(0, 0, 0, 0.35);
+}
+[data-theme="dark"] .global-todo-body .checklist-item.p1-todo-cible .checklist-checkbox {
+    background: #8b5cf6;
+    border-color: #c4b5fd;
+    box-shadow: 0 0 0 4px rgba(167, 139, 250, 0.28);
+}
+.checklist-choice-popup[data-side]::after {
+    content: "";
+    position: absolute;
+    left: calc(var(--p1-fx, 50%) - 6px);
+    width: 12px;
+    height: 12px;
+    box-sizing: border-box;
+    background: inherit;
+    border: inherit;
+    pointer-events: none;
+}
+.checklist-choice-popup[data-side="above"]::after { bottom: -7px; transform: rotate(45deg); border-top-color: transparent; border-left-color: transparent; }
+.checklist-choice-popup[data-side="below"]::after { top: -7px; transform: rotate(45deg); border-bottom-color: transparent; border-right-color: transparent; }
+@media (prefers-reduced-motion: reduce) {
+    .global-todo-body .checklist-item.p1-todo-cible,
+    .global-todo-body .checklist-item.p1-todo-cible .checklist-checkbox { transition: none; }
+}
+</style>
+<script id="p1-todo-cible-js">
+(function () {
+    function popups() {
+        return [document.getElementById('checklist-choice-popup'), document.getElementById('train-checklist-popup')].filter(Boolean);
+    }
+    function ouvert() { return popups().some(function (p) { return p.classList.contains('show'); }); }
+    function appliquer() {
+        var id = window._p1TodoCible == null ? null : String(window._p1TodoCible);
+        var rows = document.querySelectorAll('.checklist-item');
+        for (var i = 0; i < rows.length; i++) rows[i].classList.toggle('p1-todo-cible', id !== null && rows[i].getAttribute('data-todo-id') === id);
+    }
+    window.p1TodoMarquer = function (id) { window._p1TodoCible = String(id); appliquer(); };
+    window.p1TodoDemarquer = function () { window._p1TodoCible = null; appliquer(); };
+    window.p1TodoFermerPopups = function () { popups().forEach(function (p) { p.classList.remove('show'); }); };
+    /* après un redessin de la liste : la ligne ciblée reste marquée ; si la tâche n'existe plus, le popover se ferme */
+    window.p1TodoSyncCible = function () {
+        if (window._p1TodoCible == null) return;
+        var id = window._p1TodoCible, rows = document.querySelectorAll('.checklist-item'), trouve = false;
+        for (var i = 0; i < rows.length; i++) if (rows[i].getAttribute('data-todo-id') === id) trouve = true;
+        if (!trouve) { window.p1TodoFermerPopups(); window.p1TodoDemarquer(); return; }
+        appliquer();
+    };
+    /* un seul point de fermeture : dès qu'aucun popover n'est affiché, plus aucune ligne n'est marquée */
+    var mo = new MutationObserver(function () { if (!ouvert() && window._p1TodoCible != null) window.p1TodoDemarquer(); });
+    popups().forEach(function (p) { mo.observe(p, { attributes: true, attributeFilter: ['class'] }); });
+})();
 </script>
 
 <!-- ===== TPX-PERSO-MODULE — SCRIPT =====
@@ -72362,7 +72471,7 @@ html[data-theme="pastel"] .train-cl-status-option.p1-tl-tour:hover { background:
 @media (hover: hover) {
   .p1-tl-tour:hover .p1-tl-expand { max-height: 240px; opacity: 1; padding-top: 8px; visibility: visible; transition-delay: 0s; }
 }
-.p1-tl-subj { display: flex; align-items: center; gap: 6px; align-self: flex-start; max-width: 100%; box-sizing: border-box; padding: 4px 10px 4px 8px; border-radius: 999px; background: var(--c, #6366f1); color: var(--ink, #fff); font-size: 0.72rem; font-weight: 700; line-height: 1.25; box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5); }
+.p1-tl-subj { display: flex; align-items: center; gap: 6px; align-self: center; max-width: 100%; box-sizing: border-box; padding: 2px 10px 2px 8px; border: 2px solid rgba(255, 255, 255, 0.6); border-radius: 999px; background: var(--c, #6366f1); color: var(--ink, #fff); font-size: 0.72rem; font-weight: 700; line-height: 1.25; }
 .p1-tl-subj i { font-size: 0.66rem; flex: none; }
 .p1-tl-subj span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .p1-tl-lvls { display: flex; flex-direction: column; gap: 5px; }

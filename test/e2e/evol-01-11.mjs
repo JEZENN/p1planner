@@ -1,5 +1,5 @@
 /* Évolutions : (1) pause des révisions (Paramètres → Flashcards), (2) flashcards : menu « Classement » qui se ferme, « Voir la réponse » à la hauteur des boutons de réponse,
-   bouton « Session Flash » à la hauteur de « Réinitialiser les filtres », (3) to-do : « Valider un tour + la tâche » sans la fenêtre de tour, (4) menus : profil ⇄ « ··· »,
+   bouton « Session Flash » à la hauteur de « Réinitialiser les filtres », (3) to-do en mode Compact : « Valider un tour + la tâche » sans la fenêtre de tour (en mode Détaillé elle ouvre la fenêtre « Enregistrer un tour », voir todo-modes.mjs), (4) menus : profil ⇄ « ··· »,
    changement de page depuis le header sans glissement d'entrée.
    Vraie page + émulateurs. Lancer : node test/e2e/evol-01-11.mjs [préfixes]   (PUBLIC_DIR=<copie « avant » pour la contre-épreuve ; EVSHOTS=1 pour les captures) */
 import "./env-e2e.mjs";
@@ -21,7 +21,7 @@ const FM = [
 const shot = async (page, name) => { if (process.env.EVSHOTS) await page.screenshot({ path: `docs/captures-15-10/evol-01-11-${name}.png` }); };
 const DAY = 864e5;
 
-async function open({ vp = FM[0].vp, theme = "light", courses = 2, seed = null, reduce = false, page0 = "dashboard", prefs = {} } = {}) {
+async function open({ vp = FM[0].vp, theme = "light", courses = 2, seed = null, reduce = false, page0 = "dashboard", prefs = {}, compact = false } = {}) {
   const u = await mkUser({ courses });
   await adb.doc(`users/${u.uid}/settings/preferences`).set({ ednOnboardingVersion: 3, ...prefs }, { merge: true });
   if (seed) await seed(u.uid);
@@ -31,6 +31,7 @@ async function open({ vp = FM[0].vp, theme = "light", courses = 2, seed = null, 
   await page.waitForFunction(() => window.currentUser && document.getElementById("user-avatar"), { timeout: 60000 });
   await page.evaluate(() => { const o = document.getElementById("tpx-onb-overlay"); if (o) o.remove(); if (window.__ednScrollLockOwners) window.__ednScrollLockOwners.clear(); if (window._ednScrollUnlock) window._ednScrollUnlock("onb"); });
   if (theme !== "light") { await page.evaluate((t) => window.p1SetTheme(t, false), theme); await sleep(500); }
+  if (compact) { await page.evaluate((uid) => { localStorage.setItem("toursViewMode__" + uid, "compact"); window.applyToursModeToStats(); }, u.uid); await sleep(400); }
   if (page0) { await page.evaluate((p) => document.querySelector('[data-page="' + p + '"]').click(), page0); await sleep(1100); }
   await sleep(500);
   return { u, page };
@@ -139,7 +140,7 @@ try {
   const clickTaskBox = (page, id) => page.evaluate((i) => { const b = document.querySelector('.checklist-item[data-todo-id="' + i + '"] .checklist-checkbox'); b.scrollIntoView({ block: "center" }); b.click(); }, id);
   for (const f of FM) {
     await S("T1-" + f.id, `${f.label} : « Valider un tour + la tâche » se déplie (survol PC / toucher), matière, niveaux, dernier niveau encadré, tour enregistré comme un tour rapide, tâche validée, aucune fenêtre de tour`, async () => {
-      const { u, page } = await open({ vp: f.vp, page0: "planning", seed: tourSeed(2, [2, 3]) });
+      const { u, page } = await open({ vp: f.vp, page0: "planning", compact: true, seed: tourSeed(2, [2, 3]) });
       await openTodo(page);
       await page.waitForSelector('.checklist-item[data-todo-id="t1"]', { timeout: 10000 });
       await clickTaskBox(page, "t1"); await sleep(700);
@@ -187,7 +188,7 @@ try {
     });
   }
   await S("T2", "tous les tours remplis : message clair, rien n'est validé ni écrit", async () => {
-    const { u, page } = await open({ page0: "planning", seed: tourSeed(8, [1, 2, 3, 4, 5, 1, 2, 3]) });
+    const { u, page } = await open({ page0: "planning", compact: true, seed: tourSeed(8, [1, 2, 3, 4, 5, 1, 2, 3]) });
     await openTodo(page);
     await page.waitForSelector('.checklist-item[data-todo-id="t1"]', { timeout: 10000 });
     await clickTaskBox(page, "t1"); await sleep(700);
@@ -204,7 +205,7 @@ try {
     assert(t.completed === false, "la tâche ne doit pas être validée");
   });
   await S("T3", "premier tour (aucun tour dans la matière) : aucun niveau encadré ; échelle sur 10 : deux rangées de 5 ; « Valider la tâche uniquement » inchangé", async () => {
-    const { u, page } = await open({ page0: "planning", prefs: { confidenceScale: 10 }, seed: tourSeed(0, []) });
+    const { u, page } = await open({ page0: "planning", compact: true, prefs: { confidenceScale: 10 }, seed: tourSeed(0, []) });
     await page.evaluate(() => { try { localStorage.setItem("confidenceScale__" + window.currentUser.uid, "10"); } catch (e) {} });
     await openTodo(page);
     await page.waitForSelector('.checklist-item[data-todo-id="t1"]', { timeout: 10000 });
@@ -348,7 +349,7 @@ try {
   });
   for (const theme of ['dark', 'pastel']) {
     await S('V1-' + theme, 'aspect (' + theme + ') : fenêtre de validation de la to-do dépliée, ligne de pause des révisions active', async () => {
-      const { page } = await open({ theme, page0: 'planning', seed: tourSeed(2, [2, 3]) });
+      const { page } = await open({ theme, page0: 'planning', compact: true, seed: tourSeed(2, [2, 3]) });
       await openTodo(page); await page.waitForSelector('.checklist-item[data-todo-id="t1"]', { timeout: 10000 });
       await clickTaskBox(page, 't1'); await sleep(700);
       const ob = await page.evaluate(() => { const r = document.getElementById('checklist-choice-tour').getBoundingClientRect(); return { x: r.left + 40, y: r.top + 14 }; });
