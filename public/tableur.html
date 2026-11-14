@@ -16899,6 +16899,8 @@ window.TPXNotesPending = {
 <style id="p1-skel-css">
 /* chargement en squelette (en-tête tout de suite, contenu grisé animé jusqu'aux données) */
 #p1-skel { display: none; }
+/* la place de la barre de défilement est réservée pendant tout le squelette : qu'elle soit nécessaire ou non (page encore en construction, squelette plus court que la fenêtre), le squelette ne se décale plus ; la réserve est retirée au moment où le contenu prend sa place (encore transparent) */
+html.p1-skel { scrollbar-gutter: stable; }
 html.p1-skel #loader, html.p1-noloader #loader { display: none !important; }   /* p1-noloader : jamais retirée (l'ancien écran ne réapparaît pas à la fin du squelette) */
 html.p1-skel #main-content, html.p1-skel #presentation-section { display: none !important; }
 html.p1-skel #p1-skel { display: block; padding: var(--p1-main-pt) 1.5rem 1.5rem; transition: opacity 0.2s ease; }

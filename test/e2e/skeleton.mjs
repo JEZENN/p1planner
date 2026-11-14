@@ -178,6 +178,8 @@ try {
       await proxyMode("up");
       await page.setViewport({ width: 1366, height: 900 });
       await skelGone(page, 40000); await sleep(900);
+      /* le squelette réserve la place de la barre de défilement (voir skel-barre.mjs) : les vrais boutons sont mesurés avec la même réserve, pour comparer les mêmes largeurs utiles */
+      await page.evaluate(() => { document.documentElement.style.scrollbarGutter = "stable"; });
       const bad = [];
       for (const w of WIDTHS) {
         await page.setViewport({ width: w, height: 900 }); await sleep(450);

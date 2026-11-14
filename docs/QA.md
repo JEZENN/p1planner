@@ -991,3 +991,9 @@ Exécuté pour de vrai (vraie page, émulateurs Auth+Firestore, Chrome headless 
 - [x] Captures : `docs/captures-15-10/mois-icone-light.png`, `mois-icone-dark.png`.
 - [x] Suites voisines rejouées vertes : `pastilles-filtres` 10, `menus-pastille` 10, `theme-settings` 13, `retouches-15-10` 12.
 - [ ] Non testé : Safari, Firefox, iPhone / iPad réels ; le thème pastel à l'œil (vérifié par la couleur calculée, pas par capture).
+
+## Squelette de chargement : décalage dû à la barre de défilement
+- [x] `node test/e2e/skel-barre.mjs` : vraies barres de défilement visibles (le mode sans affichage les masque par défaut), échantillon à chaque image depuis le début du chargement ; pendant tout le squelette la largeur du header, la largeur et la position de la barre de navigation du squelette restent identiques. Trois hauteurs de fenêtre : 900 px (squelette plus haut que la fenêtre), 1300 px (il tient juste), 1500 px (il est plus court). **Résultat : 3 / 3.**
+- [x] Contre-épreuve sur la version d'avant (`PUBLIC_DIR=rollback/public-avant-skel-barre`) : 900 px passe (la barre est présente tout du long), 1300 px et 1500 px échouent (largeur du squelette 1069,6 puis 1059,6).
+- [x] `skeleton` : 23 / 23 (le test SK8 mesure maintenant les vrais boutons avec la même réserve de barre, voir DECISIONS). Rejouées vertes : `editeur-chargement` 15, `top-greeting` 22, `tour-fx` 21, `evol-31-10` 25.
+- [ ] Non testé : Safari, Firefox, vrai écran à barre classique autre que Chrome sous Windows ; page réelle courte (le squelette y est 10 px plus étroit que le contenu, masqué par le fondu d'entrée, non mesuré visuellement).

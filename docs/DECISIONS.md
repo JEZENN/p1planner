@@ -1630,3 +1630,10 @@ La pastille « ‹ Menu » (collée en haut pendant le défilement d'une rubriqu
 2. Le bouton utilise la même icône que l'en-tête du menu (`fa-calendar-alt`) à la place de `fa-calendar`.
 3. La case ne change pas la hauteur du bouton (marges négatives, hauteur mesurée identique à celle du bouton « Année » : avant et après).
 4. La règle porte sur la classe commune `.custom-dropdown-icon` : les deux listes « par page » (cours, entraînements), dont l'icône est la même que celle de leur en-tête, reçoivent la même case. Hauteurs inchangées (38 px).
+
+## Squelette de chargement : la barre de défilement ne le décale plus
+1. Symptôme : sur Windows (barre de défilement classique de 8 px, hors superposition), le squelette se décalait horizontalement de 10 px pendant le chargement. La barre apparaît pendant la construction de la page (page encore très haute), disparaît dès que le squelette tient dans la fenêtre, puis revient quand le contenu réel est plus haut que la fenêtre.
+2. Correction : `html.p1-skel { scrollbar-gutter: stable; }` dans la feuille du squelette. La place de la barre est réservée tant que le squelette est affiché, qu'elle soit nécessaire ou non. La classe `p1-skel` est retirée au moment où le contenu prend sa place (encore transparent, fondu d'entrée) : la réserve disparaît à ce moment précis, jamais pendant que le squelette est visible.
+3. Choix écarté : `scrollbar-gutter: stable` en permanence sur `html`. Le verrou de défilement des fenêtres (`_ednScrollLock`, `p1-scrollbar-hidden` et compensation par `padding-right`) repose sur l'absence de réserve ; le toucher ferait varier toutes les fenêtres de l'application pour un défaut qui ne concerne que le chargement.
+4. Conséquence assumée : sur une page réelle courte (sans barre), le squelette est 10 px plus étroit que le contenu final ; l'écart est absorbé par le fondu d'entrée. Le test de correspondance squelette / vrais boutons mesure donc ces derniers avec la même réserve.
+5. Sans effet là où les barres sont en superposition (téléphones, tablettes, macOS par défaut) : aucune place réservée.
