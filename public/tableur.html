@@ -480,6 +480,18 @@ html[data-theme="dark"]::-webkit-scrollbar-thumb:hover { background: linear-grad
     animation: pulse 1s infinite;
 }
 
+/* Couronne Premium : petite couronne dorée posée EXACTEMENT sur le coin haut-droit de l'icône du logo (elle est dans l'icône : son centre est le coin, quelle que soit la taille de l'icône, de la police ou le thème). Cliquable (Compte Premium) ; affichée seulement pour un abonné Premium actif (classe p1-premium-member sur <body>). Pas de lien imbriqué dans le lien du logo : c'est un bouton-lien géré en JavaScript. */
+.logo-icon { position: relative; }
+.logo-crown { display: none; position: absolute; top: 0; right: 0; width: 1.6rem; height: 1.6rem; align-items: center; justify-content: center; border-radius: 50%; color: #f59e0b; font-size: 1rem; line-height: 1; cursor: pointer; z-index: 2; transform: translate(50%, -50%) rotate(18deg); filter: drop-shadow(0 1px 2px rgba(180, 83, 9, 0.45)); transition: transform 0.2s ease, filter 0.2s ease, color 0.2s ease; -webkit-tap-highlight-color: transparent; }
+body.p1-premium-member .logo-crown { display: inline-flex; animation: p1CrownIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) backwards; }   /* backwards : après l'apparition, c'est le style normal (et le survol) qui s'applique */
+html.p1-skel .logo-crown { display: none !important; }   /* pas devant le squelette : elle apparaît avec la page */
+.logo:has(.logo-crown:hover) .logo-icon { animation: none; }   /* survoler la couronne ne fait pas pulser l'icône du logo */
+.logo-crown:hover, .logo-crown:focus-visible { color: #fbbf24; transform: translate(50%, -50%) rotate(8deg) scale(1.2); filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.75)) drop-shadow(0 2px 3px rgba(180, 83, 9, 0.5)); outline: none; }
+.logo-crown:focus-visible { box-shadow: 0 0 0 2px var(--primary); }
+.logo-crown:active { transform: translate(50%, -50%) rotate(8deg) scale(1.1); }
+@keyframes p1CrownIn { from { opacity: 0; transform: translate(50%, -50%) rotate(18deg) scale(0.4); } to { opacity: 1; transform: translate(50%, -50%) rotate(18deg) scale(1); } }
+@media (prefers-reduced-motion: reduce) { body.p1-premium-member .logo-crown { animation: none; } .logo-crown { transition: none; } }
+
 .nav {
     display: flex;
     align-items: center;
@@ -16901,6 +16913,11 @@ window.TPXNotesPending = {
 #p1-skel { display: none; }
 /* la place de la barre de défilement est réservée pendant tout le squelette : qu'elle soit nécessaire ou non (page encore en construction, squelette plus court que la fenêtre), le squelette ne se décale plus ; la réserve est retirée au moment où le contenu prend sa place (encore transparent) */
 html.p1-skel { scrollbar-gutter: stable; }
+/* attente très courte (quelques millisecondes) le temps de savoir si une session est enregistrée dans le navigateur : ni squelette ni présentation affichés */
+html.p1-skel-wait #p1-skel, html.p1-skel-wait #p1-skel-pres, html.p1-skel-wait #presentation-section, html.p1-skel-wait #main-content { display: none !important; }
+/* lecture du fichier en cours : les fenêtres modales, fenêtres flottantes et boutons flottants sont écrits avant leur feuille de style, donc dessinés bruts (plein écran, sur le côté) pendant une ou deux images ; seuls l'en-tête, le squelette, le pied de page et les sections de page restent */
+html.p1-parsing body > *:not(#header):not(#p1-skel):not(#p1-skel-pres):not(#presentation-section):not(#main-content):not(.page-header):not(footer):not(script):not(style):not(link) { display: none !important; }
+html.p1-skel .tpx-trial-fab, html.p1-skel .tpx-premium-fab { display: none !important; }   /* boutons flottants Premium / essai : affichés avec la page, pas devant le squelette (en bas à gauche) */
 html.p1-skel #loader, html.p1-noloader #loader { display: none !important; }   /* p1-noloader : jamais retirée (l'ancien écran ne réapparaît pas à la fin du squelette) */
 html.p1-skel #main-content, html.p1-skel #presentation-section { display: none !important; }
 html.p1-skel #p1-skel { display: block; padding: var(--p1-main-pt) 1.5rem 1.5rem; transition: opacity 0.2s ease; }
@@ -16970,7 +16987,36 @@ html.p1-skel-noj .p1-sk-j { display: none; }
 .p1-skl-pill { width: 56px; height: 22px; border-radius: 999px; flex: none; }
 .p1-skl-flash .p1-skl-row { padding: 10px 12px; border: 1px solid var(--gray-200); border-radius: 12px; }
 .p1-skl-list .p1-skl-row { padding: 6px 4px; }
-@media (prefers-reduced-motion: reduce) { .p1-sk, html.p1-skel .user-auth:not(.logged-in)::after { animation: none; } html.p1-skel-in #main-content { animation: none; } }
+/* squelette de la page de présentation (visiteur déconnecté) : mêmes classes de mise en page que la vraie page (barre latérale de connexion + carte centrale), donc mêmes positions */
+#p1-skel-pres { display: none; }
+html.p1-skel.p1-anon #p1-skel { display: none; }
+html.p1-skel.p1-anon #p1-skel-pres { display: block; transition: opacity 0.2s ease; }
+html.p1-skel.p1-skel-out #p1-skel-pres { opacity: 0; }
+html.p1-skel-in #presentation-section { animation: p1SkelIn 0.35s ease both; }
+#p1-skel-pres .presentation-sidebar { position: static; }
+.p1-skp-head { height: 61px; border-radius: 0; }
+.p1-skp-av { width: 70px; height: 70px; border-radius: 50%; margin: 0 auto 1.25rem; }
+.p1-skp-t { width: 70%; height: 22px; margin: 0 auto 0.75rem; }
+/* hauteurs mesurées sur la vraie page : en-tête 61, icône 70 + 20, titre 22 + 12, lignes de texte de 23 (4 en largeur de bureau, 3 quand la barre passe au-dessus), bouton 53 + 16 */
+.p1-skp-l { width: 100%; height: 13px; margin: 0 auto 10px; } .p1-skp-l.w60 { width: 60%; }
+.p1-skp-btn { height: 53px; border-radius: 999px; margin-top: 30px; margin-bottom: 16px; }
+@media (max-width: 1024px) { .p1-skp-l.l4 { display: none; } }
+#p1-skel-pres .presentation-intro { display: flow-root; }
+.p1-skp-ico { width: 90px; height: 90px; border-radius: var(--border-radius-xl); margin: 0 auto 1.5rem; }
+.p1-skp-h { width: 60%; max-width: 380px; height: 31px; margin: 0 auto 1rem; }
+.p1-skp-p { width: 100%; max-width: 650px; height: 15px; margin: 0 auto 13.8px; } .p1-skp-p.w90 { width: 90%; } .p1-skp-p.w70 { width: 70%; }
+.p1-skp-p.m1, .p1-skp-p.m2, .p1-skp-p.m3 { display: none; }
+/* texte d'introduction qui passe à la ligne plus souvent en petite largeur (paliers) ; en dessous de 375 px la carte de connexion compte aussi une ligne de plus */
+@media (max-width: 500px) { .p1-skp-p.m1 { display: block; } .p1-skp-p { margin-bottom: 12.7px; } }
+@media (max-width: 420px) { .p1-skp-p.m2 { display: block; } }
+@media (max-width: 375px) { .p1-skp-p.m3 { display: block; } .p1-skp-l.l4 { display: block; } }
+.p1-skp-sep { height: 3px; border-radius: 2px; margin: 2rem 0; }
+.p1-skp-st { width: 240px; max-width: 70%; height: 24px; margin-bottom: 1.25rem; }
+.p1-skp-card { border: 1px solid var(--gray-200); border-radius: var(--border-radius-lg); padding: 1.5rem; }
+.p1-skp-card .p1-skp-fi { width: 50px; height: 50px; border-radius: var(--border-radius-md); margin-bottom: 1rem; }
+.p1-skp-card .p1-skp-ft { width: 60%; height: 17px; margin-bottom: 12px; }
+.p1-skp-card .p1-skp-fl { height: 12px; margin-bottom: 11px; } .p1-skp-card .p1-skp-fl.w70 { width: 70%; }
+@media (prefers-reduced-motion: reduce) { .p1-sk, html.p1-skel .user-auth:not(.logged-in)::after { animation: none; } html.p1-skel-in #main-content, html.p1-skel-in #presentation-section { animation: none; } }
 </style>
 <style id="p1-greet-css">
 /* salutation éphémère du header (le texte vient du message de bienvenue, masqué dans le bandeau) */
@@ -16983,9 +17029,50 @@ html.p1-skel-noj .p1-sk-j { display: none; }
 @keyframes p1GreetFade { 0% { opacity: 0; } 11% { opacity: 1; } 84% { opacity: 1; } 100% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .p1-greet-pill { animation-name: p1GreetFade; } }
 </style>
-<script id="p1-skel-early">document.documentElement.classList.add('p1-skel', 'p1-noloader');
+<script id="p1-skel-early">document.documentElement.classList.add('p1-skel', 'p1-noloader', 'p1-parsing');
+/* p1-parsing : tant que le navigateur lit encore le fichier, les fenêtres modales (placées avant leur feuille de style) ne sont pas affichées */
+(function () { var d = document.documentElement, fin = function () { d.classList.remove('p1-parsing'); };
+  if (document.readyState !== 'loading') { fin(); return; }
+  document.addEventListener('readystatechange', function () { if (document.readyState !== 'loading') fin(); });
+  setTimeout(fin, 10000); })();
 /* case « Révisions J » du squelette : seulement si la Méthode des J est activée (même clé que l'application, lue sans attendre la connexion) */
 try { var _p1j = false; for (var _i = 0; _i < localStorage.length; _i++) { var _k = localStorage.key(_i); if (_k && _k.indexOf('jMethodEnabled__') === 0 && localStorage.getItem(_k) === '1') _p1j = true; } if (!_p1j) document.documentElement.classList.add('p1-skel-noj'); } catch (e) { document.documentElement.classList.add('p1-skel-noj'); }   /* squelette à chaque ouverture (plus jamais l'ancien écran) */</script>
+<script id="p1-skel-anon">
+/* Visiteur déconnecté : le squelette du tableur n'a pas de sens, c'est celui de la page de présentation qui s'affiche (classe p1-anon).
+   Aucune session enregistrée par Firebase dans ce navigateur (stockage local, ou base IndexedDB « firebaseLocalStorageDb » absente / sans compte) = déconnecté.
+   Au moindre doute (erreur, base bloquée, délai de 400 ms dépassé) : squelette, comme avant. */
+(function () {
+    var d = document.documentElement, fini = false;
+    d.classList.add('p1-skel-wait');
+    function decider(connecte) {
+        if (fini) return; fini = true;
+        d.classList.remove('p1-skel-wait');
+        if (!connecte) d.classList.add('p1-anon');   /* squelette de la page de présentation à la place de celui du tableur */
+    }
+    setTimeout(function () { decider(true); }, 400);
+    try {
+        for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (k && k.indexOf('firebase:authUser:') === 0) { decider(true); return; } }
+    } catch (e) { decider(true); return; }
+    try {
+        var neuve = false, rq = indexedDB.open('firebaseLocalStorageDb');
+        rq.onupgradeneeded = function () { neuve = true; try { rq.transaction.abort(); } catch (e) {} };   /* base jamais créée : aucun compte n'a jamais été connecté ici */
+        rq.onerror = function () { decider(!neuve); };
+        rq.onblocked = function () { decider(true); };
+        rq.onsuccess = function () {
+            try {
+                var db = rq.result;
+                if (!db.objectStoreNames.contains('firebaseLocalStorage')) { db.close(); decider(false); return; }
+                var g = db.transaction('firebaseLocalStorage', 'readonly').objectStore('firebaseLocalStorage').getAll();
+                g.onsuccess = function () {
+                    var trouve = (g.result || []).some(function (r) { return r && typeof r.fbase_key === 'string' && r.fbase_key.indexOf('firebase:authUser:') === 0 && r.value; });
+                    db.close(); decider(trouve);
+                };
+                g.onerror = function () { db.close(); decider(true); };
+            } catch (e) { decider(true); }
+        };
+    } catch (e) { decider(true); }
+})();
+</script>
 <style id="p1-pastilles">
 /* Icônes en pastille : encadrés des modales d'aide */
 /* case centrée sur la colonne des coches (18 px), texte du titre aligné sur celui des lignes (26 px) */
@@ -17126,7 +17213,7 @@ html[data-theme="pastel"] .help-tip.help-tip-blue > .help-tip-icon {
 <header class="header" id="header">
     <div class="container header-container">
         <a href="index.html" class="logo">
-            <span class="logo-icon"><i class="fas fa-graduation-cap"></i></span>
+            <span class="logo-icon"><i class="fas fa-graduation-cap"></i><span class="logo-crown" id="logo-crown" role="link" tabindex="0" data-href="comptepremium.html" aria-label="Compte Premium"><i class="fas fa-crown" aria-hidden="true"></i></span></span>
             P1Planner
         </a>
 
@@ -17456,6 +17543,7 @@ html[data-theme="pastel"] .help-tip.help-tip-blue > .help-tip-icon {
 
 
 <div id="p1-skel" aria-hidden="true"><div class="container"><div class="p1-sk-nav"><div class="p1-sk-navbar"><span class="p1-sk"></span><span class="p1-sk on"></span><span class="p1-sk"></span><span class="p1-sk"></span><span class="p1-sk"></span></div><span class="p1-sk p1-sk-j"></span><span class="p1-sk p1-sk-todo"></span></div><div class="p1-sk-tools"><span class="p1-sk p1-sk-search"></span><span class="p1-sk p1-sk-select"></span><span class="p1-sk p1-sk-select"></span></div><div class="p1-sk-section"><div class="p1-sk-head"><span class="p1-sk p1-sk-ico"></span><span class="p1-sk p1-sk-title"></span><span class="p1-sk-sp"></span><span class="p1-sk p1-sk-btn"></span><span class="p1-sk p1-sk-btn sm"></span></div><div class="p1-sk-grid"><div class="p1-sk-card"><div class="p1-sk-row"><span class="p1-sk p1-sk-ico sm"></span><span class="p1-sk p1-sk-line l p1-sk-w55"></span></div><div class="p1-sk-row"><span class="p1-sk p1-sk-line p1-sk-w25"></span><span class="p1-sk p1-sk-line p1-sk-w20"></span></div><div class="p1-sk-row"><span class="p1-sk p1-sk-chip"></span><span class="p1-sk p1-sk-chip"></span></div><span class="p1-sk p1-sk-bar"></span></div><div class="p1-sk-card"><div class="p1-sk-row"><span class="p1-sk p1-sk-ico sm"></span><span class="p1-sk p1-sk-line l p1-sk-w55"></span></div><div class="p1-sk-row"><span class="p1-sk p1-sk-line p1-sk-w25"></span><span class="p1-sk p1-sk-line p1-sk-w20"></span></div><div class="p1-sk-row"><span class="p1-sk p1-sk-chip"></span><span class="p1-sk p1-sk-chip"></span></div><span class="p1-sk p1-sk-bar"></span></div><div class="p1-sk-card"><div class="p1-sk-row"><span class="p1-sk p1-sk-ico sm"></span><span class="p1-sk p1-sk-line l p1-sk-w55"></span></div><div class="p1-sk-row"><span class="p1-sk p1-sk-line p1-sk-w25"></span><span class="p1-sk p1-sk-line p1-sk-w20"></span></div><div class="p1-sk-row"><span class="p1-sk p1-sk-chip"></span><span class="p1-sk p1-sk-chip"></span></div><span class="p1-sk p1-sk-bar"></span></div><div class="p1-sk-card"><div class="p1-sk-row"><span class="p1-sk p1-sk-ico sm"></span><span class="p1-sk p1-sk-line l p1-sk-w55"></span></div><div class="p1-sk-row"><span class="p1-sk p1-sk-line p1-sk-w25"></span><span class="p1-sk p1-sk-line p1-sk-w20"></span></div><div class="p1-sk-row"><span class="p1-sk p1-sk-chip"></span><span class="p1-sk p1-sk-chip"></span></div><span class="p1-sk p1-sk-bar"></span></div><div class="p1-sk-card"><div class="p1-sk-row"><span class="p1-sk p1-sk-ico sm"></span><span class="p1-sk p1-sk-line l p1-sk-w55"></span></div><div class="p1-sk-row"><span class="p1-sk p1-sk-line p1-sk-w25"></span><span class="p1-sk p1-sk-line p1-sk-w20"></span></div><div class="p1-sk-row"><span class="p1-sk p1-sk-chip"></span><span class="p1-sk p1-sk-chip"></span></div><span class="p1-sk p1-sk-bar"></span></div><div class="p1-sk-card"><div class="p1-sk-row"><span class="p1-sk p1-sk-ico sm"></span><span class="p1-sk p1-sk-line l p1-sk-w55"></span></div><div class="p1-sk-row"><span class="p1-sk p1-sk-line p1-sk-w25"></span><span class="p1-sk p1-sk-line p1-sk-w20"></span></div><div class="p1-sk-row"><span class="p1-sk p1-sk-chip"></span><span class="p1-sk p1-sk-chip"></span></div><span class="p1-sk p1-sk-bar"></span></div><div class="p1-sk-card"><div class="p1-sk-row"><span class="p1-sk p1-sk-ico sm"></span><span class="p1-sk p1-sk-line l p1-sk-w55"></span></div><div class="p1-sk-row"><span class="p1-sk p1-sk-line p1-sk-w25"></span><span class="p1-sk p1-sk-line p1-sk-w20"></span></div><div class="p1-sk-row"><span class="p1-sk p1-sk-chip"></span><span class="p1-sk p1-sk-chip"></span></div><span class="p1-sk p1-sk-bar"></span></div><div class="p1-sk-card"><div class="p1-sk-row"><span class="p1-sk p1-sk-ico sm"></span><span class="p1-sk p1-sk-line l p1-sk-w55"></span></div><div class="p1-sk-row"><span class="p1-sk p1-sk-line p1-sk-w25"></span><span class="p1-sk p1-sk-line p1-sk-w20"></span></div><div class="p1-sk-row"><span class="p1-sk p1-sk-chip"></span><span class="p1-sk p1-sk-chip"></span></div><span class="p1-sk p1-sk-bar"></span></div></div></div></div></div>
+<div id="p1-skel-pres" aria-hidden="true"><section class="presentation-section"><div class="container"><div class="presentation-layout"><aside class="presentation-sidebar"><div class="login-sidebar-card"><span class="p1-sk p1-skp-head"></span><div class="login-sidebar-body"><span class="p1-sk p1-skp-av"></span><span class="p1-sk p1-skp-t"></span><span class="p1-sk p1-skp-l"></span><span class="p1-sk p1-skp-l"></span><span class="p1-sk p1-skp-l l4"></span><span class="p1-sk p1-skp-l w60"></span><span class="p1-sk p1-skp-btn"></span></div></div></aside><main class="presentation-main"><div class="presentation-container"><div class="presentation-intro"><span class="p1-sk p1-skp-ico"></span><span class="p1-sk p1-skp-h"></span><span class="p1-sk p1-skp-p"></span><span class="p1-sk p1-skp-p"></span><span class="p1-sk p1-skp-p m1"></span><span class="p1-sk p1-skp-p m2"></span><span class="p1-sk p1-skp-p m2"></span><span class="p1-sk p1-skp-p m3"></span><span class="p1-sk p1-skp-p m3"></span><span class="p1-sk p1-skp-p w90"></span><span class="p1-sk p1-skp-p w70"></span></div><span class="p1-sk p1-skp-sep"></span><span class="p1-sk p1-skp-st"></span><div class="presentation-feature-grid"><div class="p1-skp-card"><span class="p1-sk p1-skp-fi"></span><span class="p1-sk p1-skp-ft"></span><span class="p1-sk p1-skp-fl"></span><span class="p1-sk p1-skp-fl"></span><span class="p1-sk p1-skp-fl w70"></span></div><div class="p1-skp-card"><span class="p1-sk p1-skp-fi"></span><span class="p1-sk p1-skp-ft"></span><span class="p1-sk p1-skp-fl"></span><span class="p1-sk p1-skp-fl"></span><span class="p1-sk p1-skp-fl w70"></span></div><div class="p1-skp-card"><span class="p1-sk p1-skp-fi"></span><span class="p1-sk p1-skp-ft"></span><span class="p1-sk p1-skp-fl"></span><span class="p1-sk p1-skp-fl"></span><span class="p1-sk p1-skp-fl w70"></span></div><div class="p1-skp-card"><span class="p1-sk p1-skp-fi"></span><span class="p1-sk p1-skp-ft"></span><span class="p1-sk p1-skp-fl"></span><span class="p1-sk p1-skp-fl"></span><span class="p1-sk p1-skp-fl w70"></span></div></div></div></main></div></div></section></div>
 <script id="p1-skel-js">
 /* fin du squelette de chargement — utilisateur chargé (statut appliqué) ET données arrivées ; déconnecté →
    tout de suite ; filet 15 s. Rien d'autre n'est modifié : le chargement et les sauvegardes restent ceux d'avant. */
@@ -17468,7 +17556,7 @@ html[data-theme="pastel"] .help-tip.help-tip-blue > .help-tip-icon {
         try { if (typeof window._syncNavPill === 'function') window._syncNavPill(true); } catch (e) {}
         try { window.dispatchEvent(new Event('resize')); } catch (e) {}
     }
-    function drop() { var sk = document.getElementById('p1-skel'); if (sk && sk.parentNode) sk.parentNode.removeChild(sk); }
+    function drop() { ['p1-skel', 'p1-skel-pres'].forEach(function (id) { var sk = document.getElementById(id); if (sk && sk.parentNode) sk.parentNode.removeChild(sk); }); }
     function finish() {
         if (done) return; done = true;
         if (!html.classList.contains('p1-skel')) { drop(); return; }
@@ -17482,9 +17570,12 @@ html[data-theme="pastel"] .help-tip.help-tip-blue > .help-tip-icon {
     window.p1SkelReady = function (what) {
         try {
             if (what === 'out') {
-                if (!done) { done = true; html.classList.remove('p1-skel'); drop(); }
+                if (done) return;
+                if (html.classList.contains('p1-anon') && html.classList.contains('p1-skel')) { finish(); return; }   /* visiteur déconnecté : même fondu que pour un utilisateur connecté */
+                done = true; html.classList.remove('p1-skel'); drop();
                 return;
             }
+            if (what === 'user') html.classList.remove('p1-anon');   /* une session existait finalement : squelette du tableur */
             st[what] = true;
             if (st.user && st.data && !done) requestAnimationFrame(function () { setTimeout(finish, 60); });   /* le rendu des données est fait dans la même tâche */
         } catch (e) { finish(); }
@@ -60757,8 +60848,28 @@ body.tpx-premium-locked .day-detail-open-btn {
     function tpxClearSubEndTimer() {
         if (_tpxSubEndTimer) { clearTimeout(_tpxSubEndTimer); _tpxSubEndTimer = null; }
     }
+    /* Couronne du logo : abonné Premium ACTIF seulement (formule payante en cours, accès en écriture valide) — ni l'essai, ni la lecture seule. Calculée ici à partir de entitlements/{uid} (jamais écrit par le navigateur) : la couronne n'ouvre aucun droit, c'est un simple lien vers Compte Premium. */
+    function tpxSetMemberCrown(userInfo) {
+        var on = false;
+        try { on = !!(userInfo && window.tpxIsSubscribed(userInfo) && window.tpxHasPremiumAccess(userInfo)); } catch (e) { on = false; }
+        document.body.classList.toggle('p1-premium-member', on);
+    }
+    /* La couronne est dans l'icône du logo (lui-même un lien vers l'accueil) : un lien dans un lien n'existe pas, c'est donc un bouton-lien. Le clic ne déclenche jamais le lien du logo. Ctrl / Cmd / Maj / clic du milieu : nouvel onglet. */
+    (function () {
+        var c = document.getElementById('logo-crown');
+        if (!c) return;
+        function aller(e, nouvelOnglet) {
+            e.preventDefault(); e.stopPropagation();
+            var u = c.getAttribute('data-href') || 'comptepremium.html';
+            if (nouvelOnglet || e.ctrlKey || e.metaKey || e.shiftKey) window.open(u, '_blank', 'noopener'); else window.location.href = u;
+        }
+        c.addEventListener('click', function (e) { aller(e, false); });
+        c.addEventListener('auxclick', function (e) { if (e.button === 1) aller(e, true); else { e.preventDefault(); e.stopPropagation(); } });
+        c.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') aller(e, false); });
+    })();
     window.tpxApplyPremiumState = function (userInfo) {
         _tpxLastUser = userInfo || null;
+        tpxSetMemberCrown(userInfo);
         try { if (window._p1ReferralOnEntitlement) window._p1ReferralOnEntitlement(userInfo); } catch (e) { /* parrainage : jamais bloquant */ }
         tpxClearSubEndTimer();
 
@@ -60802,7 +60913,7 @@ body.tpx-premium-locked .day-detail-open-btn {
             tpxEnablePremiumLock();
         }
     };
-    window.tpxResetPremiumState = function () { _tpxLastUser = null; tpxClearSubEndTimer(); tpxHideTrialFab(); tpxDisablePremiumLock(); };
+    window.tpxResetPremiumState = function () { _tpxLastUser = null; tpxSetMemberCrown(null); tpxClearSubEndTimer(); tpxHideTrialFab(); tpxDisablePremiumLock(); };
     /* Statut Premium IMPOSSIBLE À DÉTERMINER (échec de getDoc(users/{uid}) :
        hors ligne, erreur réseau, etc.). Comportement fail-CLOSED explicite :
        jamais fail-open. On ne devine ni n'invente un abonnement, on ne perd
@@ -60811,6 +60922,7 @@ body.tpx-premium-locked .day-detail-open-btn {
        réussie — Firestore reste de toute façon le filet de sécurité réel. */
     window.tpxSetUnknownState = function () {
         _tpxLastUser = null;
+        tpxSetMemberCrown(null);
         tpxClearSubEndTimer();
         tpxHideTrialFab();
         tpxEnablePremiumLock();
