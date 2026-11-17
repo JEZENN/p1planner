@@ -17024,10 +17024,19 @@ html.p1-skel-in #presentation-section { animation: p1SkelIn 0.35s ease both; }
 .p1-greet-pill { position: absolute; left: 0; top: 50%; transform: translate(-50%, -50%); box-sizing: border-box; padding: 0.38rem 1rem; border-radius: 999px; white-space: nowrap;
     background: var(--white); color: var(--gray-700); border: 1px solid var(--gray-200); box-shadow: 0 4px 14px rgba(15, 23, 42, 0.1);
     font-size: 0.9rem; font-weight: 600; line-height: 1.35; text-align: center; opacity: 0; animation: p1GreetLife 2800ms ease both; }
-.p1-greet-pill.is-below { top: calc(var(--header-height) + 10px); transform: translate(-50%, 0); white-space: normal; width: max-content; max-width: calc(100vw - 24px); }
+/* mode logo (téléphone) : deux lignes à droite de l'icône du logo, à la place du nom « P1Planner » qui s'efface pendant l'affichage */
+.p1-greet-pill.is-logo { top: 50%; transform: translate(0, -50%); display: flex; flex-direction: column; align-items: flex-start; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; text-align: left; line-height: 1.2; animation: p1GreetLogoLife 3900ms linear both; }
+.p1-greet-hi, .p1-greet-name { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.p1-greet-hi { font-size: 0.76rem; font-weight: 600; line-height: 1.25; color: var(--gray-500); }
+.p1-greet-name { font-family: var(--font-display); font-size: 1.16rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1.25; background: var(--primary-gradient); -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; }
+html[data-font] #header .p1-greet-name { font-family: 'Outfit', sans-serif; }   /* comme le logo : la police choisie ne s'applique pas à son nom */
+.logo { transition: color 0.25s ease; }
+#header.p1-hi-logo .logo { color: transparent !important; }   /* le nom du logo s'efface en fondu ; l'icône et la couronne (couleurs propres) ne bougent pas */
 @keyframes p1GreetLife { 0% { opacity: 0; translate: 0 -8px; } 11% { opacity: 1; translate: 0 0; } 84% { opacity: 1; translate: 0 0; } 100% { opacity: 0; translate: 0 0; } }
 @keyframes p1GreetFade { 0% { opacity: 0; } 11% { opacity: 1; } 84% { opacity: 1; } 100% { opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .p1-greet-pill { animation-name: p1GreetFade; } }
+@keyframes p1GreetLogoLife { 0% { opacity: 0; translate: 0 8px; animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); } 13% { opacity: 1; translate: 0 0; } 88% { opacity: 1; translate: 0 0; animation-timing-function: ease; } 100% { opacity: 0; translate: 0 0; } }
+@keyframes p1GreetLogoFade { 0% { opacity: 0; } 13% { opacity: 1; } 88% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .p1-greet-pill { animation-name: p1GreetFade; } .p1-greet-pill.is-logo { animation-name: p1GreetLogoFade; } }
 </style>
 <script id="p1-skel-early">document.documentElement.classList.add('p1-skel', 'p1-noloader', 'p1-parsing');
 /* p1-parsing : tant que le navigateur lit encore le fichier, les fenêtres modales (placées avant leur feuille de style) ne sont pas affichées */
@@ -73123,41 +73132,97 @@ html[data-theme="pastel"] .flash-uptodate-check { background: #6fae84; box-shado
         window.p1HdrShortcutsOn = function () { return state === 'on'; };
     })();
     /* ═══ 6b. Salutation éphémère dans le header ═══
-       Le message de bienvenue (masqué dans le bandeau) reste rempli par le code existant ; son texte, sans le « ! » final, s'affiche une fois par connexion
-       en petite pastille. Elle disparaît d'elle-même, ou tout de suite si la barre de raccourcis s'affiche. */
+       Le message de bienvenue (masqué dans le bandeau) reste rempli par le code existant ; son texte, sans le « ! » final, s'affiche une fois par connexion.
+       Trois emplacements, dans cet ordre, tous dans le header :
+         « row »  : pastille centrée entre le logo et les menus de droite quand elle y tient ;
+         « logo » : sinon (téléphone), deux lignes (salutation, puis nom) 10 px après l'icône du logo, à la place du nom « P1Planner » qui s'efface en fondu.
+       Elle disparaît d'elle-même, ou tout de suite si la barre de raccourcis s'affiche. */
     (function headerGreeting() {
         var header = document.getElementById('header'), welcome = document.getElementById('welcome-message'), host = document.getElementById('p1-greet');
         if (!header || !welcome || !host) { setTimeout(headerGreeting, 500); return; }
         var phoneMq = window.matchMedia ? window.matchMedia('(max-width: 600px)') : { matches: false };
-        var greeted = false, pill = null, endT = null;
-        function textNow() { return (welcome.textContent || '').replace(/\s+/g, ' ').trim().replace(/\s*!\s*$/, ''); }
-        function clear() { clearTimeout(endT); endT = null; if (pill && pill.parentNode) pill.parentNode.removeChild(pill); pill = null; }
+        var ROW_MS = 2800, LOGO_MS = 3900;   /* durées des animations CSS p1GreetLife / p1GreetLogoLife */
+        var greeted = false, pill = null, endT = null, logoT = null, mode = '';
+        function clean(t) { return String(t || '').replace(/\s+/g, ' ').trim().replace(/\s*!\s*$/, ''); }
+        function textNow() { return clean(welcome.textContent); }
+        /* salutation (texte avant le nom, virgule comprise) et nom (.user-name) du message de bienvenue */
+        function parts() {
+            var un = welcome.querySelector('.user-name'), hi = '', name = '';
+            if (un) {
+                name = clean(un.textContent);
+                try { var r = document.createRange(); r.selectNodeContents(welcome); r.setEndBefore(un); hi = clean(r.toString()); } catch (e) { hi = ''; }
+            }
+            return { hi: hi, name: name };
+        }
+        function fill(m) {
+            pill.textContent = '';
+            var p = parts(), t = textNow();
+            if (m === 'logo' && p.hi && p.name) {
+                var a = document.createElement('span'), b = document.createElement('span');
+                a.className = 'p1-greet-hi'; a.textContent = p.hi; b.className = 'p1-greet-name'; b.textContent = p.name;
+                pill.appendChild(a); pill.appendChild(document.createTextNode(' ')); pill.appendChild(b);
+            } else if (m === 'logo') {
+                var one = document.createElement('span'); one.className = 'p1-greet-name'; one.textContent = t; pill.appendChild(one);
+            } else pill.textContent = t;
+        }
+        function releaseLogo() { clearTimeout(logoT); logoT = null; header.classList.remove('p1-hi-logo'); }
+        function clear() { clearTimeout(endT); endT = null; releaseLogo(); if (pill && pill.parentNode) pill.parentNode.removeChild(pill); pill = null; mode = ''; }
+        /* fin de l'affichage (minuteur de secours) et retour du nom du logo, un peu après le début de l'effacement de la salutation */
+        function arm(m) {
+            var mine = pill;
+            clearTimeout(endT); endT = setTimeout(function () { if (pill === mine) clear(); }, (m === 'logo' ? LOGO_MS : ROW_MS) + 300);
+            releaseLogo();
+            if (m === 'logo') { header.classList.add('p1-hi-logo'); logoT = setTimeout(releaseLogo, Math.round(LOGO_MS * 0.88) + 140); }
+        }
+        function setMode(m) {
+            mode = m; pill.className = 'p1-greet-pill' + (m === 'logo' ? ' is-logo' : ''); fill(m); arm(m);
+        }
+        function shown(e) {
+            if (!e) return false;
+            var r = e.getBoundingClientRect(); if (!r.width || !r.height) return false;
+            var cs = getComputedStyle(e); return cs.display !== 'none' && cs.visibility !== 'hidden';
+        }
+        /* largeur de la pastille en une ligne, mesurée sur une copie invisible (la vraie pastille n'est pas touchée) */
+        function rowWidth() {
+            var m = document.createElement('div'); m.className = 'p1-greet-pill'; m.textContent = textNow();
+            m.style.cssText = 'animation:none;visibility:hidden;opacity:1';
+            host.appendChild(m); var w = m.offsetWidth; host.removeChild(m); return w;
+        }
+        /* bord gauche des éléments réellement visibles à droite du header (l'indicateur de sauvegarde, invisible, garde sa place et fausserait la mesure) */
+        function rightEdge() {
+            var min = Infinity, list = header.querySelectorAll('.header-actions, #mobile-menu-btn, .mobile-menu-btn, .nav-items > li');
+            for (var i = 0; i < list.length; i++) if (shown(list[i])) min = Math.min(min, list[i].getBoundingClientRect().left);
+            return min === Infinity ? header.getBoundingClientRect().right - 12 : min;
+        }
         function place() {
             if (!pill) return;
-            var logo = header.querySelector('.logo'), right = header.querySelector('nav.nav, .nav');
-            pill.classList.remove('is-below'); host.style.left = '';
+            var logo = header.querySelector('.logo'), icon = header.querySelector('.logo-icon'), right = header.querySelector('nav.nav, .nav'), want = 'logo', cx = 0;
             if (!phoneMq.matches && logo && right) {
                 var lr = logo.getBoundingClientRect().right, rl = right.getBoundingClientRect().left;
-                if (rl - lr >= pill.offsetWidth + 24) { host.style.left = Math.round((lr + rl) / 2) + 'px'; return; }   /* centrée entre le logo et les menus de droite */
+                if (rl - lr >= rowWidth() + 24) { want = 'row'; cx = (lr + rl) / 2; }   /* centrée entre le logo et les menus de droite */
             }
-            pill.classList.add('is-below');   /* pas la place dans le header : juste dessous, centrée */
+            if (want !== mode) setMode(want);
+            if (want === 'row') { host.style.left = Math.round(cx) + 'px'; pill.style.maxWidth = ''; return; }
+            var hl = header.getBoundingClientRect().left, x = (icon ? icon.getBoundingClientRect().right : header.querySelector('.logo').getBoundingClientRect().left) + 10 - hl;
+            host.style.left = Math.round(x) + 'px';
+            pill.style.maxWidth = Math.max(0, Math.floor(rightEdge() - 10 - hl - x)) + 'px';
         }
-        function show(txt) {
+        function show() {
             clear();
-            pill = document.createElement('div'); pill.className = 'p1-greet-pill'; pill.textContent = txt;
+            pill = document.createElement('div'); pill.className = 'p1-greet-pill'; pill.style.animation = 'none';   /* mesure et placement avant le début de l'animation */
             host.appendChild(pill); place();
+            pill.style.animation = '';
             var mine = pill;
             mine.addEventListener('animationend', function () { if (pill === mine) clear(); });
-            endT = setTimeout(function () { if (pill === mine) clear(); }, 3100);
         }
         function sync() {
             var t = textNow();
             if (!t) { greeted = false; clear(); return; }                       /* déconnexion : la prochaine connexion salue de nouveau */
-            if (pill) { pill.textContent = t; place(); return; }                /* nom remis en forme pendant l'affichage */
+            if (pill) { fill(mode); place(); return; }                          /* nom remis en forme pendant l'affichage */
             if (greeted) return;
             greeted = true;
             if (typeof window.p1HdrShortcutsOn === 'function' && window.p1HdrShortcutsOn()) return;   /* raccourcis déjà visibles : rien */
-            show(t);
+            show();
         }
         new MutationObserver(sync).observe(welcome, { childList: true, characterData: true, subtree: true });
         window.addEventListener('p1:hdr-shortcuts', function (e) { if (e && e.detail && e.detail.on) clear(); });

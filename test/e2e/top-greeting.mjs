@@ -29,14 +29,14 @@ const PROBE = () => {
     if (pill) {
       const cs = getComputedStyle(pill), r = pill.getBoundingClientRect(), t = Math.round(performance.now() - T.t0), op = parseFloat(cs.opacity);
       const hdr = document.getElementById("header").getBoundingClientRect();
-      T.pill.push({ t, op, ty: Math.round(r.top * 10) / 10, below: pill.classList.contains("is-below"), text: pill.textContent, role: pill.parentNode.getAttribute("role"), live: pill.parentNode.getAttribute("aria-live"), tr: cs.translate });
+      T.pill.push({ t, op, ty: Math.round(r.top * 10) / 10, logo: pill.classList.contains("is-logo"), text: pill.textContent, role: pill.parentNode.getAttribute("role"), live: pill.parentNode.getAttribute("aria-live"), tr: cs.translate });
       if (op > 0.95) {
         const bad = [];
-        for (const sel of [".logo", ".nav-items", ".header-actions", ".mobile-menu-btn", "#avatar-wrapper", "#save-indicator-header", "#p1HdrNav.is-on", ".user-auth"]) { const e = document.querySelector(sel); if (vis(e) && inter(r, e.getBoundingClientRect())) bad.push(sel); }
+        for (const sel of [...(pill.classList.contains("is-logo") ? [] : [".logo"]), ".nav-items", ".header-actions", ".mobile-menu-btn", "#avatar-wrapper", "#save-indicator-header", "#p1HdrNav.is-on", ".user-auth"]) { const e = document.querySelector(sel); if (vis(e) && inter(r, e.getBoundingClientRect())) bad.push(sel); }
         if (r.left < -0.5 || r.right > innerWidth + 0.5 || r.top < -0.5 || r.bottom > innerHeight + 0.5) bad.push("hors écran");
-        if (pill.classList.contains("is-below") ? r.top < hdr.bottom - 0.5 : (r.top < hdr.top - 0.5 || r.bottom > hdr.bottom + 0.5)) bad.push("hors zone");
+        if (r.top < hdr.top - 0.5 || r.bottom > hdr.bottom + 0.5) bad.push("hors du header");
         if (bad.length) T.hits.push(bad.join(",") + " @" + t);
-        T.last = { l: r.left, r: r.right, t: r.top, b: r.bottom, below: pill.classList.contains("is-below"), hb: hdr.bottom };
+        T.last = { l: r.left, r: r.right, t: r.top, b: r.bottom, logo: pill.classList.contains("is-logo"), hb: hdr.bottom };
       }
     }
     const nav = document.querySelector(".app-nav");
@@ -104,7 +104,7 @@ try {
 
     /* ═════════ TP3 : salutation ═════════ */
     for (const theme of ["light", "dark"]) {
-      await S(`TP3-${k}-${theme}`, `(${vp.width} px, ${theme}) salutation : texte sans « ! », pastille ≈ 2,8 s, rôle status, aucun chevauchement, ${k === "tel" ? "sous le header, entièrement à l'écran" : "dans le header, centrée entre le logo et les menus"}, effacée ensuite`, async () => {
+      await S(`TP3-${k}-${theme}`, `(${vp.width} px, ${theme}) salutation : texte sans « ! », pastille ≈ 2,8 s (≈ 3,9 s sur téléphone), rôle status, aucun chevauchement, ${k === "tel" ? "dans le header, deux lignes à droite de l'icône du logo" : "dans le header, centrée entre le logo et les menus"}, effacée ensuite`, async () => {
         const { page } = await boot(vp, { theme });
         await page.waitForFunction(() => window.__tp && window.__tp.pill.some((p) => p.op > 0.95), { timeout: 60000 });
         if (theme !== "light") await page.evaluate((t) => { try { window.p1SetTheme && window.p1SetTheme(t, false); } catch (e) {} }, theme);
@@ -115,12 +115,13 @@ try {
         const seen = T.pill.filter((p) => p.op > 0.05);
         assert(seen.length > 20, "pastille trop peu visible : " + seen.length + " images");
         const dur = seen[seen.length - 1].t - seen[0].t;
-        assert(dur >= 2000 && dur <= 3300, "durée affichée ≈ 2–3 s attendue : " + dur + " ms");
+        const [dmin, dmax] = k === "tel" ? [3000, 4300] : [2000, 3300];   /* téléphone : apparition 0,5 s + affichage 3 s + fondu */
+        assert(dur >= dmin && dur <= dmax, `durée affichée attendue ${dmin}–${dmax} ms : ` + dur + " ms");
         const p0 = T.pill[0];
         assert(p0.text === expected && !/!/.test(p0.text) && /^(Bonjour|Bon après-midi|Bonsoir), /.test(p0.text), `texte : « ${p0.text} » (attendu « ${expected} »)`);
         assert(p0.role === "status" && p0.live === "polite", "rôle / aria-live : " + p0.role + " / " + p0.live);
         assert(T.hits.length === 0, "chevauchement ou hors écran : " + T.hits.slice(0, 3).join(" | "));
-        assert(T.last && (k === "tel" ? T.last.below === true : T.last.below === false), "emplacement : " + JSON.stringify(T.last));
+        assert(T.last && (k === "tel" ? T.last.logo === true : T.last.logo === false), "emplacement : " + JSON.stringify(T.last));
         const ys = seen.filter((p) => p.op > 0.95).map((p) => p.ty); assert(ys.length > 20, "pastille pleinement visible trop brève");
         const after = await page.evaluate(() => ({ pills: document.querySelectorAll(".p1-greet-pill").length, host: !!document.getElementById("p1-greet") }));
         assert(after.pills === 0 && after.host, "pastille non retirée à la fin : " + JSON.stringify(after));
