@@ -17019,24 +17019,18 @@ html.p1-skel-in #presentation-section { animation: p1SkelIn 0.35s ease both; }
 @media (prefers-reduced-motion: reduce) { .p1-sk, html.p1-skel .user-auth:not(.logged-in)::after { animation: none; } html.p1-skel-in #main-content, html.p1-skel-in #presentation-section { animation: none; } }
 </style>
 <style id="p1-greet-css">
-/* salutation éphémère du header (le texte vient du message de bienvenue, masqué dans le bandeau) */
-.p1-greet { position: absolute; left: 50%; top: 0; width: 0; height: var(--header-height); pointer-events: none; z-index: 2; }
-.p1-greet-pill { position: absolute; left: 0; top: 50%; transform: translate(-50%, -50%); box-sizing: border-box; padding: 0.38rem 1rem; border-radius: 999px; white-space: nowrap;
-    background: var(--white); color: var(--gray-700); border: 1px solid var(--gray-200); box-shadow: 0 4px 14px rgba(15, 23, 42, 0.1);
-    font-size: 0.9rem; font-weight: 600; line-height: 1.35; text-align: center; opacity: 0; animation: p1GreetLife 2800ms ease both; }
-/* mode logo (téléphone) : deux lignes à droite de l'icône du logo, à la place du nom « P1Planner » qui s'efface pendant l'affichage */
-.p1-greet-pill.is-logo { top: 50%; transform: translate(0, -50%); display: flex; flex-direction: column; align-items: flex-start; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; text-align: left; line-height: 1.2; animation: p1GreetLogoLife 3900ms linear both; }
+/* salutation éphémère du header (le texte vient du message de bienvenue, masqué dans le bandeau) : deux lignes à droite de l'icône du logo, à la place du nom « P1Planner » qui s'efface en fondu ; la position (left) est posée par le script */
+.p1-greet { position: absolute; left: 0; top: 0; width: 0; height: var(--header-height); pointer-events: none; z-index: 2; }
+.p1-greet-pill { position: absolute; left: 0; top: 50%; transform: translate(0, -50%); display: flex; flex-direction: column; align-items: flex-start; text-align: left; white-space: nowrap; line-height: 1.2; opacity: 0; animation: p1GreetLogoLife 3900ms linear both; }
 .p1-greet-hi, .p1-greet-name { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .p1-greet-hi { font-size: 0.76rem; font-weight: 600; line-height: 1.25; color: var(--gray-500); }
 .p1-greet-name { font-family: var(--font-display); font-size: 1.16rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1.25; background: var(--primary-gradient); -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; }
 html[data-font] #header .p1-greet-name { font-family: 'Outfit', sans-serif; }   /* comme le logo : la police choisie ne s'applique pas à son nom */
 .logo { transition: color 0.25s ease; }
 #header.p1-hi-logo .logo { color: transparent !important; }   /* le nom du logo s'efface en fondu ; l'icône et la couronne (couleurs propres) ne bougent pas */
-@keyframes p1GreetLife { 0% { opacity: 0; translate: 0 -8px; } 11% { opacity: 1; translate: 0 0; } 84% { opacity: 1; translate: 0 0; } 100% { opacity: 0; translate: 0 0; } }
-@keyframes p1GreetFade { 0% { opacity: 0; } 11% { opacity: 1; } 84% { opacity: 1; } 100% { opacity: 0; } }
 @keyframes p1GreetLogoLife { 0% { opacity: 0; translate: 0 8px; animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); } 13% { opacity: 1; translate: 0 0; } 88% { opacity: 1; translate: 0 0; animation-timing-function: ease; } 100% { opacity: 0; translate: 0 0; } }
 @keyframes p1GreetLogoFade { 0% { opacity: 0; } 13% { opacity: 1; } 88% { opacity: 1; } 100% { opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .p1-greet-pill { animation-name: p1GreetFade; } .p1-greet-pill.is-logo { animation-name: p1GreetLogoFade; } }
+@media (prefers-reduced-motion: reduce) { .p1-greet-pill { animation-name: p1GreetLogoFade; } }
 </style>
 <script id="p1-skel-early">document.documentElement.classList.add('p1-skel', 'p1-noloader', 'p1-parsing');
 /* p1-parsing : tant que le navigateur lit encore le fichier, les fenêtres modales (placées avant leur feuille de style) ne sont pas affichées */
@@ -73132,17 +73126,14 @@ html[data-theme="pastel"] .flash-uptodate-check { background: #6fae84; box-shado
         window.p1HdrShortcutsOn = function () { return state === 'on'; };
     })();
     /* ═══ 6b. Salutation éphémère dans le header ═══
-       Le message de bienvenue (masqué dans le bandeau) reste rempli par le code existant ; son texte, sans le « ! » final, s'affiche une fois par connexion.
-       Trois emplacements, dans cet ordre, tous dans le header :
-         « row »  : pastille centrée entre le logo et les menus de droite quand elle y tient ;
-         « logo » : sinon (téléphone), deux lignes (salutation, puis nom) 10 px après l'icône du logo, à la place du nom « P1Planner » qui s'efface en fondu.
+       Le message de bienvenue (masqué dans le bandeau) reste rempli par le code existant ; son texte, sans le « ! » final, s'affiche une fois par connexion,
+       sur tous les écrans, au même endroit : deux lignes (salutation, puis nom) 10 px après l'icône du logo, à la place du nom « P1Planner » qui s'efface en fondu.
        Elle disparaît d'elle-même, ou tout de suite si la barre de raccourcis s'affiche. */
     (function headerGreeting() {
         var header = document.getElementById('header'), welcome = document.getElementById('welcome-message'), host = document.getElementById('p1-greet');
         if (!header || !welcome || !host) { setTimeout(headerGreeting, 500); return; }
-        var phoneMq = window.matchMedia ? window.matchMedia('(max-width: 600px)') : { matches: false };
-        var ROW_MS = 2800, LOGO_MS = 3900;   /* durées des animations CSS p1GreetLife / p1GreetLogoLife */
-        var greeted = false, pill = null, endT = null, logoT = null, mode = '';
+        var LOGO_MS = 3900;   /* durée de l'animation CSS p1GreetLogoLife */
+        var greeted = false, pill = null, endT = null, logoT = null;
         function clean(t) { return String(t || '').replace(/\s+/g, ' ').trim().replace(/\s*!\s*$/, ''); }
         function textNow() { return clean(welcome.textContent); }
         /* salutation (texte avant le nom, virgule comprise) et nom (.user-name) du message de bienvenue */
@@ -73154,39 +73145,30 @@ html[data-theme="pastel"] .flash-uptodate-check { background: #6fae84; box-shado
             }
             return { hi: hi, name: name };
         }
-        function fill(m) {
+        function fill() {
             pill.textContent = '';
-            var p = parts(), t = textNow();
-            if (m === 'logo' && p.hi && p.name) {
+            var p = parts();
+            if (p.hi && p.name) {
                 var a = document.createElement('span'), b = document.createElement('span');
                 a.className = 'p1-greet-hi'; a.textContent = p.hi; b.className = 'p1-greet-name'; b.textContent = p.name;
                 pill.appendChild(a); pill.appendChild(document.createTextNode(' ')); pill.appendChild(b);
-            } else if (m === 'logo') {
-                var one = document.createElement('span'); one.className = 'p1-greet-name'; one.textContent = t; pill.appendChild(one);
-            } else pill.textContent = t;
+            } else {   /* sans nom : une seule ligne */
+                var one = document.createElement('span'); one.className = 'p1-greet-name'; one.textContent = textNow(); pill.appendChild(one);
+            }
         }
         function releaseLogo() { clearTimeout(logoT); logoT = null; header.classList.remove('p1-hi-logo'); }
-        function clear() { clearTimeout(endT); endT = null; releaseLogo(); if (pill && pill.parentNode) pill.parentNode.removeChild(pill); pill = null; mode = ''; }
-        /* fin de l'affichage (minuteur de secours) et retour du nom du logo, un peu après le début de l'effacement de la salutation */
-        function arm(m) {
+        function clear() { clearTimeout(endT); endT = null; releaseLogo(); if (pill && pill.parentNode) pill.parentNode.removeChild(pill); pill = null; }
+        /* le nom du logo s'efface pendant l'affichage et revient un peu après le début du fondu de sortie de la salutation ; minuteur de secours pour la fin */
+        function arm() {
             var mine = pill;
-            clearTimeout(endT); endT = setTimeout(function () { if (pill === mine) clear(); }, (m === 'logo' ? LOGO_MS : ROW_MS) + 300);
-            releaseLogo();
-            if (m === 'logo') { header.classList.add('p1-hi-logo'); logoT = setTimeout(releaseLogo, Math.round(LOGO_MS * 0.88) + 140); }
-        }
-        function setMode(m) {
-            mode = m; pill.className = 'p1-greet-pill' + (m === 'logo' ? ' is-logo' : ''); fill(m); arm(m);
+            clearTimeout(endT); endT = setTimeout(function () { if (pill === mine) clear(); }, LOGO_MS + 300);
+            header.classList.add('p1-hi-logo');
+            clearTimeout(logoT); logoT = setTimeout(releaseLogo, Math.round(LOGO_MS * 0.88) + 140);
         }
         function shown(e) {
             if (!e) return false;
             var r = e.getBoundingClientRect(); if (!r.width || !r.height) return false;
             var cs = getComputedStyle(e); return cs.display !== 'none' && cs.visibility !== 'hidden';
-        }
-        /* largeur de la pastille en une ligne, mesurée sur une copie invisible (la vraie pastille n'est pas touchée) */
-        function rowWidth() {
-            var m = document.createElement('div'); m.className = 'p1-greet-pill'; m.textContent = textNow();
-            m.style.cssText = 'animation:none;visibility:hidden;opacity:1';
-            host.appendChild(m); var w = m.offsetWidth; host.removeChild(m); return w;
         }
         /* bord gauche des éléments réellement visibles à droite du header (l'indicateur de sauvegarde, invisible, garde sa place et fausserait la mesure) */
         function rightEdge() {
@@ -73196,29 +73178,23 @@ html[data-theme="pastel"] .flash-uptodate-check { background: #6fae84; box-shado
         }
         function place() {
             if (!pill) return;
-            var logo = header.querySelector('.logo'), icon = header.querySelector('.logo-icon'), right = header.querySelector('nav.nav, .nav'), want = 'logo', cx = 0;
-            if (!phoneMq.matches && logo && right) {
-                var lr = logo.getBoundingClientRect().right, rl = right.getBoundingClientRect().left;
-                if (rl - lr >= rowWidth() + 24) { want = 'row'; cx = (lr + rl) / 2; }   /* centrée entre le logo et les menus de droite */
-            }
-            if (want !== mode) setMode(want);
-            if (want === 'row') { host.style.left = Math.round(cx) + 'px'; pill.style.maxWidth = ''; return; }
-            var hl = header.getBoundingClientRect().left, x = (icon ? icon.getBoundingClientRect().right : header.querySelector('.logo').getBoundingClientRect().left) + 10 - hl;
+            var icon = header.querySelector('.logo-icon'), logo = header.querySelector('.logo'), hl = header.getBoundingClientRect().left;
+            var ref = icon || logo; if (!ref) return;
+            var x = (icon ? ref.getBoundingClientRect().right + 10 : ref.getBoundingClientRect().left) - hl;
             host.style.left = Math.round(x) + 'px';
             pill.style.maxWidth = Math.max(0, Math.floor(rightEdge() - 10 - hl - x)) + 'px';
         }
         function show() {
             clear();
-            pill = document.createElement('div'); pill.className = 'p1-greet-pill'; pill.style.animation = 'none';   /* mesure et placement avant le début de l'animation */
-            host.appendChild(pill); place();
-            pill.style.animation = '';
+            pill = document.createElement('div'); pill.className = 'p1-greet-pill';
+            fill(); host.appendChild(pill); place(); arm();
             var mine = pill;
             mine.addEventListener('animationend', function () { if (pill === mine) clear(); });
         }
         function sync() {
             var t = textNow();
             if (!t) { greeted = false; clear(); return; }                       /* déconnexion : la prochaine connexion salue de nouveau */
-            if (pill) { fill(mode); place(); return; }                          /* nom remis en forme pendant l'affichage */
+            if (pill) { fill(); place(); return; }                              /* nom remis en forme pendant l'affichage */
             if (greeted) return;
             greeted = true;
             if (typeof window.p1HdrShortcutsOn === 'function' && window.p1HdrShortcutsOn()) return;   /* raccourcis déjà visibles : rien */

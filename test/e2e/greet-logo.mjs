@@ -1,6 +1,5 @@
-/* Salutation éphémère du header : sur téléphone (la pastille ne tient pas entre le logo et les menus), elle s'affiche DANS le header, en deux lignes
-   (salutation, puis nom) juste à droite de l'icône du logo, à la place du nom « P1Planner » qui s'efface en fondu ; jamais sous le header.
-   Sur écran plus large : pastille centrée dans le header, nom du logo intact.
+/* Salutation éphémère du header : sur tous les écrans (téléphone, iPad, ordinateur), elle s'affiche DANS le header, en deux lignes (salutation, puis nom)
+   10 px après l'icône du logo, à la place du nom « P1Planner » qui s'efface en fondu ; jamais sous le header, jamais au centre.
    Vraie page + émulateurs, échantillon à chaque image depuis le début du chargement.
    Lancer : node test/e2e/greet-logo.mjs [préfixes]   (GLSHOTS=1 pour les captures ; PUBLIC_DIR=<copie « avant »> pour la contre-épreuve) */
 import "./env-e2e.mjs";
@@ -15,6 +14,8 @@ const OPEN = [];
 const S = (id, title, fn) => (want(id) ? scenario(`${id} ${title}`, async () => { try { return await fn(); } finally { while (OPEN.length) { try { await OPEN.pop().close(); } catch (e) {} } } }) : null);
 const server = await startServer(), proxy = await startProxy(), browser = await launch();
 const tel = (w) => ({ width: w, height: 844, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
+const ipad = (w) => ({ width: w, height: 1024, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
+const pc = (w) => ({ width: w, height: 900 });
 const ts = (j) => admin.firestore.Timestamp.fromDate(new Date(Date.now() + j * 864e5));
 const abonne = (uid) => adb.doc(`entitlements/${uid}`).set({ status: "active", planType: "monthly", trialStartedAt: ts(-40), trialEndsAt: ts(-25), writeAccessUntil: ts(30), premiumUntil: ts(30) });
 const shot = async (page, name) => { if (process.env.GLSHOTS) await page.screenshot({ path: `docs/captures-15-10/${name}.png`, clip: { x: 0, y: 0, width: page.viewport().width, height: 150 } }); };
@@ -27,10 +28,10 @@ const PROBE = () => {
     const G = window.__g, pill = document.querySelector(".p1-greet-pill"), hdr = document.getElementById("header");
     const lg = document.querySelector(".logo"), cr = document.getElementById("logo-crown"), nav = document.querySelector(".app-nav");
     const f = { t: Math.round(performance.now() - G.t0), hdr: r4(hdr), icon: r4(document.querySelector(".logo-icon")), crown: cr && getComputedStyle(cr).display !== "none" ? r4(cr) : null,
-      logoColor: lg ? getComputedStyle(lg).color : null, avatar: r4(document.getElementById("user-avatar")), nav: nav && nav.getClientRects().length ? r4(nav) : null, pill: null };
+      logoColor: lg ? getComputedStyle(lg).color : null, avatar: r4(document.getElementById("user-avatar")), edge: (() => { let m = Infinity; for (const e of document.querySelectorAll("#header .header-actions, #header .mobile-menu-btn, #header .nav-items > li")) { const b = e.getBoundingClientRect(), cs = getComputedStyle(e); if (b.width && b.height && cs.display !== "none" && cs.visibility !== "hidden") m = Math.min(m, b.left); } return m; })(), nav: nav && nav.getClientRects().length ? r4(nav) : null, pill: null };
     if (pill) {
       const cs = getComputedStyle(pill), hi = pill.querySelector(".p1-greet-hi"), nm = pill.querySelector(".p1-greet-name");
-      f.pill = { op: parseFloat(cs.opacity), rect: r4(pill), logo: pill.classList.contains("is-logo"), tr: cs.translate, text: pill.textContent, hi: r4(hi), name: r4(nm), hiText: hi && hi.textContent, nameText: nm && nm.textContent,
+      f.pill = { op: parseFloat(cs.opacity), rect: r4(pill), tr: cs.translate, text: pill.textContent, hi: r4(hi), name: r4(nm), hiText: hi && hi.textContent, nameText: nm && nm.textContent,
         nameClip: nm ? { sw: nm.scrollWidth, cw: nm.clientWidth } : null, hiColor: hi ? getComputedStyle(hi).color : null, nameFont: nm ? getComputedStyle(nm).fontFamily : null, nameSize: nm ? getComputedStyle(nm).fontSize : null, hiSize: hi ? getComputedStyle(hi).fontSize : null,
         bg: cs.backgroundColor, shadow: cs.boxShadow, border: cs.borderTopWidth, clip: nm ? getComputedStyle(nm).backgroundClip : null, logoFont: lg ? getComputedStyle(lg).fontFamily : null };
     }
@@ -64,15 +65,15 @@ const degager = (page) => page.evaluate(() => { const o = document.getElementByI
 const noHScroll = (page) => page.evaluate(() => ({ sw: document.documentElement.scrollWidth, iw: innerWidth }));
 
 try {
-  /* ═════ GL1 : téléphone, salutation dans le header, deux lignes, nom du logo effacé puis revenu, icône et couronne immobiles ═════ */
-  for (const w of [360, 390, 430, 600]) {
-    await S("GL1-" + w, `(${w} px, tactile, Premium) salutation dans le header à droite de l'icône : deux lignes, barre des pages non recouverte, nom du logo effacé puis revenu, icône et couronne immobiles`, async () => {
-      const { page } = await boot(tel(w), { premium: true });
-      await pleine(page);
+  /* ═════ GL1 : sur tous les écrans, salutation dans le header à droite de l'icône : deux lignes, barre des pages non recouverte, nom du logo effacé puis revenu, icône et couronne immobiles ═════ */
+  const verifLogo = async (vp) => {
+      const w = vp.width, { page } = await boot(vp, { premium: true });
+      await pleine(page); await sleep(500);
+      if (!vp.isMobile && w === 1366 || vp.isMobile && w === 820) await shot(page, `salutation-logo-${w}-clair-pendant`);
       await page.waitForFunction(() => window.__g.frames.slice(-1)[0].pill === null, { timeout: 15000 }); await sleep(900);
       const F = await frames(page), V = seen(F), P = full(F);
       assert(P.length > 40, "pastille pleinement visible trop brève : " + P.length + " images");
-      assert(P.every((f) => f.pill.logo), "pas en mode logo : " + JSON.stringify(P[0].pill.logo));
+      assert(P.every((f) => f.pill.hiText && f.pill.nameText), "pas en deux lignes");
       assert(!P.some((f) => f.pill.text && /^\s/.test(f.pill.text)), "texte vide / espaces");
       const bad = [];
       for (const f of V) {
@@ -80,6 +81,8 @@ try {
         if (p.b > f.hdr.b + 0.5 || p.t < f.hdr.t - 0.5) bad.push("hors header @" + f.t);
         if (f.nav && p.b > f.nav.t + 0.5) bad.push("barre recouverte @" + f.t);
         if (p.l < f.icon.r + 6 - 0.5) bad.push(`trop près de l'icône (${(p.l - f.icon.r).toFixed(1)}) @${f.t}`);
+        if (p.l > f.icon.r + 14 + 0.5) bad.push(`trop loin de l'icône (${(p.l - f.icon.r).toFixed(1)}) @${f.t}`);
+        if (f.edge < Infinity && p.r > f.edge - 6 + 0.5) bad.push(`trop près du premier menu (${(f.edge - p.r).toFixed(1)}) @${f.t}`);
         if (f.avatar && p.r > f.avatar.l - 6 + 0.5) bad.push(`trop près de l'avatar (${(f.avatar.l - p.r).toFixed(1)}) @${f.t}`);
         if (p.l < 0 || p.r > w + 0.5) bad.push("hors écran @" + f.t);
       }
@@ -110,32 +113,37 @@ try {
       assert(F.slice(F.indexOf(ref)).every((f) => f.crown), "couronne disparue pendant l'affichage");
       const hs = await noHScroll(page); assert(hs.sw <= hs.iw, "défilement horizontal : " + JSON.stringify(hs));
       assert(page.__errors.length === 0, "erreurs JS : " + page.__errors.join(" | "));
-    });
-  }
+  };
+  for (const w of [360, 390, 430, 600]) await S("GL1-" + w, `(${w} px, téléphone tactile, Premium) salutation dans le header à droite de l'icône : deux lignes, barre des pages non recouverte, nom du logo effacé puis revenu, icône et couronne immobiles`, () => verifLogo(tel(w)));
+  for (const w of [768, 820, 1024, 1180]) await S("GL11-" + w, `(${w} px, iPad tactile, Premium) à la place du nom du logo : 6 à 14 px après l'icône, fin avant le premier menu, dans le header, barre des pages non recouverte, nom du logo effacé puis revenu, icône et couronne immobiles`, () => verifLogo(ipad(w)));
+  for (const w of [700, 1024, 1100, 1280, 1366, 1920]) await S("GL6-" + w, `(${w} px, ordinateur, Premium) à la place du nom du logo : 6 à 14 px après l'icône, fin avant le premier menu, dans le header, barre des pages non recouverte, nom du logo effacé puis revenu, icône et couronne immobiles`, () => verifLogo(pc(w)));
 
-  /* ═════ GL2 : nom très long coupé par « … », sans toucher l'avatar ; nom remis en forme pendant l'affichage ═════ */
-  for (const w of [360, 390]) {
-    await S("GL2-" + w, `(${w} px) nom très long (remis en forme pendant l'affichage) : coupé par « … » sans toucher l'avatar, dans le header`, async () => {
-      const { page } = await boot(tel(w));
-      await pleine(page);
-      await page.evaluate(() => { const un = document.querySelector("#welcome-message .user-name"); un.textContent = "Alexandre-Maximilien DE LA TOUR D'AUVERGNE-LAURAGUAIS"; });
-      await sleep(500);
-      const F = await frames(page), L = F.filter((f) => f.pill && f.pill.op > 0.95 && /AUVERGNE/.test(f.pill.nameText || ""));
-      assert(L.length > 5, "nom long jamais affiché : " + L.length);
-      const f = L[L.length - 1], p = f.pill;
-      assert(p.nameClip.sw > p.nameClip.cw, "nom non coupé : " + JSON.stringify(p.nameClip));
-      assert(p.rect.r <= f.avatar.l - 6 + 0.5, "touche l'avatar : " + (f.avatar.l - p.rect.r).toFixed(1));
-      assert(p.rect.b <= f.hdr.b && (!f.nav || p.rect.b <= f.nav.t), "déborde sous le header");
-      const ellipsis = await page.evaluate(() => { const n = document.querySelector(".p1-greet-name"); return n ? getComputedStyle(n).textOverflow : null; });
-      assert(ellipsis === "ellipsis" || ellipsis === null, "text-overflow : " + ellipsis);
-      assert(page.__errors.length === 0, "erreurs JS : " + page.__errors.join(" | "));
-    });
-  }
+  /* ═════ GL2 : nom très long remis en forme pendant l'affichage ═════ */
+  const LONG = "Alexandre-Maximilien DE LA TOUR D'AUVERGNE-LAURAGUAIS";
+  const nomLong = async (vp, { entier, coupeOk }) => {
+    const { page } = await boot(vp);
+    await pleine(page);
+    await page.evaluate((n) => { const un = document.querySelector("#welcome-message .user-name"); un.textContent = n; }, LONG);
+    await sleep(500);
+    const F = await frames(page), L = F.filter((f) => f.pill && f.pill.op > 0.95 && /AUVERGNE/.test(f.pill.nameText || ""));
+    assert(L.length > 5, "nom long jamais affiché : " + L.length);
+    const f = L[L.length - 1], p = f.pill, clipped = p.nameClip.sw > p.nameClip.cw;
+    if (entier) assert(!clipped, "nom coupé alors qu'il tient : " + JSON.stringify(p.nameClip) + " (place " + Math.round(f.edge - 10 - p.rect.l) + " px)");
+    else assert(coupeOk || !clipped, "nom coupé");
+    assert(p.rect.r <= f.edge - 6 + 0.5, "touche le premier menu : " + (f.edge - p.rect.r).toFixed(1));
+    assert(f.avatar && p.rect.r <= f.avatar.l - 6 + 0.5, "touche l'avatar : " + (f.avatar.l - p.rect.r).toFixed(1));
+    assert(p.rect.b <= f.hdr.b && (!f.nav || p.rect.b <= f.nav.t), "déborde sous le header");
+    assert(p.rect.t >= f.hdr.t, "déborde au-dessus du header");
+    assert(page.__errors.length === 0, "erreurs JS : " + page.__errors.join(" | "));
+    return { clipped };
+  };
+  for (const w of [360, 390]) await S("GL2-" + w, `(${w} px) nom très long (remis en forme pendant l'affichage) : coupé par « … » sans toucher l'avatar, dans le header`, async () => { const r = await nomLong(tel(w), { entier: false, coupeOk: true }); assert(r.clipped, "nom non coupé"); });
+  await S("GL2-1366", "(1366 px) nom très long : affiché en entier, dans le header, sans toucher les menus", () => nomLong(pc(1366), { entier: true }));
+  await S("GL2-768", "(768 px, iPad tactile) nom très long : entier, ou coupé par « … » avant les menus", () => nomLong(ipad(768), { entier: false, coupeOk: true }));
 
   /* ═════ GL3 : thèmes clair / sombre / pastel, police choisie ═════ */
-  for (const theme of ["light", "dark", "pastel"]) {
-    await S("GL3-" + theme, `(390 px, ${theme}) nom du logo effacé (même devant les règles de thème), icône et couronne gardent leurs couleurs, nom en dégradé, retour du nom ensuite`, async () => {
-      const { page } = await boot(tel(390), { theme, premium: true });
+  const themeCase = async (vp, theme) => {
+      const { page } = await boot(vp, { theme, premium: true });
       await pleine(page); await sleep(700);
       const during = await page.evaluate(() => {
         const lg = document.querySelector(".logo"), ic = document.querySelector(".logo-icon"), cr = document.getElementById("logo-crown");
@@ -145,14 +153,15 @@ try {
       assert(alpha(during.icon) > 0.99 && alpha(during.iconI) > 0.99 && during.iconI !== "rgba(0, 0, 0, 0)", "icône sans couleur : " + JSON.stringify(during));
       assert(during.crown && alpha(during.crown) > 0.99 && during.crown !== "rgba(0, 0, 0, 0)", "couronne sans couleur : " + during.crown);
       assert(/p1-hi-logo/.test(during.cls), "classe du header : " + during.cls);
-      await shot(page, `salutation-logo-390-${theme === "light" ? "clair" : theme === "dark" ? "sombre" : "pastel"}-pendant`);
+      if (vp.width === 390) await shot(page, `salutation-logo-390-${theme === "light" ? "clair" : theme === "dark" ? "sombre" : "pastel"}-pendant`);
       await page.waitForFunction(() => !document.querySelector(".p1-greet-pill"), { timeout: 15000 }); await sleep(700);
       const after = await page.evaluate(() => ({ logo: getComputedStyle(document.querySelector(".logo")).color, cls: document.getElementById("header").className }));
       assert(alpha(after.logo) > 0.99 && !/p1-hi-logo/.test(after.cls), "nom du logo non revenu : " + JSON.stringify(after));
-      await shot(page, `salutation-logo-390-${theme === "light" ? "clair" : theme === "dark" ? "sombre" : "pastel"}-apres`);
+      if (vp.width === 390) await shot(page, `salutation-logo-390-${theme === "light" ? "clair" : theme === "dark" ? "sombre" : "pastel"}-apres`);
       assert(page.__errors.length === 0, "erreurs JS : " + page.__errors.join(" | "));
-    });
-  }
+  };
+  for (const theme of ["light", "dark", "pastel"]) await S("GL3-" + theme, `(390 px, ${theme}) nom du logo effacé (même devant les règles de thème), icône et couronne gardent leurs couleurs, nom en dégradé, retour du nom ensuite`, () => themeCase(tel(390), theme));
+  for (const theme of ["dark", "pastel"]) await S("GL3b-" + theme, `(1366 px, ${theme}) nom du logo effacé (même devant les règles de thème), icône et couronne gardent leurs couleurs, retour du nom ensuite`, () => themeCase(pc(1366), theme));
   await S("GL3-font", "(390 px, police « serif ») le nom suit la police du logo", async () => {
     const { page } = await boot(tel(390), { font: "serif" });
     await pleine(page); await sleep(500);
@@ -194,28 +203,8 @@ try {
     const d = retour.t - sortie.t; assert(d >= 0 && d <= 450, "retour du nom : " + d + " ms après le début du fondu de la salutation");
   });
 
-  /* ═════ GL6 : écrans plus larges : pastille dans le header, centrée, sans toucher le logo ni les menus, nom du logo intact ═════ */
-  for (const w of [700, 1024, 1100, 1366]) {
-    await S("GL6-" + w, `(${w} px) pastille dans le header, centrée (milieu du header ou de l'espace libre), sans toucher le logo ni les menus ; nom du logo intact`, async () => {
-      const { page } = await boot({ width: w, height: 900 });
-      await pleine(page);
-      const geo = await page.evaluate(() => { const L = document.querySelector(".logo").getBoundingClientRect(), N = document.querySelector(".nav").getBoundingClientRect(); return { lr: L.right, nl: N.left }; });
-      await page.waitForFunction(() => window.__g.frames.slice(-1)[0].pill === null, { timeout: 15000 }); await sleep(600);
-      const F = await frames(page), V = seen(F), P = full(F);
-      assert(P.length > 20 && P.every((f) => !f.pill.logo), "pas en mode ligne : " + JSON.stringify(P[0] && P[0].pill.logo));
-      const f = P[Math.floor(P.length / 2)], p = f.pill.rect, c = (p.l + p.r) / 2;
-      const libre = (geo.lr + geo.nl) / 2, milieu = (f.hdr.l + f.hdr.r) / 2;
-      assert(Math.min(Math.abs(c - libre), Math.abs(c - milieu)) <= 3, `centre ${c.toFixed(0)} : espace libre ${libre.toFixed(0)}, header ${milieu.toFixed(0)}`);
-      assert(V.every((g) => g.pill.rect.t >= g.hdr.t - 0.5 && g.pill.rect.b <= g.hdr.b + 0.5), "hors du header");
-      assert(p.l >= geo.lr + 4 && p.r <= geo.nl - 4, `touche le logo / les menus : ${p.l.toFixed(0)}–${p.r.toFixed(0)} dans ${geo.lr.toFixed(0)}–${geo.nl.toFixed(0)}`);
-      assert(F.every((g) => alpha(g.logoColor) > 0.99), "nom du logo modifié");
-      assert(await page.evaluate(() => !/p1-hi-logo/.test(document.getElementById("header").className)), "classe du header posée");
-      assert(page.__errors.length === 0, "erreurs JS : " + page.__errors.join(" | "));
-    });
-  }
-
   /* ═════ GL7 : Paramètres ouverts puis fermés pendant l'affichage : salutation immobile ═════ */
-  for (const [k, vp] of [["tel", tel(390)], ["pc", { width: 1100, height: 900 }]]) {
+  for (const [k, vp] of [["tel", tel(390)], ["ipad", ipad(820)], ["pc", pc(1100)], ["pc1366", pc(1366)]]) {
     await S("GL7-" + k, `(${vp.width} px) Paramètres ouverts puis fermés pendant l'affichage : la salutation ne bouge pas`, async () => {
       const { page } = await boot(vp);
       await pleine(page);
@@ -230,20 +219,20 @@ try {
     });
   }
 
-  /* ═════ GL8 : redimensionnement : le mode et la position sont recalculés ═════ */
-  await S("GL8", "(390 → 1100 → 390) redimensionnement pendant l'affichage : le mode et la position suivent, toujours dans le header, nom du logo cohérent", async () => {
+  /* ═════ GL8 : redimensionnement : la position suit (mêmes options tactiles avant et après : Puppeteer recharge la page si isMobile / hasTouch change) ═════ */
+  await S("GL8", "(390 → 1100 → 390, tactile) redimensionnement pendant l'affichage : la position suit l'icône du logo, toujours dans le header, nom du logo effacé", async () => {
     const { page } = await boot(tel(390));
     await pleine(page);
-    const lire = () => page.evaluate(() => { const p = document.querySelector(".p1-greet-pill"), h = document.getElementById("header").getBoundingClientRect(); if (!p) return null; const r = p.getBoundingClientRect(); return { logo: p.classList.contains("is-logo"), inHdr: r.top >= h.top - 0.5 && r.bottom <= h.bottom + 0.5, r: r.right, iw: innerWidth, cls: /p1-hi-logo/.test(document.getElementById("header").className) }; });
-    await page.setViewport({ width: 1100, height: 900 }); await sleep(400);
-    const a = await lire(); assert(a && !a.logo && a.inHdr && !a.cls, "à 1100 px : " + JSON.stringify(a));
+    const lire = () => page.evaluate(() => { const p = document.querySelector(".p1-greet-pill"), h = document.getElementById("header").getBoundingClientRect(), ic = document.querySelector(".logo-icon").getBoundingClientRect(); if (!p) return null; const r = p.getBoundingClientRect(); return { dx: r.left - ic.right, inHdr: r.top >= h.top - 0.5 && r.bottom <= h.bottom + 0.5, r: r.right, iw: innerWidth, cls: /p1-hi-logo/.test(document.getElementById("header").className), deux: p.children.length }; });
+    await page.setViewport({ ...tel(1100) }); await sleep(400);
+    const a = await lire(); assert(a && a.deux === 2 && a.inHdr && a.cls && Math.abs(a.dx - 10) <= 1 && a.r <= a.iw, "à 1100 px : " + JSON.stringify(a));
     await page.setViewport(tel(390)); await sleep(400);
-    const b = await lire(); assert(b && b.logo && b.inHdr && b.cls && b.r <= b.iw, "retour à 390 px : " + JSON.stringify(b));
+    const b = await lire(); assert(b && b.deux === 2 && b.inHdr && b.cls && Math.abs(b.dx - 10) <= 1 && b.r <= b.iw, "retour à 390 px : " + JSON.stringify(b));
     assert(page.__errors.length === 0, "erreurs JS : " + page.__errors.join(" | "));
   });
 
   /* ═════ GL9 : raccourcis du header qui apparaissent, déconnexion / reconnexion, message sans nom ═════ */
-  await S("GL9a", "(1366 px) la barre de raccourcis qui apparaît retire la salutation (mode ligne) tout de suite", async () => {
+  await S("GL9a", "(1366 px) la barre de raccourcis qui apparaît retire la salutation et rend le nom du logo tout de suite", async () => {
     const { page } = await boot({ width: 1366, height: 900 });
     await pleine(page); await degager(page);
     await page.evaluate(() => { const d = document.createElement("div"); d.style.height = "2600px"; (document.querySelector("footer") || document.body).appendChild(d); window.scrollTo({ top: 900, behavior: "instant" }); });
@@ -269,7 +258,7 @@ try {
     const r = await page.evaluate(() => ({ pill: !!document.querySelector(".p1-greet-pill"), cls: document.getElementById("header").className, c: getComputedStyle(document.querySelector(".logo")).color }));
     assert(!r.pill && !/p1-hi-logo/.test(r.cls) && alpha(r.c) > 0.99, "état après déconnexion : " + JSON.stringify(r));
     await page.evaluate(async (e, p) => { await window.__authApi.signInWithEmailAndPassword(window.__auth, e, p); }, u.email, u.password);
-    await page.waitForFunction(() => { const p = document.querySelector(".p1-greet-pill.is-logo"); return p && parseFloat(getComputedStyle(p).opacity) > 0.9; }, { timeout: 30000 });
+    await page.waitForFunction(() => { const p = document.querySelector(".p1-greet-pill"); return p && parseFloat(getComputedStyle(p).opacity) > 0.9; }, { timeout: 30000 });
     assert(page.__errors.length === 0, "erreurs JS : " + page.__errors.join(" | "));
   });
   await S("GL9d", "(390 px) message sans nom : une seule ligne, dans le header", async () => {
